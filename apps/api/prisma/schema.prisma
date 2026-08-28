@@ -1,0 +1,306 @@
+// OJS Nutrition — Prisma schema
+// Kaynak: BACKEND_PLAN.md §4. Alan tipleri plandaki özet modelin
+// gerçek Prisma karşılığıdır; ilişkiler, index'ler ve @db tipleri eklenmiştir.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AuthProvider {
+  local
+  google
+}
+
+enum Role {
+  customer
+  admin
+}
+
+enum OrderStatus {
+  pending
+  processing
+  shipped
+  delivered
+  cancelled
+  returned
+}
+
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  // Google ile kayıt olan kullanıcılarda null (bkz. BACKEND_PLAN §5.1)
+  passwordHash String?
+  authProvider AuthProvider @default(local)
+  googleId     String?      @unique
+  // Admin panel yetkilendirmesi — bkz. BACKEND_PLAN §5.10
+  role         Role         @default(customer)
+  firstName    String
+  lastName     String
+  phoneNumber  String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  addresses     Address[]
+  cartItems     CartItem[]
+  orders        Order[]
+  reviews       Review[]
+  refreshTokens RefreshToken[]
+}
+
+// Refresh token'lar DB'de hash'lenerek saklanır ki logout/iptal mümkün olsun
+// (bkz. BACKEND_PLAN §6).
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Country {
+  id        Int       @id @default(autoincrement())
+  name      String
+  regions   Region[]
+  addresses Address[]
+}
+
+model Region {
+  id         Int         @id @default(autoincrement())
+  name       String
+  countryId  Int
+  country    Country     @relation(fields: [countryId], references: [id])
+  subregions Subregion[]
+  addresses  Address[]
+
+  @@index([countryId])
+}
+
+model Subregion {
+  id        Int       @id @default(autoincrement())
+  name      String
+  regionId  Int
+  region    Region    @relation(fields: [regionId], references: [id])
+  addresses Address[]
+
+  @@index([regionId])
+}
+
+model Address {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  firstName   String
+  lastName    String
+  countryId   Int
+  country     Country   @relation(fields: [countryId], references: [id])
+  regionId    Int
+  region      Region    @relation(fields: [regionId], references: [id])
+  subregionId Int
+  subregion   Subregion @relation(fields: [subregionId], references: [id])
+  fullAddress String
+  phoneNumber String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Category {
+  id            String        @id @default(uuid())
+  name          String
+  slug          String        @unique
+  subCategories SubCategory[]
+  products      Product[]     @relation("ProductMainCategory")
+}
+
+model SubCategory {
+  id         String    @id @default(uuid())
+  name       String
+  slug       String
+  categoryId String
+  category   Category  @relation(fields: [categoryId], references: [id])
+  products   Product[] @relation("ProductSubCategory")
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+}
+
+model Product {
+  id               String   @id @default(uuid())
+  name             String
+  slug             String   @unique
+  shortExplanation String
+  usage            String
+  features         String
+  description      String
+  // { ingredients, nutrition_facts, amino_acid_facts } — bkz. BACKEND_PLAN §5.3
+  nutritionalContent Json
+  tags             String[]
+  mainCategoryId   String
+  mainCategory     Category    @relation("ProductMainCategory", fields: [mainCategoryId], references: [id])
+  subCategoryId    String
+  subCategory      SubCategory  @relation("ProductSubCategory", fields: [subCategoryId], references: [id])
+  isBestSeller     Boolean  @default(false)
+  bestSellerRank   Int?
+  // reviews'dan denormalize — yeni review ile aynı transaction'da güncellenir
+  commentCount     Int      @default(0)
+  averageStar      Float    @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  variants   ProductVariant[]
+  reviews    Review[]
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@index([mainCategoryId])
+  @@index([subCategoryId])
+  @@index([isBestSeller, bestSellerRank])
+}
+
+model ProductVariant {
+  id              String   @id @default(uuid())
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  gram            Int
+  pieces          Int
+  totalServings   Int
+  aroma           String
+  totalPrice      Decimal  @db.Decimal(10, 2)
+  discountedPrice Decimal? @db.Decimal(10, 2)
+  pricePerServing Decimal  @db.Decimal(10, 2)
+  photoSrc        String
+  // Admin'in manuel "satışa kapat" anahtarı. API'deki is_available
+  // response katmanında `isAvailable && stockQuantity > 0` olarak hesaplanır.
+  isAvailable     Boolean  @default(true)
+  stockQuantity   Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@index([productId])
+}
+
+model Review {
+  id           String   @id @default(uuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  reviewerName String
+  rating       Int
+  isVerified   Boolean  @default(false)
+  title        String
+  text         String
+  images       String[]
+  helpfulCount Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@index([productId])
+  @@index([userId])
+}
+
+model CartItem {
+  id               String         @id @default(uuid())
+  userId           String?
+  user             User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // userId null ise misafir sepeti — bkz. BACKEND_PLAN §5.5
+  guestSessionId   String?
+  productId        String
+  product          Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productVariantId String
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+  pieces           Int
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([userId, productVariantId])
+  @@unique([guestSessionId, productVariantId])
+  @@index([guestSessionId])
+  @@index([productId])
+  @@index([productVariantId])
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  orderNo         String      @unique
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  status          OrderStatus @default(pending)
+  totalPrice      Decimal     @db.Decimal(10, 2)
+  shippingFee     Decimal     @db.Decimal(10, 2)
+  // Sipariş anındaki adres kopyası (OrderAddress şekli)
+  addressSnapshot Json
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  items   OrderItem[]
+  payment PaymentTransaction?
+
+  @@index([userId])
+  @@index([status])
+}
+
+model OrderItem {
+  id               String         @id @default(uuid())
+  orderId          String
+  order            Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product        @relation(fields: [productId], references: [id])
+  productVariantId String
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
+  productName      String
+  variantName      String?
+  pieces           Int
+  unitPrice        Decimal        @db.Decimal(10, 2)
+  totalPrice       Decimal        @db.Decimal(10, 2)
+  photo            String?
+
+  @@index([orderId])
+}
+
+model PaymentTransaction {
+  id          String   @id @default(uuid())
+  orderId     String   @unique
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider    String
+  providerRef String
+  cardType    String
+  // Sadece son 4 hane saklanır, tam PAN asla saklanmaz
+  last4       String
+  status      String
+  createdAt   DateTime @default(now())
+}
+
+model FaqItem {
+  id        String @id @default(uuid())
+  question  String
+  answer    String
+  category  String
+  sortOrder Int    @default(0)
+
+  @@index([category])
+}
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  message   String
+  handled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([handled])
+}
