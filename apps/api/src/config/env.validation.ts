@@ -43,6 +43,10 @@ export class EnvironmentVariables {
   DATABASE_URL!: string;
 
   @IsString()
+  @IsOptional()
+  DIRECT_URL?: string;
+
+  @IsString()
   @IsNotEmpty()
   JWT_ACCESS_SECRET!: string;
 
