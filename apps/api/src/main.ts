@@ -4,6 +4,8 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
+import express from 'express';
+import helmet from 'helmet';
 
 import { AppModule } from './app.module';
 import { AppConfig } from './config/configuration';
@@ -14,6 +16,9 @@ async function bootstrap(): Promise<void> {
 
   app.setGlobalPrefix(config.get('apiGlobalPrefix', { infer: true }));
 
+  app.use(helmet());
+  app.use(express.json({ limit: '50kb' }));
+  app.use(express.urlencoded({ extended: true, limit: '50kb' }));
   app.use(cookieParser());
   app.use(compression());
 
