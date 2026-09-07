@@ -55,3 +55,8 @@ export const createMockRefreshToken = (overrides = {}) => ({
   createdAt: new Date('2026-09-07T12:00:00Z'),
   ...overrides,
 });
+
+export const createMockRefreshTokenDto = (overrides = {}) => ({
+  refresh: 'valid.mock.refresh-token',
+  ...overrides,
+});

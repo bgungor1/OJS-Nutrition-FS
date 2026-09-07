@@ -12,6 +12,7 @@ import { Request } from 'express';
 import { Public } from '../common/decorators/public.decorator';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import {
   RegisterResponse,
@@ -64,5 +65,29 @@ export class AuthController {
     @Req() req: Request,
   ): Promise<TokensResponse> {
     return this.authService.login(dto, req.ip);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Post('token/refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Refresh token ile yeni access ve refresh token üretir (Token Rotation)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Yeni token çifti başarıyla üretildi.',
+  })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Geçersiz, süresi dolmuş veya iptal edilmiş yenileme anahtarı.',
+  })
+  async refreshToken(
+    @Body() dto: RefreshTokenDto,
+    @Req() req: Request,
+  ): Promise<TokensResponse> {
+    return this.authService.refreshToken(dto, req.ip);
   }
 }

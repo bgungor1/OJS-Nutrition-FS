@@ -5,74 +5,26 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'node:crypto';
-import { AppConfig } from '../config/configuration';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import {
   RegisterResponse,
   TokensResponse,
 } from './interfaces/auth-response.interface';
+import { TokenService } from './token.service';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private static readonly BCRYPT_SALT_ROUNDS = 10;
-  private static readonly REFRESH_TOKEN_DAYS = 7;
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService,
-    private readonly config: ConfigService<AppConfig, true>,
+    private readonly tokenService: TokenService,
   ) {}
-
-  private hashToken(token: string): string {
-    return crypto.createHash('sha256').update(token).digest('hex');
-  }
-
-  private async generateTokens(
-    userId: string,
-    email: string,
-    role: string,
-  ): Promise<TokensResponse> {
-    const jwtConfig = this.config.get('jwt', { infer: true });
-
-    const [access, refresh] = await Promise.all([
-      this.jwtService.signAsync(
-        { sub: userId, email, role },
-        {
-          secret: jwtConfig.accessSecret,
-          expiresIn: jwtConfig.accessExpires as unknown as number,
-        },
-      ),
-      this.jwtService.signAsync(
-        { sub: userId },
-        {
-          secret: jwtConfig.refreshSecret,
-          expiresIn: jwtConfig.refreshExpires as unknown as number,
-        },
-      ),
-    ]);
-
-    const expiresAt = new Date(
-      Date.now() + AuthService.REFRESH_TOKEN_DAYS * 24 * 60 * 60 * 1000,
-    );
-    const tokenHash = this.hashToken(refresh);
-
-    await this.prisma.refreshToken.create({
-      data: {
-        userId,
-        tokenHash,
-        expiresAt,
-      },
-    });
-
-    return { access, refresh };
-  }
 
   async register(dto: RegisterDto): Promise<RegisterResponse> {
     if (dto.password !== dto.password2) {
@@ -120,6 +72,7 @@ export class AuthService {
       message: 'Kayıt başarıyla tamamlandı.',
     };
   }
+
   async login(dto: LoginDto, ipAddress?: string): Promise<TokensResponse> {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.username },
@@ -144,12 +97,23 @@ export class AuthService {
       throw new UnauthorizedException('Geçersiz e-posta veya şifre.');
     }
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.tokenService.generateTokens(
+      user.id,
+      user.email,
+      user.role,
+    );
 
     this.logger.log(
       `Kullanıcı oturum açtı: ${user.email} (${user.id}) - IP: ${ipAddress ?? 'bilinmiyor'}`,
     );
 
     return tokens;
+  }
+
+  async refreshToken(
+    dto: RefreshTokenDto,
+    ipAddress?: string,
+  ): Promise<TokensResponse> {
+    return this.tokenService.rotateRefreshToken(dto.refresh, ipAddress);
   }
 }

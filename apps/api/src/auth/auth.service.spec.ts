@@ -3,15 +3,15 @@ import {
   ConflictException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthProvider } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
+import { TokenService } from './token.service';
 import {
   createMockLoginDto,
+  createMockRefreshTokenDto,
   createMockRegisterDto,
   createMockSafeUser,
   createMockUser,
@@ -24,20 +24,15 @@ describe('AuthService', () => {
       findUnique: jest.Mock;
       create: jest.Mock;
     };
-    refreshToken: {
-      create: jest.Mock;
-    };
   };
-  let jwtService: {
-    signAsync: jest.Mock;
-    verifyAsync: jest.Mock;
-  };
-  let configService: {
-    get: jest.Mock;
+  let tokenService: {
+    generateTokens: jest.Mock;
+    rotateRefreshToken: jest.Mock;
   };
 
   const mockRegisterDto = createMockRegisterDto();
   const mockLoginDto = createMockLoginDto();
+  const mockRefreshTokenDto = createMockRefreshTokenDto();
 
   beforeEach(async () => {
     prisma = {
@@ -45,32 +40,16 @@ describe('AuthService', () => {
         findUnique: jest.fn(),
         create: jest.fn(),
       },
-      refreshToken: {
-        create: jest.fn(),
-      },
     };
 
-    jwtService = {
-      signAsync: jest.fn((payload: { role?: string }) => {
-        if (payload.role) {
-          return Promise.resolve('mock-access-token');
-        }
-        return Promise.resolve('mock-refresh-token');
+    tokenService = {
+      generateTokens: jest.fn().mockResolvedValue({
+        access: 'mock-access-token',
+        refresh: 'mock-refresh-token',
       }),
-      verifyAsync: jest.fn(),
-    };
-
-    configService = {
-      get: jest.fn((key: string) => {
-        if (key === 'jwt') {
-          return {
-            accessSecret: 'test-access-secret',
-            refreshSecret: 'test-refresh-secret',
-            accessExpires: '15m',
-            refreshExpires: '7d',
-          };
-        }
-        return undefined;
+      rotateRefreshToken: jest.fn().mockResolvedValue({
+        access: 'mock-rotated-access-token',
+        refresh: 'mock-rotated-refresh-token',
       }),
     };
 
@@ -78,8 +57,7 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: PrismaService, useValue: prisma },
-        { provide: JwtService, useValue: jwtService },
-        { provide: ConfigService, useValue: configService },
+        { provide: TokenService, useValue: tokenService },
       ],
     }).compile();
 
@@ -184,14 +162,12 @@ describe('AuthService', () => {
   });
 
   describe('Faz 1.3.2 (Login)', () => {
-    it('doğru bilgilerle giriş yapıldığında token çifti dönmeli ve refresh token hash kaydetmeli', async () => {
-      // Şifresi 'Password1' olan mock kullanıcı
+    it('doğru bilgilerle giriş yapıldığında tokenService.generateTokens çağrılmalı', async () => {
       const rawPassword = 'Password1';
       const passwordHash = await bcrypt.hash(rawPassword, 10);
       const mockUser = createMockUser({ passwordHash });
 
       prisma.user.findUnique.mockResolvedValue(mockUser);
-      prisma.refreshToken.create.mockResolvedValue({ id: 'rt-1' });
 
       const result = await service.login(mockLoginDto, '127.0.0.1');
 
@@ -199,14 +175,11 @@ describe('AuthService', () => {
         where: { email: mockLoginDto.username },
       });
 
-      expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
-      expect(prisma.refreshToken.create).toHaveBeenCalledWith({
-        data: {
-          userId: mockUser.id,
-          tokenHash: expect.any(String) as unknown as string,
-          expiresAt: expect.any(Date) as unknown as Date,
-        },
-      });
+      expect(tokenService.generateTokens).toHaveBeenCalledWith(
+        mockUser.id,
+        mockUser.email,
+        mockUser.role,
+      );
 
       expect(result).toEqual({
         access: 'mock-access-token',
@@ -224,8 +197,7 @@ describe('AuthService', () => {
         'Geçersiz e-posta veya şifre.',
       );
 
-      expect(jwtService.signAsync).not.toHaveBeenCalled();
-      expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+      expect(tokenService.generateTokens).not.toHaveBeenCalled();
     });
 
     it('kullanıcı sağlayıcısı local değilse genel UnauthorizedException fırlatmalı', async () => {
@@ -242,7 +214,7 @@ describe('AuthService', () => {
         'Geçersiz e-posta veya şifre.',
       );
 
-      expect(jwtService.signAsync).not.toHaveBeenCalled();
+      expect(tokenService.generateTokens).not.toHaveBeenCalled();
     });
 
     it('hatalı şifre girildiğinde genel UnauthorizedException fırlatmalı', async () => {
@@ -257,8 +229,26 @@ describe('AuthService', () => {
         'Geçersiz e-posta veya şifre.',
       );
 
-      expect(jwtService.signAsync).not.toHaveBeenCalled();
-      expect(prisma.refreshToken.create).not.toHaveBeenCalled();
+      expect(tokenService.generateTokens).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Faz 1.3.3 (RefreshToken)', () => {
+    it('refreshToken isteğini tokenService.rotateRefreshToken metoduna delege etmeli', async () => {
+      const result = await service.refreshToken(
+        mockRefreshTokenDto,
+        '127.0.0.1',
+      );
+
+      expect(tokenService.rotateRefreshToken).toHaveBeenCalledWith(
+        mockRefreshTokenDto.refresh,
+        '127.0.0.1',
+      );
+
+      expect(result).toEqual({
+        access: 'mock-rotated-access-token',
+        refresh: 'mock-rotated-refresh-token',
+      });
     });
   });
 });
