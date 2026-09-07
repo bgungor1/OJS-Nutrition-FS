@@ -1,4 +1,4 @@
-import { plainToInstance } from 'class-transformer';
+import { Type, plainToInstance } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
@@ -25,6 +25,7 @@ export class EnvironmentVariables {
   @IsOptional()
   NODE_ENV: NodeEnv = NodeEnv.Development;
 
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @IsOptional()
@@ -94,11 +95,13 @@ export class EnvironmentVariables {
   @IsOptional()
   MEDIA_STORAGE_PATH = './media';
 
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @IsOptional()
   THROTTLE_TTL = 60;
 
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @IsOptional()
