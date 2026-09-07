@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsNotEmpty,
@@ -7,13 +8,14 @@ import {
   MinLength,
 } from 'class-validator';
 
-// Frontend zod şemasıyla (apps/web/src/schemas/auth.ts) birebir aynı kural:
-// min 8 karakter + en az bir büyük harf, bir küçük harf, bir rakam.
 const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 export class RegisterDto {
   @ApiProperty({ example: 'user@example.com' })
-  @IsEmail()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
+  @IsEmail({}, { message: 'Geçerli bir e-posta adresi giriniz.' })
   email!: string;
 
   @ApiProperty({ example: 'Passw0rd' })
@@ -31,12 +33,18 @@ export class RegisterDto {
   password2!: string;
 
   @ApiProperty({ example: 'Ada' })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'Ad alanı zorunludur.' })
   first_name!: string;
 
   @ApiProperty({ example: 'Lovelace' })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'Soyad alanı zorunludur.' })
   last_name!: string;
 }
