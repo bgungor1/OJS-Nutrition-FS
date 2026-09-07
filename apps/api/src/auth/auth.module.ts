@@ -5,6 +5,7 @@ import { PassportModule } from '@nestjs/passport';
 import { AppConfig } from '../config/configuration';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { TokenService } from './token.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
@@ -12,14 +13,13 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
-      // expiresIn sign anında AuthService'te verilir (access/refresh farklı ömür).
       useFactory: (config: ConfigService<AppConfig, true>) => ({
         secret: config.get('jwt', { infer: true }).accessSecret,
       }),
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService, JwtModule],
+  providers: [AuthService, TokenService, JwtStrategy],
+  exports: [AuthService, TokenService, JwtModule],
 })
 export class AuthModule {}
