@@ -19,7 +19,14 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "{auth,common,products,users}/**/*.(t|j)s",
+      "!**/*.module.ts",
+      "!**/*.dto.ts",
+      "!**/*.interface.ts",
+      "!**/*google.strategy.ts",
+      "!**/constants.ts",
+      "!**/test/**",
+      "!**/*.fixture.ts"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
