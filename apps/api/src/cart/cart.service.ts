@@ -154,4 +154,60 @@ export class CartService {
 
     return [];
   }
+
+  async mergeGuestCart(
+    userId: string,
+    guestSessionId?: string,
+  ): Promise<CartItemResponse[]> {
+    if (!guestSessionId || guestSessionId.trim().length === 0) {
+      return this.getCart({ userId });
+    }
+
+    const trimmedGuestSessionId = guestSessionId.trim();
+
+    await this.prisma.$transaction(async (tx) => {
+      const guestItems = await tx.cartItem.findMany({
+        where: { guestSessionId: trimmedGuestSessionId },
+      });
+
+      if (guestItems.length === 0) {
+        return;
+      }
+
+      const userItems = await tx.cartItem.findMany({
+        where: { userId },
+      });
+
+      const userItemMap = new Map<string, (typeof userItems)[number]>();
+      for (const item of userItems) {
+        userItemMap.set(item.productVariantId, item);
+      }
+
+      for (const guestItem of guestItems) {
+        const existingUserItem = userItemMap.get(guestItem.productVariantId);
+
+        if (existingUserItem) {
+          await tx.cartItem.update({
+            where: { id: existingUserItem.id },
+            data: {
+              pieces: { increment: guestItem.pieces },
+            },
+          });
+          await tx.cartItem.delete({
+            where: { id: guestItem.id },
+          });
+        } else {
+          await tx.cartItem.update({
+            where: { id: guestItem.id },
+            data: {
+              userId,
+              guestSessionId: null,
+            },
+          });
+        }
+      }
+    });
+
+    return this.getCart({ userId });
+  }
 }
