@@ -8,6 +8,7 @@ import {
 
 export interface IPaymentProvider {
   readonly providerName: PaymentProviderName;
+  isConfigured(): boolean;
   charge(request: PaymentChargeRequest): Promise<PaymentChargeResult>;
   refund(request: PaymentRefundRequest): Promise<PaymentRefundResult>;
   verifyWebhookSignature(
