@@ -19,6 +19,10 @@ export const MOCK_VALID_WEBHOOK_SIGNATURE = 'valid_mock_signature';
 export class MockPaymentProvider implements IPaymentProvider {
   readonly providerName: PaymentProviderName = PAYMENT_PROVIDERS.MOCK;
 
+  isConfigured(): boolean {
+    return true;
+  }
+
   charge(request: PaymentChargeRequest): Promise<PaymentChargeResult> {
     const token = request.paymentToken;
 
