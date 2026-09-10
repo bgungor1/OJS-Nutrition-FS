@@ -146,3 +146,21 @@ export const mockOrderDetail = {
   items: [],
   payment: null,
 };
+
+export const mockOrderDetailWithItems = {
+  ...mockOrderDetail,
+  items: [
+    {
+      id: 'item-1',
+      orderId: MOCK_ORDER_ID,
+      productId: 'prod-1',
+      productVariantId: 'var-1',
+      productName: 'Whey Protein',
+      variantName: 'Çikolata',
+      pieces: 2,
+      unitPrice: new Decimal(300),
+      totalPrice: new Decimal(600),
+      photo: 'media/products/whey.jpg',
+    },
+  ],
+};
