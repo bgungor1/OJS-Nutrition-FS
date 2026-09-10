@@ -18,6 +18,7 @@ import { IPaymentProvider } from './interfaces/payment-provider.interface';
 import { MockPaymentProvider } from './providers/mock-payment.provider';
 import { IyzicoPaymentProvider } from './providers/iyzico-payment.provider';
 import { AppConfig } from '../config/configuration';
+import { PaymentWebhookDto } from './dto/payment-webhook.dto';
 
 export type ProviderOverride = 'mock' | 'iyzico';
 
@@ -135,6 +136,19 @@ export class PaymentsService {
       signature,
       timestamp,
     );
+  }
+
+  handleWebhook(dto: PaymentWebhookDto): {
+    received: boolean;
+    status: string;
+  } {
+    this.logger.log(
+      `[PAYMENT_WEBHOOK] Acknowledged webhook notification: paymentId=${dto.paymentId} status=${dto.status} eventType=${dto.iyziEventType ?? 'DEFAULT'}`,
+    );
+    return {
+      received: true,
+      status: dto.status,
+    };
   }
 
   private buildChargeFailure(
