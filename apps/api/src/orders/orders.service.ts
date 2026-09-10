@@ -6,13 +6,16 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentsService } from '../payments/payments.service';
+import { PAGINATION } from '../common/constants';
 import { DEFAULT_CURRENCY, FREE_SHIPPING_THRESHOLD } from './order.constants';
 import {
   OrderDetailResponse,
+  PaginatedOrdersResponse,
   ShipmentFeeResponse,
 } from './interfaces/order-response.interface';
 import { PaymentSettingsResponse } from '../payments/interfaces/payment-process.interface';
 import { CompleteShoppingDto } from './dto/complete-shopping.dto';
+import { OrderQueryDto } from './dto/order-query.dto';
 import { OrderNoGeneratorHelper } from './helpers/order-no-generator.helper';
 import { OrderPricingHelper } from './helpers/order-pricing.helper';
 import { OrderCheckoutHelper } from './helpers/order-checkout.helper';
@@ -56,6 +59,51 @@ export class OrdersService {
       free_shipping_threshold: FREE_SHIPPING_THRESHOLD,
       is_free: fee === 0,
     };
+  }
+
+  async findUserOrders(
+    userId: string,
+    query?: OrderQueryDto,
+  ): Promise<PaginatedOrdersResponse> {
+    const limit = query?.limit ?? PAGINATION.DEFAULT_LIMIT;
+    const offset = query?.offset ?? PAGINATION.DEFAULT_OFFSET;
+
+    const [orders, count] = await Promise.all([
+      this.prisma.order.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+        include: {
+          items: true,
+          payment: true,
+        },
+      }),
+      this.prisma.order.count({
+        where: { userId },
+      }),
+    ]);
+
+    return OrdersMapper.toPaginatedOrdersResponse(orders, count);
+  }
+
+  async findUserOrderById(
+    userId: string,
+    orderId: string,
+  ): Promise<OrderDetailResponse> {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, userId },
+      include: {
+        items: true,
+        payment: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Sipariş bulunamadı.');
+    }
+
+    return OrdersMapper.toOrderDetailResponse(order);
   }
 
   async completeShopping(
