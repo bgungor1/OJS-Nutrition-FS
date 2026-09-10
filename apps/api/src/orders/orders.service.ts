@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentsService } from '../payments/payments.service';
 import { PAGINATION } from '../common/constants';
@@ -16,9 +11,10 @@ import {
 import { PaymentSettingsResponse } from '../payments/interfaces/payment-process.interface';
 import { CompleteShoppingDto } from './dto/complete-shopping.dto';
 import { OrderQueryDto } from './dto/order-query.dto';
-import { OrderNoGeneratorHelper } from './helpers/order-no-generator.helper';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrderPricingHelper } from './helpers/order-pricing.helper';
 import { OrderCheckoutHelper } from './helpers/order-checkout.helper';
+import { OrderLifecycleHelper } from './helpers/order-lifecycle.helper';
 import { OrdersMapper } from './orders.mapper';
 
 @Injectable()
@@ -111,78 +107,39 @@ export class OrdersService {
     dto: CompleteShoppingDto,
     ipAddress?: string,
   ): Promise<OrderDetailResponse> {
-    const address = await this.prisma.address.findFirst({
-      where: { id: dto.address_id, userId },
-      include: { country: true, region: true, subregion: true },
-    });
-    if (!address) {
-      throw new NotFoundException('Belirtilen teslimat adresi bulunamadı.');
-    }
+    const context = await OrderCheckoutHelper.prepareCheckoutContext(
+      this.prisma,
+      userId,
+      dto,
+    );
 
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('Kullanıcı bulunamadı.');
-    }
-
-    const cartItems = await this.prisma.cartItem.findMany({
-      where: { userId },
-      include: { product: true, productVariant: true },
-      orderBy: { createdAt: 'asc' },
-    });
-    if (cartItems.length === 0) {
-      throw new BadRequestException('Sepetinizde ürün bulunmamaktadır.');
-    }
-
-    const { shippingFee, totalPrice } =
-      OrderPricingHelper.calculateOrderTotals(cartItems);
-    const orderNo = OrderNoGeneratorHelper.generate();
-    const addressSnapshot = OrderCheckoutHelper.buildAddressSnapshot(address);
-
-    const order = await this.prisma.$transaction(
-      async (tx) => {
-        await OrderCheckoutHelper.decrementStockAtomic(tx, cartItems);
-
-        const chargeRequest = OrderCheckoutHelper.buildChargeRequest({
-          dto,
-          user,
-          address,
-          cartItems,
-          totalPrice,
-          orderNo,
-          ipAddress,
-        });
-        const chargeResult = await this.paymentsService.charge(chargeRequest);
-
-        if (!chargeResult.success || chargeResult.rawStatus === 'failed') {
-          throw new BadRequestException(
-            chargeResult.errorMessage ||
-              'Ödeme işlemi bankanız tarafından onaylanmadı.',
-          );
-        }
-
-        const createdOrder = await OrderCheckoutHelper.createOrderWithRelations(
-          tx,
-          {
-            orderNo,
-            userId,
-            totalPrice,
-            shippingFee,
-            addressSnapshot,
-            cartItems,
-            chargeResult,
-          },
-        );
-
-        await tx.cartItem.deleteMany({ where: { userId } });
-        return createdOrder;
-      },
-      { timeout: 15000, maxWait: 5000 },
+    const order = await OrderCheckoutHelper.executeCheckoutTransaction(
+      this.prisma,
+      this.paymentsService,
+      context,
+      dto,
+      userId,
+      ipAddress,
     );
 
     this.logger.log(
-      `[ORDER_CREATED] OrderNo: ${order.orderNo} | User: ${userId} | Total: ${totalPrice} TRY | Items: ${cartItems.length}`,
+      `[ORDER_CREATED] OrderNo: ${order.orderNo} | User: ${userId} | Total: ${context.totalPrice} TRY | Items: ${context.cartItems.length}`,
     );
 
     return OrdersMapper.toOrderDetailResponse(order);
+  }
+
+  async updateOrderStatus(
+    orderId: string,
+    dto: UpdateOrderStatusDto,
+  ): Promise<OrderDetailResponse> {
+    const { order, updatedOrder, isRestock } =
+      await OrderLifecycleHelper.executeStatusUpdate(this.prisma, orderId, dto);
+
+    this.logger.warn(
+      `[ORDER_STATUS_UPDATED] OrderNo: ${order.orderNo} | Status: ${order.status} -> ${dto.status}${isRestock ? ` | Restocked: ${order.items.length} items` : ''}`,
+    );
+
+    return OrdersMapper.toOrderDetailResponse(updatedOrder);
   }
 }
