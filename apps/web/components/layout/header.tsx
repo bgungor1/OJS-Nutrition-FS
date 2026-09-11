@@ -3,17 +3,20 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShoppingCart, User, Menu, X } from 'lucide-react';
+import { ShoppingCart, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SearchBar } from './search-bar';
 import { CategoryNav } from './category-nav';
-import type { ApiCategory } from '@/types';
+import { UserMenu } from './user-menu';
+import { MobileMenu } from './mobile-menu';
+import type { AccountProfile, ApiCategory } from '@/types';
 
 interface HeaderProps {
   categories?: ApiCategory[];
+  user?: AccountProfile | null;
 }
 
-export const Header: React.FC<HeaderProps> = ({ categories = [] }) => {
+export const Header: React.FC<HeaderProps> = ({ categories = [], user = null }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const toggleMobileMenu = () => setMobileMenuOpen((prev) => !prev);
@@ -43,17 +46,9 @@ export const Header: React.FC<HeaderProps> = ({ categories = [] }) => {
         <div className="hidden md:flex flex-1 justify-center max-w-md mx-4">
           <SearchBar />
         </div>
+
         <div className="flex items-center gap-2 sm:gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full text-foreground hover:text-primary"
-            asChild
-          >
-            <Link href="/login" aria-label="Hesabım">
-              <User className="h-5 w-5" />
-            </Link>
-          </Button>
+          <UserMenu user={user} />
 
           <Button
             variant="ghost"
@@ -84,46 +79,12 @@ export const Header: React.FC<HeaderProps> = ({ categories = [] }) => {
 
       <CategoryNav categories={categories} />
 
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-background px-4 py-4 space-y-4 animate-in slide-in-from-top-2 duration-200">
-          <SearchBar onSearchComplete={closeMobileMenu} />
-
-          <div className="border-t border-border pt-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase px-2 mb-2">
-              Kategoriler
-            </p>
-            <CategoryNav
-              categories={categories}
-              isOpen={true}
-              onItemClick={closeMobileMenu}
-            />
-          </div>
-
-          <div className="border-t border-border pt-3 flex flex-col gap-2 text-sm font-medium">
-            <Link
-              href="/about"
-              onClick={closeMobileMenu}
-              className="px-2 py-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
-            >
-              Hakkımızda
-            </Link>
-            <Link
-              href="/faq"
-              onClick={closeMobileMenu}
-              className="px-2 py-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
-            >
-              Sıkça Sorulan Sorular
-            </Link>
-            <Link
-              href="/contact"
-              onClick={closeMobileMenu}
-              className="px-2 py-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"
-            >
-              İletişim
-            </Link>
-          </div>
-        </div>
-      )}
+      <MobileMenu
+        isOpen={mobileMenuOpen}
+        onClose={closeMobileMenu}
+        categories={categories}
+        user={user}
+      />
     </header>
   );
 };
