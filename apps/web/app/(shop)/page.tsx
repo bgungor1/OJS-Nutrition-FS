@@ -1,21 +1,45 @@
 import type { Metadata } from 'next';
+import { HeroBanner } from '@/components/home/hero-banner';
+import { CategoryGrid } from '@/components/home/category-grid';
+import { BestSellersSection } from '@/components/home/best-sellers-section';
+import { PromoBanner } from '@/components/home/promo-banner';
+import { CustomerReviewsPreview } from '@/components/home/customer-reviews-preview';
+import { TrustGuarantee } from '@/components/home/trust-guarantee';
+import { getBestSellers } from '@/lib/api/products';
+import type { ApiBestSellerProduct } from '@/types';
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: 'Ana Sayfa | OJS Nutrition',
-  description: 'Türkiye\'nin en kaliteli sporcu besinleri ve takviye gıdaları.',
+  title: 'OJS Nutrition | Türkiye\'nin En Kaliteli Sporcu Besinleri',
+  description:
+    'Avrupa standartlarında yüksek kaliteli protein tozları, kreatin, BCAA ve sporcu gıdaları. Aynı gün ücretsiz kargo ve memnuniyet garantisiyle.',
+  openGraph: {
+    title: 'OJS Nutrition | Türkiye\'nin En Kaliteli Sporcu Besinleri',
+    description:
+      'Avrupa standartlarında üretilen yüksek kaliteli whey proteinler, kreatinler ve amino asit takviyeleri.',
+    type: 'website',
+    locale: 'tr_TR',
+  },
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  let bestSellers: ApiBestSellerProduct[] = [];
+
+  try {
+    bestSellers = await getBestSellers();
+  } catch (error) {
+    console.warn('Çok satan ürünler API üzerinden alınamadı:', error);
+  }
+
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-12">
-      <div className="space-y-4 text-center max-w-2xl mx-auto">
-        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
-          Hedefine Ulaşman İçin <span className="text-primary">En İyisi</span>
-        </h1>
-        <p className="text-lg text-muted-foreground">
-          OJS Nutrition yüksek kaliteli protein tozları, kreatinler ve sporcu gıdalarıyla antrenman veriminizi artırın.
-        </p>
-      </div>
+    <div className="flex flex-col">
+      <HeroBanner />
+      <CategoryGrid />
+      <BestSellersSection products={bestSellers} />
+      <PromoBanner />
+      <CustomerReviewsPreview />
+      <TrustGuarantee />
     </div>
   );
 }
