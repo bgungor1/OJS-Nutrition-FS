@@ -1,19 +1,73 @@
 import type { Metadata } from 'next';
+import { CatalogHeader } from '@/components/catalog/catalog-header';
+import { CatalogSort } from '@/components/catalog/catalog-sort';
+import { ProductGrid } from '@/components/catalog/product-grid';
+import { CatalogPagination } from '@/components/catalog/catalog-pagination';
+import { getProducts } from '@/lib/api/products';
+import type { ApiProduct, PaginatedResponse, ProductSortOption } from '@/types';
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: 'Tüm Ürünler',
-  description: 'OJS Nutrition tüm sporcu gıdaları ve takviye ürünleri.',
+  title: 'Tüm Ürünler | OJS Nutrition',
+  description:
+    'En kaliteli sporcu besinleri, protein tozları, amino asitler ve vitamin takviyeleri. Türkiye genelinde aynı gün ücretsiz kargo.',
 };
 
-export default function ProductsPage() {
+type ProductsPageProps = {
+  searchParams: Promise<{
+    page?: string;
+    category?: string;
+    sort?: ProductSortOption;
+  }>;
+};
+
+export default async function ProductsPage({ searchParams }: ProductsPageProps) {
+  const { page, category, sort } = await searchParams;
+  const currentPage = Math.max(1, parseInt(page || '1', 10));
+  const limit = 12;
+  const offset = (currentPage - 1) * limit;
+
+  let data: PaginatedResponse<ApiProduct> = {
+    count: 0,
+    next: null,
+    previous: null,
+    results: [],
+  };
+
+  try {
+    data = await getProducts({
+      limit,
+      offset,
+      category,
+      sort,
+    });
+  } catch (error) {
+    console.warn('Ürün listesi API üzerinden alınamadı:', error);
+  }
+
+  const totalPages = Math.ceil(data.count / limit);
+
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-10">
-      <div className="space-y-2 mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Tüm Ürünler</h1>
-        <p className="text-sm text-muted-foreground">
-          En çok tercih edilen besin takviyelerini keşfedin.
-        </p>
+    <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <CatalogHeader
+        title="Tüm Ürünler"
+        description="Vücudunuzun ihtiyacı olan yüksek kaliteli protein, amino asit ve performans artırıcı sporcu besinleri."
+        totalCount={data.count}
+      />
+
+      <div className="flex justify-end mb-6">
+        <CatalogSort />
       </div>
+
+      <ProductGrid products={data.results} />
+
+      <CatalogPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        baseUrl="/products"
+        query={{ category, sort }}
+      />
     </div>
   );
 }
