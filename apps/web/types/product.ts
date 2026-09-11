@@ -87,3 +87,13 @@ export interface ApiReview {
   helpful_count: number;
   created_at: string;
 }
+
+export type ProductSortOption = 'price_asc' | 'price_desc' | 'newest' | 'rating';
+
+export interface GetProductsParams {
+  limit?: number;
+  offset?: number;
+  category?: string;
+  sort?: ProductSortOption;
+}
+
