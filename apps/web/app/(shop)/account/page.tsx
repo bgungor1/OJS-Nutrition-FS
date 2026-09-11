@@ -1,17 +1,30 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+import { getAccessToken } from '@/lib/auth-cookies';
+import { getMyAccount } from '@/lib/api/users';
+import { ProfileForm } from '@/components/account/profile-form';
 
 export const metadata: Metadata = {
-  title: 'Hesabım',
-  description: 'OJS Nutrition kullanıcı hesabı, siparişler ve kayıtlı adresler.',
+  title: 'Hesap Bilgilerim | OJS Nutrition',
+  description: 'OJS Nutrition kullanıcı hesabı ve kişisel profil bilgileri.',
 };
 
-export default function AccountPage() {
+export default async function AccountPage() {
+  const token = await getAccessToken();
+  if (!token) {
+    redirect('/login');
+  }
+
+  let account;
+  try {
+    account = await getMyAccount(token);
+  } catch {
+    redirect('/login');
+  }
+
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-10 max-w-3xl">
-      <h1 className="text-3xl font-bold tracking-tight mb-2">Hesabım</h1>
-      <p className="text-sm text-muted-foreground">
-        Kullanıcı profili, sipariş geçmişi ve adres yönetimi Faz 2&apos;de entegre edilecektir.
-      </p>
+    <div className="space-y-6">
+      <ProfileForm initialData={account} />
     </div>
   );
 }
