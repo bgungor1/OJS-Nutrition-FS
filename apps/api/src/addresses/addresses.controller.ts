@@ -17,17 +17,14 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { AuthenticatedUser } from '../common/types/authenticated-user';
+import { CurrentUser, AuthenticatedUser } from '../common';
 import { AddressesService } from './addresses.service';
-import { AddressesQueryDto } from './dto/addresses-query.dto';
-import { CreateAddressDto } from './dto/create-address.dto';
-import { UpdateAddressDto } from './dto/update-address.dto';
+import { AddressesQueryDto, CreateAddressDto, UpdateAddressDto } from './dto';
 import {
   AddressResponseDto,
   DeleteAddressResponseDto,
   PaginatedAddressesResponseDto,
-} from './interfaces/address-response.interface';
+} from './interfaces';
 
 @ApiTags('addresses')
 @ApiBearerAuth()

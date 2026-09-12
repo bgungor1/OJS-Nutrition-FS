@@ -17,20 +17,21 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Public } from '../common/decorators/public.decorator';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { OptionalAuthGuard } from '../common/guards/optional-auth.guard';
-import { AuthenticatedUser } from '../common/types/authenticated-user';
+import {
+  CurrentUser,
+  Public,
+  JwtAuthGuard,
+  OptionalAuthGuard,
+  AuthenticatedUser,
+} from '../common';
 import {
   clearGuestCartCookie,
   GUEST_CART_COOKIE,
   resolveCartSession,
 } from './cart-session.helper';
 import { CartService } from './cart.service';
-import { AddToCartDto } from './dto/add-to-cart.dto';
-import { RemoveFromCartDto } from './dto/remove-from-cart.dto';
-import { CartItemResponseDto } from './interfaces/cart-item-response.interface';
+import { AddToCartDto, RemoveFromCartDto } from './dto';
+import { CartItemResponseDto } from './interfaces';
 
 @ApiTags('cart')
 @Controller('cart')

@@ -1,20 +1,23 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { PaymentsService } from '../payments/payments.service';
-import { PAGINATION } from '../common/constants';
+import { PrismaService } from '../prisma';
+import { PaymentsService, PaymentSettingsResponse } from '../payments';
+import { PAGINATION } from '../common';
 import { DEFAULT_CURRENCY, FREE_SHIPPING_THRESHOLD } from './order.constants';
 import {
   OrderDetailResponse,
   PaginatedOrdersResponse,
   ShipmentFeeResponse,
-} from './interfaces/order-response.interface';
-import { PaymentSettingsResponse } from '../payments/interfaces/payment-process.interface';
-import { CompleteShoppingDto } from './dto/complete-shopping.dto';
-import { OrderQueryDto } from './dto/order-query.dto';
-import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
-import { OrderPricingHelper } from './helpers/order-pricing.helper';
-import { OrderCheckoutHelper } from './helpers/order-checkout.helper';
-import { OrderLifecycleHelper } from './helpers/order-lifecycle.helper';
+} from './interfaces';
+import {
+  CompleteShoppingDto,
+  OrderQueryDto,
+  UpdateOrderStatusDto,
+} from './dto';
+import {
+  OrderPricingHelper,
+  OrderCheckoutHelper,
+  OrderLifecycleHelper,
+} from './helpers';
 import { OrdersMapper } from './orders.mapper';
 
 @Injectable()

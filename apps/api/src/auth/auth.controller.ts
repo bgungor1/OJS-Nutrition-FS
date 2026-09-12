@@ -12,18 +12,12 @@ import {
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
-import { Public } from '../common/decorators/public.decorator';
+import { Public } from '../common';
 import { AuthService } from './auth.service';
 import { GoogleAuthService } from './google-auth.service';
-import { LoginDto } from './dto/login.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { RegisterDto } from './dto/register.dto';
-import { GoogleOAuthGuard } from './guards/google-oauth.guard';
-import {
-  GoogleProfile,
-  RegisterResponse,
-  TokensResponse,
-} from './interfaces/auth-response.interface';
+import { LoginDto, RefreshTokenDto, RegisterDto } from './dto';
+import { GoogleOAuthGuard } from './guards';
+import { GoogleProfile, RegisterResponse, TokensResponse } from './interfaces';
 
 @ApiTags('auth')
 @Controller('auth')

@@ -12,13 +12,9 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { AuthenticatedUser } from '../common/types/authenticated-user';
-import { UpdateProfileDto } from './dto/update-profile.dto';
-import {
-  AccountProfile,
-  AccountProfileDto,
-} from './interfaces/account-profile.interface';
+import { CurrentUser, AuthenticatedUser } from '../common';
+import { UpdateProfileDto } from './dto';
+import { AccountProfile, AccountProfileDto } from './interfaces';
 import { UsersService } from './users.service';
 
 @ApiTags('users')
