@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
-import { CatalogHeader } from '@/components/catalog/catalog-header';
-import { CatalogSort } from '@/components/catalog/catalog-sort';
-import { ProductGrid } from '@/components/catalog/product-grid';
-import { CatalogPagination } from '@/components/catalog/catalog-pagination';
-import { getProducts } from '@/lib/api/products';
+import {
+  CatalogHeader,
+  CatalogSort,
+  ProductGrid,
+  CatalogPagination,
+} from '@/components/catalog';
+import { getProducts } from '@/lib/api';
 import type { ApiProduct, PaginatedResponse, ProductSortOption } from '@/types';
 
 export const revalidate = 60;

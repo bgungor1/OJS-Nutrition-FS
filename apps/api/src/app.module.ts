@@ -5,28 +5,29 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { join } from 'node:path';
 
-import configuration, { AppConfig } from './config/configuration';
-import { validateEnv } from './config/env.validation';
-import { PrismaModule } from './prisma/prisma.module';
+import configuration, { AppConfig, validateEnv } from './config';
+import { PrismaModule } from './prisma';
 
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
-import { ResponseInterceptor } from './common/interceptors/response.interceptor';
-import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
-import { RolesGuard } from './common/guards/roles.guard';
+import {
+  AllExceptionsFilter,
+  ResponseInterceptor,
+  JwtAuthGuard,
+  RolesGuard,
+} from './common';
 
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { AddressesModule } from './addresses/addresses.module';
-import { LocationsModule } from './locations/locations.module';
-import { ProductsModule } from './products/products.module';
-import { CartModule } from './cart/cart.module';
-import { OrdersModule } from './orders/orders.module';
-import { PaymentsModule } from './payments/payments.module';
-import { ReviewsModule } from './reviews/reviews.module';
-import { FaqModule } from './faq/faq.module';
-import { ContactModule } from './contact/contact.module';
-import { MediaModule } from './media/media.module';
-import { AdminModule } from './admin/admin.module';
+import { AuthModule } from './auth';
+import { UsersModule } from './users';
+import { AddressesModule } from './addresses';
+import { LocationsModule } from './locations';
+import { ProductsModule } from './products';
+import { CartModule } from './cart';
+import { OrdersModule } from './orders';
+import { PaymentsModule } from './payments';
+import { ReviewsModule } from './reviews';
+import { FaqModule } from './faq';
+import { ContactModule } from './contact';
+import { MediaModule } from './media';
+import { AdminModule } from './admin';
 
 @Module({
   imports: [

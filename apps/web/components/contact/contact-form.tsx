@@ -2,9 +2,7 @@
 
 import React, { useActionState } from 'react';
 import { CheckCircle2, AlertCircle, Loader2, Send } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button, Input, Textarea } from '@/components/ui';
 import { submitContactAction, type ContactActionResult } from '@/app/(shop)/contact/actions';
 
 const initialState: ContactActionResult | null = null;

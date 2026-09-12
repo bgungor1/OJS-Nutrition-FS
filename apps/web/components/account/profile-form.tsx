@@ -1,10 +1,16 @@
 'use client';
 
 import React, { useActionState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Button,
+  Input,
+  Label,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui';
 import { updateProfileAction, type ProfileActionState } from '@/app/(shop)/account/actions';
 import { Loader2, CheckCircle2, AlertCircle, Lock } from 'lucide-react';
 import type { AccountProfile } from '@/types';

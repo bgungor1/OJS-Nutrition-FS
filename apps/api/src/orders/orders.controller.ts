@@ -17,20 +17,20 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
-import { AuthenticatedUser } from '../common/types/authenticated-user';
+import { CurrentUser, Roles, AuthenticatedUser } from '../common';
 import { OrdersService } from './orders.service';
-import { CompleteShoppingDto } from './dto/complete-shopping.dto';
-import { OrderQueryDto } from './dto/order-query.dto';
-import { CalculateShipmentFeeQueryDto } from './dto/calculate-shipment-fee-query.dto';
-import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import {
+  CompleteShoppingDto,
+  OrderQueryDto,
+  CalculateShipmentFeeQueryDto,
+  UpdateOrderStatusDto,
+} from './dto';
 import {
   OrderDetailResponse,
   PaginatedOrdersResponse,
   ShipmentFeeResponse,
-} from './interfaces/order-response.interface';
-import { PaymentSettingsResponse } from '../payments/interfaces/payment-process.interface';
+} from './interfaces';
+import { PaymentSettingsResponse } from '../payments';
 
 @ApiTags('orders')
 @ApiBearerAuth()

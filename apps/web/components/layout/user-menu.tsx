@@ -3,15 +3,15 @@
 import React from 'react';
 import Link from 'next/link';
 import { User, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/ui';
 import { logoutAction } from '@/lib/actions/auth';
 import type { AccountProfile } from '@/types';
 

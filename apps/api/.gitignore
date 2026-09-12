@@ -24,8 +24,9 @@ prisma/*.db-journal
 *.db-wal
 
 # media & uploads
-media/
-uploads/
+/media/
+/uploads/
+!src/media/
 
 # logs
 *.log
