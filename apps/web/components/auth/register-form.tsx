@@ -1,9 +1,7 @@
 'use client';
 
 import React, { useActionState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button, Input, Label } from '@/components/ui';
 import { registerAction, type AuthActionState } from '@/app/(shop)/login/actions';
 import { Loader2 } from 'lucide-react';
 

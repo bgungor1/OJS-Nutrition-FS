@@ -3,15 +3,15 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Search, HelpCircle, ArrowRight } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
+  Input,
+  Button,
+  Badge,
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
+} from '@/components/ui';
 import type { ApiFaqItem } from '@/types';
 
 interface FaqListProps {

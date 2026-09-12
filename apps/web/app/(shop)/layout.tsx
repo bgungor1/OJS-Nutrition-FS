@@ -1,10 +1,7 @@
 import React from 'react';
-import { Header } from '@/components/layout/header';
-import { InfoBanner } from '@/components/layout/info-banner';
-import { Footer } from '@/components/layout/footer';
-import { getCategories } from '@/lib/api/categories';
+import { Header, InfoBanner, Footer } from '@/components/layout';
+import { getCategories, getMyAccount } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth-cookies';
-import { getMyAccount } from '@/lib/api/users';
 import type { AccountProfile, ApiCategory } from '@/types';
 
 export default async function ShopLayout({

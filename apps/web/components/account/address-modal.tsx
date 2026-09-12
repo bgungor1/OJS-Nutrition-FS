@@ -8,8 +8,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+  Button,
+} from '@/components/ui';
 import { LocationSelects } from './location-selects';
 import { AddressFormFields } from './address-form-fields';
 import { createAddressAction, updateAddressAction } from '@/app/(shop)/account/addresses/actions';
@@ -18,7 +18,7 @@ import {
   addressToFormData,
   DEFAULT_ADDRESS_FORM,
   type AddressFormData,
-} from '@/lib/schemas/address';
+} from '@/lib/schemas';
 import { Loader2 } from 'lucide-react';
 import type { Address, Country } from '@/types';
 

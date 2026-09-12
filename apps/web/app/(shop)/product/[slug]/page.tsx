@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { ProductGallery } from '@/components/product-detail/product-gallery';
-import { ProductInfo } from '@/components/product-detail/product-info';
-import { ProductActions } from '@/components/product-detail/product-actions';
-import { ProductAccordion } from '@/components/product-detail/product-accordion';
-import { BestSellersSection } from '@/components/home/best-sellers-section';
-import { getProductBySlug, getBestSellers } from '@/lib/api/products';
-import { getImageUrl } from '@/lib/utils/image';
+import {
+  ProductGallery,
+  ProductInfo,
+  ProductActions,
+  ProductAccordion,
+} from '@/components/product-detail';
+import { BestSellersSection } from '@/components/home';
+import { getProductBySlug, getBestSellers } from '@/lib/api';
+import { getImageUrl } from '@/lib/utils';
 
 export const revalidate = 60;
 

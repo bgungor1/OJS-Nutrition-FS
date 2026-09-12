@@ -35,10 +35,11 @@ coverage
 .cache
 
 # Media & File Uploads (Backend)
-media
-uploads
-apps/api/media
-apps/api/uploads
+/media/
+/uploads/
+/apps/api/media/
+/apps/api/uploads/
+!apps/api/src/media/
 
 # Database (Prisma / SQLite)
 prisma/*.db

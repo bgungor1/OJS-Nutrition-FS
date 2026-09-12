@@ -2,11 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getAccessToken } from '@/lib/auth-cookies';
-import { getOrderById } from '@/lib/api/orders';
-import { OrderStatusBadge } from '@/components/account/order-status-badge';
-import { OrderDetailItems } from '@/components/account/order-detail-items';
-import { OrderDetailSummary } from '@/components/account/order-detail-summary';
-import { formatDateTime } from '@/lib/utils/format';
+import { getOrderById } from '@/lib/api';
+import {
+  OrderStatusBadge,
+  OrderDetailItems,
+  OrderDetailSummary,
+} from '@/components/account';
+import { formatDateTime } from '@/lib/utils';
 import { ArrowLeft, Calendar } from 'lucide-react';
 
 interface OrderDetailPageProps {

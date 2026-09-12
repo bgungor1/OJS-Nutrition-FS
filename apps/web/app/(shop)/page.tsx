@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
-import { HeroBanner } from '@/components/home/hero-banner';
-import { CategoryGrid } from '@/components/home/category-grid';
-import { BestSellersSection } from '@/components/home/best-sellers-section';
-import { PromoBanner } from '@/components/home/promo-banner';
-import { CustomerReviewsPreview } from '@/components/home/customer-reviews-preview';
-import { TrustGuarantee } from '@/components/home/trust-guarantee';
-import { getBestSellers } from '@/lib/api/products';
+import {
+  HeroBanner,
+  CategoryGrid,
+  BestSellersSection,
+  PromoBanner,
+  CustomerReviewsPreview,
+  TrustGuarantee,
+} from '@/components/home';
+import { getBestSellers } from '@/lib/api';
 import type { ApiBestSellerProduct } from '@/types';
 
 export const revalidate = 60;
