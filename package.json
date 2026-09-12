@@ -11,8 +11,19 @@
     "dev:web": "pnpm --filter web dev",
     "build:web": "pnpm --filter web build",
     "lint:web": "pnpm --filter web lint",
+    "typecheck:web": "pnpm --filter web typecheck",
     "dev:api": "pnpm --filter api start:dev",
-    "build:api": "pnpm --filter api build"
+    "build:api": "pnpm --filter api build",
+    "lint:api": "pnpm --filter api run lint:check",
+    "test": "pnpm run test:web && pnpm run test:api",
+    "test:web": "pnpm --filter web test",
+    "test:web:watch": "pnpm --filter web test:watch",
+    "test:web:coverage": "pnpm --filter web test:coverage",
+    "test:api": "pnpm --filter api test",
+    "test:api:watch": "pnpm --filter api test:watch",
+    "test:api:coverage": "pnpm --filter api test:cov",
+    "test:coverage": "pnpm run test:web:coverage && pnpm run test:api:coverage",
+    "test:all": "pnpm run test"
   },
   "dependencies": {
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
