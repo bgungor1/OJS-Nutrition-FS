@@ -42,10 +42,20 @@ Lütfen bu PR'ı açmadan önce [ENGINEERING_STANDARDS.md](../ENGINEERING_STANDA
 - [ ] Kullanılmayan import, değişken veya ölü kod temizlendi mi?
 - [ ] Commit mesajları ve PR başlığı **Conventional Commits** formatına uyuyor mu?
 
+### Frontend & Test Standartları
+- [ ] Yeni pure utility veya Zod şeması için `*.test.ts` eklendi mi?
+- [ ] Yeni interaktif UI bileşenleri için `*.test.tsx` (RTL, `getByRole` öncelikli) eklendi mi?
+- [ ] Testlerde kırılgan snapshot veya `getByTestId` kirliliğinden kaçınıldı mı?
+- [ ] Frontend bileşenleri ~150 satır sınırını aşıyor mu? (Aşıyorsa mantıklı alt bileşenlere bölündü mü?)
+
 ---
 
 ## 🧪 Nasıl Doğrulandı? (Verification)
 - [ ] `pnpm --filter api run lint` başarıyla geçti.
 - [ ] `pnpm --filter api run build` (TypeScript derlemesi) hatasız tamamlandı.
-- [ ] `pnpm --filter api run test` (Birim testleri) yeşil yandı.
+- [ ] `pnpm --filter api run test` (Backend birim testleri) yeşil yandı.
+- [ ] `pnpm --filter web run lint` (Frontend lint) 0 hata ile geçti.
+- [ ] `pnpm --filter web run typecheck` (Frontend typecheck) 0 hata ile geçti.
+- [ ] `pnpm --filter web run test` (Frontend Vitest birim/bileşen testleri) yeşil yandı.
+- [ ] `pnpm --filter web run build` (Next.js üretim derlemesi) hatasız tamamlandı.
 - [ ] Yerel manuel testler gerçekleştirildi (Swagger / cURL / Tarayıcı).
