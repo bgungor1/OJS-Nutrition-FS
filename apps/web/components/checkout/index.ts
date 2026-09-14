@@ -5,3 +5,7 @@ export * from './payment-form';
 export * from './checkout-empty';
 export * from './checkout-error-banner';
 export * from './checkout-view';
+export * from './thank-you-header';
+export * from './thank-you-actions';
+export * from './thank-you-fallback';
+export * from './thank-you-view';
