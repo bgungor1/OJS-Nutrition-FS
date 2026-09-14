@@ -5,6 +5,15 @@ import { CheckoutView } from './checkout-view';
 import { useCartStore } from '@/store/cart-store';
 import type { Address, CartItemResponse } from '@/types';
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    refresh: vi.fn(),
+  }),
+  redirect: vi.fn(),
+}));
+
 const mockAddress: Address = {
   id: 'd3b07384-d113-469b-81d4-8d48695026ff',
   title: 'Ev',
@@ -85,5 +94,37 @@ describe('CheckoutView', () => {
     expect(screen.getByText(/kart üzerindeki ad en az 3 karakter/i)).toBeInTheDocument();
     expect(screen.getByText(/kart numarası 15 veya 16 haneli/i)).toBeInTheDocument();
     expect(screen.getByText(/onaylamalısınız/i)).toBeInTheDocument();
+  });
+
+  it('triggers onCompleteCheckout when form is valid', async () => {
+    const handleCheckout = vi.fn().mockResolvedValue(undefined);
+    useCartStore.setState({ items: [mockItem] });
+    const { user } = render(
+      <CheckoutView
+        initialAddresses={[mockAddress]}
+        countries={[]}
+        onCompleteCheckout={handleCheckout}
+      />,
+    );
+
+    await user.type(screen.getByPlaceholderText('Ad Soyad'), 'Ahmet Yilmaz');
+    await user.type(screen.getByPlaceholderText('•••• •••• •••• ••••'), '4532015112830366');
+    await user.selectOptions(screen.getByLabelText(/son kullanma ayı/i), '12');
+    await user.selectOptions(screen.getByLabelText(/son kullanma yılı/i), '28');
+    await user.type(screen.getByPlaceholderText('•••'), '123');
+    await user.click(screen.getByRole('checkbox'));
+
+    const submitButton = screen.getByRole('button', { name: /siparişi onayla/i });
+    await user.click(submitButton);
+
+    expect(handleCheckout).toHaveBeenCalledTimes(1);
+    expect(handleCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address_id: mockAddress.id,
+        card_holder: 'Ahmet Yilmaz',
+        cvv: '123',
+        terms_accepted: true,
+      }),
+    );
   });
 });
