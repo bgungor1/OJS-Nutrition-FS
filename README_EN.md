@@ -139,7 +139,12 @@ OJS-Nutrition-FS/
 
 ## 🔌 API Documentation & Endpoints
 
-When the backend server is running, the interactive Swagger documentation is available at **[http://localhost:3000/docs](http://localhost:3000/docs)**.
+When the backend is running, the interactive **Swagger / OpenAPI** documentation and raw JSON schema are available at:
+
+- **Swagger UI (Interactive Docs):** [http://localhost:3000/docs](http://localhost:3000/docs)
+- **OpenAPI JSON Schema:** [http://localhost:3000/docs-json](http://localhost:3000/docs-json)
+
+> **💡 Tip:** Protected endpoints can be tested directly from Swagger UI using the top-right **Authorize** button with a JWT Bearer token (`Bearer <token>`). Because `persistAuthorization` is enabled, your authentication state will persist across browser refreshes.
 
 ### Key Endpoints Summary
 

@@ -42,7 +42,8 @@ pnpm start:dev
 ```
 
 - **API Base:** `http://localhost:3000/api/v1`
-- **Swagger Docs:** `http://localhost:3000/docs`
+- **Swagger Docs (UI):** `http://localhost:3000/docs`
+- **OpenAPI JSON Şeması:** `http://localhost:3000/docs-json`
 - **Statik Medya:** `http://localhost:3000/media`
 
 ---
