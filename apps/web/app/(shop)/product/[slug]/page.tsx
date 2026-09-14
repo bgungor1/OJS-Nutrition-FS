@@ -90,6 +90,7 @@ export default async function ProductDetailPage({
           />
 
           <ProductActions
+            productId={product.id}
             variants={product.variants || []}
             productName={product.name}
           />
