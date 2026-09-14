@@ -139,7 +139,12 @@ OJS-Nutrition-FS/
 
 ## 🔌 API Dokümantasyonu ve Endpointler
 
-Backend çalışırken canlı ve etkileşimli Swagger dokümantasyonuna **[http://localhost:3000/docs](http://localhost:3000/docs)** adresinden erişilebilir.
+Backend çalışırken interaktif **Swagger / OpenAPI** dokümantasyonuna ve ham JSON şemasına aşağıdaki adreslerden erişilebilir:
+
+- **Swagger UI (İnteraktif Dokümantasyon):** [http://localhost:3000/docs](http://localhost:3000/docs)
+- **OpenAPI JSON Şeması:** [http://localhost:3000/docs-json](http://localhost:3000/docs-json)
+
+> **💡 İpucu:** Swagger arayüzü üzerinden sağ üstteki **Authorize** butonu kullanılarak JWT Bearer token (`Bearer <token>`) ile yetkilendirme yapılabilir ve korumalı tüm endpoint'ler doğrudan tarayıcı üzerinden test edilebilir. Arayüzde `persistAuthorization` aktif olduğundan sayfa yenilense de oturum bilgisi korunur.
 
 ### Temel Endpoint Grupları
 

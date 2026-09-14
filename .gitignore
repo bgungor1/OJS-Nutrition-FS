@@ -73,8 +73,3 @@ Desktop.ini
 .claude
 .gemini/
 .agents/
-
-# Plans & Engineering Standards
-BACKEND_PLAN.md
-FRONTEND_NEXTJS_PLAN.md
-ENGINEERING_STANDARDS.md
