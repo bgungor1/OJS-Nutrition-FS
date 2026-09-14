@@ -10,3 +10,4 @@ export * from './select';
 export * from './skeleton';
 export * from './tabs';
 export * from './textarea';
+export * from './sheet';
