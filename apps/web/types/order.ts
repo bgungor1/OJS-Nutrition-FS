@@ -104,3 +104,22 @@ export interface ApiOrder {
   created_at: string;
   items?: ApiOrderItem[];
 }
+
+export interface ShipmentFeeResponse {
+  fee: number;
+  currency: string;
+  free_shipping_threshold: number;
+  is_free: boolean;
+}
+
+export interface PaymentSettingsResponse {
+  card_types: string[];
+  payment_types: string[];
+  currency: string;
+}
+
+export interface CompleteShoppingRequest {
+  address_id: string;
+  payment_type: 'credit_card' | 'debit_card';
+  payment_token: string;
+}
