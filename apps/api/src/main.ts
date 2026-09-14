@@ -16,7 +16,24 @@ async function bootstrap(): Promise<void> {
 
   app.setGlobalPrefix(config.get('apiGlobalPrefix', { infer: true }));
 
-  app.use(helmet());
+  const defaultHelmet = helmet();
+  const swaggerHelmet = helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  });
+
+  app.use(
+    (
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction,
+    ) => {
+      if (req.path.startsWith('/docs')) {
+        return swaggerHelmet(req, res, next);
+      }
+      return defaultHelmet(req, res, next);
+    },
+  );
   app.use(express.json({ limit: '50kb' }));
   app.use(express.urlencoded({ extended: true, limit: '50kb' }));
   app.use(cookieParser());
@@ -38,7 +55,7 @@ async function bootstrap(): Promise<void> {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('OJS Nutrition API')
-    .setDescription('BACKEND_PLAN.md sözleşmesi')
+    .setDescription('OJS Nutrition REST API dokümantasyonu ve sözleşmesi')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -46,6 +63,12 @@ async function bootstrap(): Promise<void> {
     'docs',
     app,
     SwaggerModule.createDocument(app, swaggerConfig),
+    {
+      swaggerOptions: {
+        persistAuthorization: true,
+      },
+      customSiteTitle: 'OJS Nutrition API Docs',
+    },
   );
 
   const port = config.get('port', { infer: true });
