@@ -1,17 +1,22 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ShoppingCart, Check, Plus, Minus, Truck, ShieldCheck } from 'lucide-react';
+import { ShoppingCart, Check, Plus, Minus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useCartStore } from '@/store/cart-store';
+import { VariantSelector } from './variant-selector';
+import { ProductPriceBox } from './product-price-box';
+import { ProductTrustBadges } from './product-trust-badges';
 import type { ApiProductVariant } from '@/types';
 
 interface ProductActionsProps {
+  productId?: string;
   variants: ApiProductVariant[];
   productName: string;
 }
 
 export const ProductActions: React.FC<ProductActionsProps> = ({
+  productId,
   variants,
 }) => {
   const aromas = Array.from(new Set(variants.map((v) => v.aroma).filter(Boolean)));
@@ -32,6 +37,10 @@ export const ProductActions: React.FC<ProductActionsProps> = ({
 
   const [quantity, setQuantity] = useState<number>(1);
   const [isAdded, setIsAdded] = useState<boolean>(false);
+  const [isAdding, setIsAdding] = useState<boolean>(false);
+
+  const addItem = useCartStore((state) => state.addItem);
+  const isCartLoading = useCartStore((state) => state.isLoading);
 
   const handleAromaSelect = (aroma: string) => {
     setSelectedAroma(aroma);
@@ -41,95 +50,38 @@ export const ProductActions: React.FC<ProductActionsProps> = ({
     }
   };
 
-  const handleAddToCart = () => {
-    if (!currentVariant?.is_available) return;
-    setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 2200);
+  const handleAddToCart = async () => {
+    if (!currentVariant?.is_available || !currentVariant?.id) return;
+    setIsAdding(true);
+    const targetProductId = productId || currentVariant.id;
+    const success = await addItem(targetProductId, currentVariant.id, quantity);
+    setIsAdding(false);
+
+    if (success) {
+      setIsAdded(true);
+      setTimeout(() => setIsAdded(false), 2200);
+    }
   };
 
-  const price = currentVariant?.price?.total_price || 0;
-  const originalPrice = currentVariant?.price?.discounted_price;
-  const discountPercentage = currentVariant?.price?.discount_percentage;
-  const servings = currentVariant?.size?.total_services || 1;
   const isAvailable = currentVariant?.is_available ?? true;
 
   return (
     <div className="space-y-6 pt-2">
-      {aromas.length > 0 && (
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-muted-foreground uppercase">
-            Aroma: <span className="text-foreground font-bold">{selectedAroma}</span>
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {aromas.map((aroma) => {
-              const isSelected = selectedAroma === aroma;
-              return (
-                <button
-                  key={aroma}
-                  type="button"
-                  onClick={() => handleAromaSelect(aroma)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isSelected
-                    ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary'
-                    : 'border-border bg-card text-muted-foreground hover:text-foreground hover:border-border/80'
-                    }`}
-                >
-                  {aroma}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <VariantSelector
+        aromas={aromas}
+        selectedAroma={selectedAroma}
+        onSelectAroma={handleAromaSelect}
+        availableVariants={availableVariants}
+        selectedVariantId={selectedVariantId}
+        onSelectVariantId={setSelectedVariantId}
+      />
 
-      {availableVariants.length > 1 && (
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-muted-foreground uppercase">
-            Boyut Seçimi
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {availableVariants.map((v) => {
-              const isSelected = v.id === currentVariant?.id;
-              return (
-                <button
-                  key={v.id}
-                  type="button"
-                  onClick={() => setSelectedVariantId(v.id)}
-                  className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all text-left ${isSelected
-                    ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary'
-                    : 'border-border bg-card text-muted-foreground hover:text-foreground'
-                    }`}
-                >
-                  <div>{v.size.gram}g</div>
-                  <div className="text-[10px] text-muted-foreground">{v.size.total_services} Servis</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      <div className="rounded-xl bg-muted/40 border border-border p-4 space-y-1">
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl sm:text-3xl font-black text-primary">
-            {price.toLocaleString('tr-TR')} TL
-          </span>
-          {originalPrice && originalPrice > price && (
-            <span className="text-sm text-muted-foreground line-through">
-              {originalPrice.toLocaleString('tr-TR')} TL
-            </span>
-          )}
-          {Boolean(discountPercentage && discountPercentage > 0) && (
-            <Badge variant="destructive" className="text-[10px] font-bold">
-              %{discountPercentage} İndirim
-            </Badge>
-          )}
-        </div>
-        {servings > 1 && (
-          <p className="text-[11px] text-muted-foreground">
-            Servis Başına: ~{(price / servings).toFixed(2)} TL
-          </p>
-        )}
-      </div>
+      <ProductPriceBox
+        price={currentVariant?.price?.total_price || 0}
+        originalPrice={currentVariant?.price?.discounted_price}
+        discountPercentage={currentVariant?.price?.discount_percentage}
+        servings={currentVariant?.size?.total_services || 1}
+      />
 
       <div className="flex items-center gap-3">
         <div className="flex items-center rounded-lg border border-border bg-card h-11">
@@ -158,11 +110,17 @@ export const ProductActions: React.FC<ProductActionsProps> = ({
         <Button
           size="lg"
           onClick={handleAddToCart}
-          disabled={!isAvailable}
-          className={`flex-1 font-bold transition-all h-11 ${isAdded ? 'bg-green-600 hover:bg-green-700 text-white' : ''
-            }`}
+          disabled={!isAvailable || isAdding || isCartLoading}
+          className={`flex-1 font-bold transition-all h-11 cursor-pointer ${
+            isAdded ? 'bg-green-600 hover:bg-green-700 text-white' : ''
+          }`}
         >
-          {isAdded ? (
+          {isAdding ? (
+            <>
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              Ekleniyor...
+            </>
+          ) : isAdded ? (
             <>
               <Check className="h-5 w-5 mr-2" />
               Sepete Eklendi
@@ -178,16 +136,7 @@ export const ProductActions: React.FC<ProductActionsProps> = ({
         </Button>
       </div>
 
-      <div className="pt-2 border-t border-border/60 flex flex-col sm:flex-row gap-3 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <Truck className="h-4 w-4 text-primary shrink-0" />
-          <span>Aynı gün ücretsiz kargo</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-          <span>256-Bit SSL güvenli alışveriş</span>
-        </div>
-      </div>
+      <ProductTrustBadges />
     </div>
   );
 };

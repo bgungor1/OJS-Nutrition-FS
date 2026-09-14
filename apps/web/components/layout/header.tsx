@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ShoppingCart, Menu, X } from 'lucide-react';
@@ -9,6 +9,8 @@ import { SearchBar } from './search-bar';
 import { CategoryNav } from './category-nav';
 import { UserMenu } from './user-menu';
 import { MobileMenu } from './mobile-menu';
+import { CartDrawer } from '@/components/cart';
+import { useCartStore } from '@/store/cart-store';
 import type { AccountProfile, ApiCategory } from '@/types';
 
 interface HeaderProps {
@@ -18,6 +20,16 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ categories = [], user = null }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const items = useCartStore((state) => state.items);
+  const openDrawer = useCartStore((state) => state.openDrawer);
+  const fetchCart = useCartStore((state) => state.fetchCart);
+
+  useEffect(() => {
+    void fetchCart();
+  }, [fetchCart]);
+
+  const itemCount = items.reduce((acc, item) => acc + (item.pieces || 0), 0);
 
   const toggleMobileMenu = () => setMobileMenuOpen((prev) => !prev);
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -53,15 +65,16 @@ export const Header: React.FC<HeaderProps> = ({ categories = [], user = null }) 
           <Button
             variant="ghost"
             size="icon"
-            className="relative rounded-full text-foreground hover:text-primary"
-            asChild
+            onClick={openDrawer}
+            className="relative rounded-full text-foreground hover:text-primary cursor-pointer"
+            aria-label="Sepetim"
           >
-            <Link href="/payment" aria-label="Sepetim">
-              <ShoppingCart className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                0
+            <ShoppingCart className="h-5 w-5" />
+            {itemCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground animate-in zoom-in-50 duration-200">
+                {itemCount > 99 ? '99+' : itemCount}
               </span>
-            </Link>
+            )}
           </Button>
 
           <Button
@@ -85,6 +98,8 @@ export const Header: React.FC<HeaderProps> = ({ categories = [], user = null }) 
         categories={categories}
         user={user}
       />
+
+      <CartDrawer />
     </header>
   );
 };
