@@ -1,18 +1,32 @@
 import type { Metadata } from 'next';
+import { getAccessToken } from '@/lib/auth-cookies';
+import { getOrderById } from '@/lib/api';
+import { ThankYouView } from '@/components/checkout';
+import type { OrderDetail } from '@/types';
 
 export const metadata: Metadata = {
-  title: 'Siparişiniz Alındı',
-  description: 'OJS Nutrition sipariş onay sayfası.',
+  title: 'Siparişiniz Alındı | OJS Nutrition',
+  description: 'OJS Nutrition sipariş onay sayfası ve sipariş detayları.',
 };
 
-export default function ThankYouPage() {
-  return (
-    <div className="max-w-xl mx-auto py-12 text-center space-y-4">
-      <span className="text-5xl">🎉</span>
-      <h1 className="text-3xl font-bold tracking-tight">Siparişiniz Alındı!</h1>
-      <p className="text-sm text-muted-foreground">
-        Sipariş detaylarınız ve kargo takip numarası e-posta adresinize iletilecektir.
-      </p>
-    </div>
-  );
+interface ThankYouPageProps {
+  searchParams: Promise<{
+    orderId?: string;
+  }>;
+}
+
+export default async function ThankYouPage({ searchParams }: ThankYouPageProps) {
+  const { orderId } = await searchParams;
+  const token = await getAccessToken();
+
+  let order: OrderDetail | null = null;
+  if (orderId && token) {
+    try {
+      order = await getOrderById(token, orderId);
+    } catch {
+      order = null;
+    }
+  }
+
+  return <ThankYouView order={order} orderId={orderId} />;
 }
