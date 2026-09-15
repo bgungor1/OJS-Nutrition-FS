@@ -31,7 +31,7 @@ describe('ReviewsAdminController', () => {
   });
 
   describe('delete', () => {
-    it('admin rotasında servisin delete metodunu id ile çağırmalıdır', async () => {
+    it('should call service.delete with id parameter on admin route', async () => {
       service.delete.mockResolvedValue({ id: 'rev-admin-1' });
 
       const result = await controller.delete('rev-admin-1');

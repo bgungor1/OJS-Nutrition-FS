@@ -5,7 +5,7 @@ import { ReviewQueryDto } from './review-query.dto';
 
 describe('Reviews DTO Validation', () => {
   describe('CreateReviewDto', () => {
-    it('geçerli bir girdi doğrulama testinden geçmelidir', async () => {
+    it('should pass validation with valid input', async () => {
       const input = {
         rating: 5,
         title: 'Mükemmel ürün',
@@ -19,7 +19,7 @@ describe('Reviews DTO Validation', () => {
       expect(errors).toHaveLength(0);
     });
 
-    it('rating 1-5 aralığı dışında olduğunda hata vermelidir', async () => {
+    it('should fail validation when rating is outside 1-5 range', async () => {
       const input = {
         rating: 6,
         title: 'Harika',
@@ -33,7 +33,7 @@ describe('Reviews DTO Validation', () => {
       expect(errors[0].property).toBe('rating');
     });
 
-    it('başlık ve yorum boş olduğunda hata vermelidir', async () => {
+    it('should fail validation when title and text are empty', async () => {
       const input = {
         rating: 4,
         title: '',
@@ -48,7 +48,7 @@ describe('Reviews DTO Validation', () => {
       expect(properties).toContain('text');
     });
 
-    it('görsel sayısı 5ten fazla olduğunda hata vermelidir', async () => {
+    it('should fail validation when images count exceeds 5', async () => {
       const input = {
         rating: 4,
         title: 'Güzel',
@@ -72,7 +72,7 @@ describe('Reviews DTO Validation', () => {
   });
 
   describe('ReviewQueryDto', () => {
-    it('geçerli query parametrelerini kabul etmelidir', async () => {
+    it('should accept valid query parameters', async () => {
       const input = {
         limit: 15,
         offset: 0,
@@ -86,7 +86,7 @@ describe('Reviews DTO Validation', () => {
       expect(errors).toHaveLength(0);
     });
 
-    it('geçersiz sort parametresinde hata vermelidir', async () => {
+    it('should fail validation when sort parameter is invalid', async () => {
       const input = {
         sort: 'invalid_sort_param',
       };

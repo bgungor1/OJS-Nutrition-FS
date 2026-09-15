@@ -17,7 +17,7 @@ describe('ReviewsMapper', () => {
   };
 
   describe('toApiReview', () => {
-    it('Prisma Review modelini ApiReview formatına dönüştürmelidir', () => {
+    it('should transform Prisma Review model to ApiReview interface', () => {
       const result = ReviewsMapper.toApiReview(mockReview);
 
       expect(result).toEqual({
@@ -34,7 +34,7 @@ describe('ReviewsMapper', () => {
       });
     });
 
-    it('images null veya tanımsız olduğunda boş dizi dönmelidir', () => {
+    it('should return empty array when images is null or undefined', () => {
       const reviewWithoutImages = {
         ...mockReview,
         images: null as unknown as string[],
@@ -45,7 +45,7 @@ describe('ReviewsMapper', () => {
   });
 
   describe('calculateStats', () => {
-    it('boş yorum listesinde sıfırlanmış istatistik dönmelidir', () => {
+    it('should return reset stats for an empty review list', () => {
       const stats = ReviewsMapper.calculateStats([]);
 
       expect(stats).toEqual({
@@ -56,7 +56,7 @@ describe('ReviewsMapper', () => {
       });
     });
 
-    it('yıldız dağılımını ve ortalama puanı doğru hesaplamalıdır', () => {
+    it('should correctly calculate star rating distribution and average rating', () => {
       const summaries = [
         { rating: 5, isVerified: true },
         { rating: 5, isVerified: false },
@@ -81,7 +81,7 @@ describe('ReviewsMapper', () => {
   });
 
   describe('toPaginatedReviewsResponse', () => {
-    it('sayfalanmış yorum yanıtını doğru oluşturmalıdır', () => {
+    it('should correctly construct paginated reviews response', () => {
       const stats = ReviewsMapper.calculateStats([
         { rating: 5, isVerified: true },
       ]);

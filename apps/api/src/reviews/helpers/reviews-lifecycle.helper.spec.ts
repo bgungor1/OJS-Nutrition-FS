@@ -4,7 +4,7 @@ import { ReviewsLifecycleHelper } from './reviews-lifecycle.helper';
 
 describe('ReviewsLifecycleHelper', () => {
   describe('buildOrderBy', () => {
-    it('sıralama parametrelerini doğru Prisma orderBy yapılarına eşlemelidir', () => {
+    it('should map sort parameters to correct Prisma orderBy structures', () => {
       expect(ReviewsLifecycleHelper.buildOrderBy('newest')).toEqual([
         { createdAt: 'desc' },
       ]);
@@ -27,7 +27,7 @@ describe('ReviewsLifecycleHelper', () => {
   });
 
   describe('recalculateProductMetrics', () => {
-    it('yorum ortalamasını ve sayısını hesaplayıp ürünü güncellemelidir', async () => {
+    it('should calculate review average and count and update the product', async () => {
       const mockTx = {
         review: {
           aggregate: jest.fn().mockResolvedValue({
@@ -54,7 +54,7 @@ describe('ReviewsLifecycleHelper', () => {
       });
     });
 
-    it('hiç yorum olmadığında ortalama puanı 0 olarak set etmelidir', async () => {
+    it('should set average rating to 0 when there are no reviews', async () => {
       const mockTx = {
         review: {
           aggregate: jest.fn().mockResolvedValue({
@@ -93,7 +93,7 @@ describe('ReviewsLifecycleHelper', () => {
       createdAt: new Date(),
     };
 
-    it('executeReviewCreation transaction içinde yorum oluşturmalı ve metrikleri güncellemelidir', async () => {
+    it('should create review and update metrics within a transaction in executeReviewCreation', async () => {
       const mockTx = {
         review: {
           create: jest.fn().mockResolvedValue(mockReview),
@@ -132,7 +132,7 @@ describe('ReviewsLifecycleHelper', () => {
       expect(mockTx.product.update).toHaveBeenCalled();
     });
 
-    it('executeReviewDeletion transaction içinde yorum silmeli ve metrikleri güncellemelidir', async () => {
+    it('should delete review and update metrics within a transaction in executeReviewDeletion', async () => {
       const mockTx = {
         review: {
           delete: jest.fn().mockResolvedValue(mockReview),

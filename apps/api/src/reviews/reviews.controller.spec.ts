@@ -71,7 +71,7 @@ describe('ReviewsController', () => {
   });
 
   describe('list', () => {
-    it('servisin list metodunu doğru parametrelerle çağırmalıdır', async () => {
+    it('should call service.list with correct parameters', async () => {
       service.list.mockResolvedValue(mockPaginatedResponse);
 
       const query: ReviewQueryDto = { limit: 10, offset: 0, rating: 5 };
@@ -83,7 +83,7 @@ describe('ReviewsController', () => {
   });
 
   describe('create', () => {
-    it('servisin create metodunu kullanıcı ID ve DTO ile çağırmalıdır', async () => {
+    it('should call service.create with user ID and DTO', async () => {
       service.create.mockResolvedValue(mockApiReview);
 
       const dto: CreateReviewDto = {
@@ -104,7 +104,7 @@ describe('ReviewsController', () => {
   });
 
   describe('markHelpful', () => {
-    it('servisin markHelpful metodunu slug ve id ile çağırmalıdır', async () => {
+    it('should call service.markHelpful with slug and id', async () => {
       service.markHelpful.mockResolvedValue({
         ...mockApiReview,
         helpful_count: 1,
@@ -118,7 +118,7 @@ describe('ReviewsController', () => {
   });
 
   describe('delete', () => {
-    it('servisin delete metodunu id ile çağırmalıdır', async () => {
+    it('should call service.delete with id', async () => {
       service.delete.mockResolvedValue({ id: 'rev-1' });
 
       const result = await controller.delete('rev-1');

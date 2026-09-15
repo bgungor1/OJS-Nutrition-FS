@@ -101,7 +101,7 @@ describe('ReviewsService', () => {
   });
 
   describe('list', () => {
-    it('ürün bulunamadığında NotFoundException fırlatmalıdır', async () => {
+    it('should throw NotFoundException when product is not found', async () => {
       prisma.product.findUnique.mockResolvedValue(null);
 
       await expect(service.list('olmayan-urun')).rejects.toThrow(
@@ -113,14 +113,14 @@ describe('ReviewsService', () => {
       });
     });
 
-    it('sayfalanmış yorum listesini ve doğru istatistikleri dönmelidir', async () => {
+    it('should return paginated reviews list and correct statistics', async () => {
       prisma.product.findUnique.mockResolvedValue(mockProduct);
       prisma.review.findMany
-        .mockResolvedValueOnce([mockReview]) // sayfalı liste
+        .mockResolvedValueOnce([mockReview]) // paginated reviews
         .mockResolvedValueOnce([
           { rating: 5, isVerified: true },
           { rating: 4, isVerified: false },
-        ]); // istatistik özetleri
+        ]); // stats summary
       prisma.review.count.mockResolvedValue(1);
 
       const query: ReviewQueryDto = { limit: 10, offset: 0, sort: 'newest' };
@@ -136,7 +136,7 @@ describe('ReviewsService', () => {
       expect(result.stats.rating_distribution[4]).toBe(1);
     });
 
-    it('rating filtresi ve farklı sıralama seçeneklerini desteklemelidir', async () => {
+    it('should support rating filter and different sorting options', async () => {
       prisma.product.findUnique.mockResolvedValue(mockProduct);
       prisma.review.findMany
         .mockResolvedValueOnce([mockReview])
@@ -170,7 +170,7 @@ describe('ReviewsService', () => {
       images: ['https://example.com/photo.jpg'],
     };
 
-    it('ürün bulunamadığında NotFoundException fırlatmalıdır', async () => {
+    it('should throw NotFoundException when product is not found', async () => {
       prisma.product.findUnique.mockResolvedValue(null);
 
       await expect(
@@ -178,7 +178,7 @@ describe('ReviewsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('kullanıcı bulunamadığında NotFoundException fırlatmalıdır', async () => {
+    it('should throw NotFoundException when user is not found', async () => {
       prisma.product.findUnique.mockResolvedValue(mockProduct);
       prisma.user.findUnique.mockResolvedValue(null);
 
@@ -187,7 +187,7 @@ describe('ReviewsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('kullanıcı daha önce yorum yaptıysa ConflictException fırlatmalıdır', async () => {
+    it('should throw ConflictException when user has already reviewed the product', async () => {
       prisma.product.findUnique.mockResolvedValue(mockProduct);
       prisma.user.findUnique.mockResolvedValue(mockUser);
       prisma.review.findFirst.mockResolvedValue({ id: 'existing-rev' });
@@ -197,11 +197,11 @@ describe('ReviewsService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('doğrulanmış alıcı (isVerified=true) olarak transaction içinde yorum kaydetmeli ve ürünü güncellemelidir', async () => {
+    it('should create review with isVerified=true and update product metrics within transaction for verified buyer', async () => {
       prisma.product.findUnique.mockResolvedValue(mockProduct);
       prisma.user.findUnique.mockResolvedValue(mockUser);
-      prisma.review.findFirst.mockResolvedValue(null); // mükerrer yok
-      prisma.orderItem.findFirst.mockResolvedValue({ id: 'item-1' }); // satın almış
+      prisma.review.findFirst.mockResolvedValue(null); // no duplicate review
+      prisma.orderItem.findFirst.mockResolvedValue({ id: 'item-1' }); // verified purchase
 
       prisma.$transaction.mockImplementation(
         (callback: (tx: unknown) => Promise<unknown>) => {
@@ -238,7 +238,7 @@ describe('ReviewsService', () => {
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     });
 
-    it('ürünü satın almamış kullanıcı için isVerified=false olarak yorum oluşturmalıdır', async () => {
+    it('should create review with isVerified=false for non-purchasing user', async () => {
       prisma.product.findUnique.mockResolvedValue(mockProduct);
       prisma.user.findUnique.mockResolvedValue({
         id: 'user-2',
@@ -246,7 +246,7 @@ describe('ReviewsService', () => {
         lastName: null,
       });
       prisma.review.findFirst.mockResolvedValue(null);
-      prisma.orderItem.findFirst.mockResolvedValue(null); // satın almamış
+      prisma.orderItem.findFirst.mockResolvedValue(null); // not purchased
 
       const unverifiedReview = {
         ...mockReview,
@@ -281,7 +281,7 @@ describe('ReviewsService', () => {
   });
 
   describe('markHelpful', () => {
-    it('ürün bulunamadığında NotFoundException fırlatmalıdır', async () => {
+    it('should throw NotFoundException when product is not found', async () => {
       prisma.product.findUnique.mockResolvedValue(null);
 
       await expect(
@@ -289,7 +289,7 @@ describe('ReviewsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('yorum bulunamadığında NotFoundException fırlatmalıdır', async () => {
+    it('should throw NotFoundException when review is not found', async () => {
       prisma.product.findUnique.mockResolvedValue(mockProduct);
       prisma.review.findFirst.mockResolvedValue(null);
 
@@ -298,7 +298,7 @@ describe('ReviewsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('helpfulCount değerini 1 artırıp güncellenmiş yorumu dönmelidir', async () => {
+    it('should increment helpfulCount by 1 and return the updated review', async () => {
       prisma.product.findUnique.mockResolvedValue(mockProduct);
       prisma.review.findFirst.mockResolvedValue(mockReview);
       prisma.review.update.mockResolvedValue({
@@ -317,7 +317,7 @@ describe('ReviewsService', () => {
   });
 
   describe('delete', () => {
-    it('yorum bulunamadığında NotFoundException fırlatmalıdır', async () => {
+    it('should throw NotFoundException when review is not found', async () => {
       prisma.review.findUnique.mockResolvedValue(null);
 
       await expect(service.delete('rev-999')).rejects.toThrow(
@@ -325,7 +325,7 @@ describe('ReviewsService', () => {
       );
     });
 
-    it('yorum silinip ürün aggregate verileri transaction içinde güncellenmelidir', async () => {
+    it('should delete review and update product aggregate metrics within transaction', async () => {
       prisma.review.findUnique.mockResolvedValue({
         id: 'rev-1',
         productId: 'prod-1',
