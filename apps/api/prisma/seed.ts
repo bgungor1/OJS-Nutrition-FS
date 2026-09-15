@@ -119,71 +119,71 @@ async function main(): Promise<void> {
     {
       question: 'OJS Nutrition ürünlerinin menşei neresi?',
       answer:
-        'OJS Nutrition ürünleri, dünya çapında tanınmış ve güvenilir üreticilerden temin edilmektedir. Tüm ürünlerimiz kalite sertifikalarına sahiptir ve uluslararası standartlarda üretilmiştir.',
+        'OJS Nutrition ürünleri, dünya çapında tanınmış ve güvenilir üreticilerden temin edilen hammaddelerle, T.C. Tarım ve Orman Bakanlığı onaylı modern tesislerde uluslararası standartlarda üretilmektedir.',
       category: 'genel',
       sortOrder: 1,
     },
     {
-      question: 'Hangi sertifikalarınız var?',
+      question: 'Hangi kalite ve güvenlik sertifikalarınız var?',
       answer:
-        'ISO 9001 Kalite Yönetim Sistemi, GMP (Good Manufacturing Practice), FDA onayı, HACCP sertifikası ve diğer uluslararası kalite belgelerimiz mevcuttur.',
+        'Tesislerimiz ISO 9001 Kalite Yönetim Sistemi, ISO 22000 Gıda Güvenliği, GMP (Good Manufacturing Practice) ve Helal üretim sertifikalarına sahiptir.',
       category: 'genel',
       sortOrder: 2,
     },
     {
-      question: 'Satılan ürünler garantili midir? Değişim var mı?',
+      question: 'Satılan ürünler garantili midir? İade/değişim koşulları nelerdir?',
       answer:
-        'Evet, tüm ürünlerimiz %100 orijinallik garantisi ile satılmaktadır. Hasarlı veya hatalı ürünler için 14 gün içinde değişim yapılır.',
+        'Tüm ürünlerimiz %100 orijinaldir. Açılmamış ve güvenlik bandrolü hasar görmemiş ürünleri teslimat tarihinden itibaren 14 gün içinde koşulsuz iade edebilirsiniz.',
       category: 'genel',
       sortOrder: 3,
     },
     {
-      question: 'Sipariş verirken sorun yaşıyorum, ne yapmam gerekir?',
+      question: 'Sattığınız ürünler ilaç mıdır? Tedavi amacıyla kullanılır mı?',
       answer:
-        'Sipariş verme sırasında teknik bir sorun yaşıyorsanız, müşteri hizmetlerimizi arayabilir veya destek hattımızdan yardım alabilirsiniz.',
-      category: 'genel',
+        'Hayır. Sitemizde satılan ürünler sporcu gıdası ve takviye edici gıdadır; ilaç değildir ve herhangi bir hastalığın teşhis, tedavi veya önlenmesi amacıyla kullanılmaz.',
+      category: 'urunler',
       sortOrder: 4,
     },
     {
-      question: 'Taksit seçeneği neden yok?',
+      question: 'Kapağın altındaki folyo tam yapışmamış görünüyor, bu normal mi?',
       answer:
-        'Kredi kartı ile yapılan ödemelerde 2, 3, 6, 9 ve 12 aya varan taksit seçenekleri mevcuttur. Taksit seçenekleri ödeme sayfasında kartınıza göre görüntülenir.',
+        'Kapaklarımızda basınca duyarlı (pressure-sealed) koruyucu folyolar kullanılır. Kapağı çevirerek ilk kez açtığınızda yapışkan tabaka kapakla birlikte hafifçe gevşeyebilir. Ürün emniyet bandı sağlamsa ürün tamamen taze ve güvenlidir.',
       category: 'urunler',
       sortOrder: 5,
     },
     {
-      question: 'Siparişimi nasıl iptal edebilirim?',
+      question: 'Siparişler ne kadar sürede kargoya verilir?',
       answer:
-        'Henüz kargoya verilmemiş siparişleri müşteri panelinden iptal edebilirsiniz. Kargoya verilmiş siparişler için kargo iade sürecini başlatmanız gerekir.',
-      category: 'urunler',
+        'Hafta içi saat 16:00\'a kadar verilen siparişler aynı gün kargoya teslim edilir. Resmi tatil ve hafta sonu verilen siparişler takip eden ilk iş günü kargolanır.',
+      category: 'kargo',
       sortOrder: 6,
     },
     {
-      question: 'Sattığınız ürünler ilaç mıdır?',
+      question: 'Kargo ücreti ne kadar ve hangi kargo firmasıyla çalışıyorsunuz?',
       answer:
-        'Hayır, satışını yaptığımız ürünler gıda takviyesidir. İlaç değildir ve hastalık tedavisinde kullanılmaz. Beslenme programınızı destekleyici niteliktedir.',
-      category: 'urunler',
+        '750 TL ve üzeri tüm siparişlerde kargo tamamen ücretsizdir. Anlaşmalı olduğumuz Yurtiçi Kargo ve Aras Kargo güvencesiyle Türkiye\'nin her yerine teslimat yapmaktayız.',
+      category: 'kargo',
       sortOrder: 7,
+    },
+    {
+      question: 'Kargo paketini teslim alırken nelere dikkat etmeliyim?',
+      answer:
+        'Paketi teslim alırken ezilme, yırtılma veya ıslanma gibi hasar olup olmadığını kontrol ediniz. Hasar durumunda kargo görevlisine Hasar Tespit Tutanağı tutturmanız rica olunur.',
+      category: 'kargo',
+      sortOrder: 8,
     },
     {
       question: 'Kapıda ödeme hizmetiniz var mı?',
       answer:
         'Evet, kapıda ödeme seçeneğimiz mevcuttur. Ancak bu seçenek sadece belirli şehirler için geçerlidir.',
       category: 'kargo',
-      sortOrder: 8,
-    },
-    {
-      question: 'Sipariş takibimi nasıl yapabilirim?',
-      answer:
-        'Siparişiniz kargoya verildikten sonra size SMS ve e-posta ile takip numarası gönderilir.',
-      category: 'kargo',
       sortOrder: 9,
     },
     {
-      question: 'İptal ve iade ettiğim ürünlerin tutarı hesabıma ne zaman aktarılır?',
+      question: 'Taksit seçeneği neden yok?',
       answer:
-        'İade onaylandıktan sonra kredi kartına iadeler 2-5 iş günü, banka hesabına iadeler 3-7 iş günü içinde gerçekleşir.',
-      category: 'kargo',
+        'Kredi kartı ile yapılan ödemelerde 2, 3, 6, 9 ve 12 aya varan taksit seçenekleri mevcuttur. Taksit seçenekleri ödeme sayfasında kartınıza göre görüntülenir.',
+      category: 'urunler',
       sortOrder: 10,
     },
   ];
@@ -192,11 +192,20 @@ async function main(): Promise<void> {
     const existing = await prisma.faqItem.findFirst({
       where: { question: faq.question },
     });
-    if (!existing) {
+    if (existing) {
+      await prisma.faqItem.update({
+        where: { id: existing.id },
+        data: {
+          answer: faq.answer,
+          category: faq.category,
+          sortOrder: faq.sortOrder,
+        },
+      });
+    } else {
       await prisma.faqItem.create({ data: faq });
     }
   }
-  console.log('✅ SSS maddeleri eklendi.');
+  console.log('✅ SSS (FAQ) maddeleri senkronize edildi (10 madde).');
 
   // 4. KATEGORİLER VE ALT KATEGORİLER
   console.log('📂 Kategoriler ve alt kategoriler oluşturuluyor...');
@@ -1077,6 +1086,303 @@ async function main(): Promise<void> {
   }
 
   console.log(`✅ ${productsData.length} ürün ve varyantları başarıyla oluşturuldu/güncellendi.`);
+
+  // 6. ÜRÜN YORUMLARI (REVIEWS) VE İSTATİSTİK SENKRONİZASYONU
+  console.log('⭐ Ürün yorumları (Reviews) ve istatistikleri senkronize ediliyor...');
+  const reviewsSeedData = [
+    // WHEY PROTEIN
+    {
+      productSlug: 'whey-protein',
+      userId: customer.id,
+      reviewerName: 'Berkant M.',
+      rating: 5,
+      isVerified: true,
+      title: 'Harika Çözünürlük ve Tat',
+      text: 'Çikolatalı whey proteinin tadı ve suyla karışması gerçekten kusursuz. Şişkinlik yapmıyor, antrenman sonrası toparlanmaya çok yardımcı oldu.',
+      images: ['media/products/whey-protein-chocolate-400g.jpg'],
+      helpfulCount: 14,
+      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+    },
+    {
+      productSlug: 'whey-protein',
+      userId: null,
+      reviewerName: 'Can K.',
+      rating: 5,
+      isVerified: true,
+      title: 'Bisküvili Aroma Efsane',
+      text: 'Bisküvi aromalısını aldım, yulaf lapasına veya süte karıştırınca tatlı krizlerini anında kesiyor. Protein oranı ve kalitesi çok iyi.',
+      images: [],
+      helpfulCount: 8,
+      createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+    },
+    {
+      productSlug: 'whey-protein',
+      userId: null,
+      reviewerName: 'Mert S.',
+      rating: 4,
+      isVerified: true,
+      title: 'Fiyat Performans Gayet İyi',
+      text: 'Muz aroması güzel ama biraz tatlı geldi. Yine de içerik profili ve ham madde kalitesi için kesinlikle tavsiye ederim.',
+      images: [],
+      helpfulCount: 3,
+      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    },
+    {
+      productSlug: 'whey-protein',
+      userId: null,
+      reviewerName: 'Elif D.',
+      rating: 5,
+      isVerified: true,
+      title: 'Hızlı Kargo ve Harika Paketleme',
+      text: 'Siparişim ertesi gün ulaştı, shaker hediyesi ve güvenli kargo için teşekkürler.',
+      images: [],
+      helpfulCount: 5,
+      createdAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000),
+    },
+
+    // CREATINE
+    {
+      productSlug: 'creatine',
+      userId: customer.id,
+      reviewerName: 'Berkant M.',
+      rating: 5,
+      isVerified: true,
+      title: 'Fiyat Performans Canavarı',
+      text: 'Piyasadaki en temiz içerikli kreatinlerden biri. 200 mesh mikronize olduğu için suda kum gibi kalmıyor, tamamen çözünüyor. Güç artışını hissettirdi.',
+      images: [],
+      helpfulCount: 19,
+      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+    },
+    {
+      productSlug: 'creatine',
+      userId: null,
+      reviewerName: 'Serdar T.',
+      rating: 5,
+      isVerified: true,
+      title: 'Saf ve Etkili',
+      text: 'Kreatin monohidratta saf hammadde çok önemli. OJS bu konuda güven veriyor, yükleme yapmadan günde 5g alıyorum çok memnunum.',
+      images: [],
+      helpfulCount: 11,
+      createdAt: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000),
+    },
+    {
+      productSlug: 'creatine',
+      userId: null,
+      reviewerName: 'Burak A.',
+      rating: 4,
+      isVerified: false,
+      title: 'Kusursuz Karışım',
+      text: 'Aromasız olması çok iyi, whey proteiniyle birlikte karıştırıp içiyorum hiçbir tat değişikliği yapmıyor.',
+      images: [],
+      helpfulCount: 4,
+      createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+    },
+
+    // FITNESS PAKETİ
+    {
+      productSlug: 'fitness-paketi',
+      userId: customer.id,
+      reviewerName: 'Berkant M.',
+      rating: 5,
+      isVerified: true,
+      title: 'Başlangıç İçin Mükemmel Kombinasyon',
+      text: 'Sporda gelişim isteyen herkes için gerekli temel ürünler tek pakette toplanmış. Paket fiyatı tek tek almaktan çok daha uyguna geliyor.',
+      images: [],
+      helpfulCount: 12,
+      createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
+    },
+    {
+      productSlug: 'fitness-paketi',
+      userId: null,
+      reviewerName: 'Ali V.',
+      rating: 5,
+      isVerified: true,
+      title: 'Çok Avantajlı',
+      text: 'Whey + kreatin + kaliteli shaker bir arada. Ürünlerin son kullanma tarihleri de çok ileri tarihli, teşekkürler OJS.',
+      images: [],
+      helpfulCount: 7,
+      createdAt: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000),
+    },
+
+    // PRE-WORKOUT SUPREME
+    {
+      productSlug: 'pre-workout-supreme',
+      userId: null,
+      reviewerName: 'Oğuz Y.',
+      rating: 5,
+      isVerified: true,
+      title: 'Müthiş Odaklanma ve Pompa',
+      text: 'Ekşi elma aroması gayet ferahlatıcı. 300mg kafein ve sitrülin etkisi yarım saat içinde kendini belli ediyor, yorgun günlerin kurtarıcısı.',
+      images: [],
+      helpfulCount: 15,
+      createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+    },
+    {
+      productSlug: 'pre-workout-supreme',
+      userId: null,
+      reviewerName: 'Emre C.',
+      rating: 4,
+      isVerified: true,
+      title: 'Karıncalanma Hissi Çok İyi',
+      text: 'Beta alanin dozu yüksek olduğu için hafif karıncalanma yapıyor ama antrenmanda tam odaklanma sağlıyor. Çarpıntı yapmadı.',
+      images: [],
+      helpfulCount: 6,
+      createdAt: new Date(Date.now() - 16 * 24 * 60 * 60 * 1000),
+    },
+
+    // CREAM OF RICE
+    {
+      productSlug: 'cream-of-rice',
+      userId: null,
+      reviewerName: 'Selin B.',
+      rating: 5,
+      isVerified: true,
+      title: 'En Pratik Karbonhidrat Öğünü',
+      text: 'Bisküvili pirinç kremasını sıcak suyla karıştırıp üzerine bir ölçek whey ekliyorum, puding gibi oluyor. Sindirimi çok rahat, antrenman öncesi mükemmel.',
+      images: [],
+      helpfulCount: 9,
+      createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+    },
+    {
+      productSlug: 'cream-of-rice',
+      userId: null,
+      reviewerName: 'Volkan K.',
+      rating: 5,
+      isVerified: true,
+      title: 'Topaklanma Yapmıyor',
+      text: 'Piyasadaki diğer pirinç unları gibi topak topak kalmıyor, kıvamı tam yerinde.',
+      images: [],
+      helpfulCount: 5,
+      createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000),
+    },
+  ];
+
+  const affectedProductIds = new Set<string>();
+
+  for (const r of reviewsSeedData) {
+    const product = await prisma.product.findUnique({
+      where: { slug: r.productSlug },
+      select: { id: true },
+    });
+
+    if (!product) {
+      continue;
+    }
+
+    affectedProductIds.add(product.id);
+
+    const existingReview = await prisma.review.findFirst({
+      where: {
+        productId: product.id,
+        title: r.title,
+      },
+    });
+
+    if (existingReview) {
+      await prisma.review.update({
+        where: { id: existingReview.id },
+        data: {
+          userId: r.userId,
+          reviewerName: r.reviewerName,
+          rating: r.rating,
+          isVerified: r.isVerified,
+          text: r.text,
+          images: r.images,
+          helpfulCount: r.helpfulCount,
+          createdAt: r.createdAt,
+        },
+      });
+    } else {
+      await prisma.review.create({
+        data: {
+          productId: product.id,
+          userId: r.userId,
+          reviewerName: r.reviewerName,
+          rating: r.rating,
+          isVerified: r.isVerified,
+          title: r.title,
+          text: r.text,
+          images: r.images,
+          helpfulCount: r.helpfulCount,
+          createdAt: r.createdAt,
+        },
+      });
+    }
+  }
+
+  // Atomik metrik senkronizasyonu
+  for (const productId of affectedProductIds) {
+    const agg = await prisma.review.aggregate({
+      where: { productId },
+      _count: { id: true },
+      _avg: { rating: true },
+    });
+
+    await prisma.product.update({
+      where: { id: productId },
+      data: {
+        commentCount: agg._count.id,
+        averageStar:
+          agg._avg.rating !== null
+            ? Math.round(agg._avg.rating * 10) / 10
+            : 0,
+      },
+    });
+  }
+  console.log(
+    `✅ ${reviewsSeedData.length} ürün yorumu eklendi ve ürün metrikleri senkronize edildi.`,
+  );
+
+  // 7. İLETİŞİM MESAJLARI (CONTACT MESSAGES)
+  console.log('📬 İletişim mesajları (ContactMessage) ekleniyor...');
+  const contactMessagesData = [
+    {
+      name: 'Caner Özdemir',
+      email: 'caner.ozdemir@example.com',
+      message:
+        'Kreatin ürününüzün stokları ne zaman yenilenecek? Toplu alım yapmak istiyoruz.',
+      handled: false,
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    },
+    {
+      name: 'Zeynep Kaya',
+      email: 'zeynep.kaya@example.com',
+      message:
+        'Siparişimdeki shaker kapağında hasar vardı, müşteri hizmetlerinize teşekkür ederim anında yenisini kargoladınız.',
+      handled: true,
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    },
+    {
+      name: 'Murat Arslan',
+      email: 'murat.arslan@example.com',
+      message:
+        'İzole whey proteini için yeni aromalar gelecek mi? Çilek veya karamel seçeneği çok iyi olurdu.',
+      handled: false,
+      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    },
+  ];
+
+  for (const msg of contactMessagesData) {
+    const existingMsg = await prisma.contactMessage.findFirst({
+      where: { email: msg.email, message: msg.message },
+    });
+
+    if (existingMsg) {
+      await prisma.contactMessage.update({
+        where: { id: existingMsg.id },
+        data: {
+          name: msg.name,
+          handled: msg.handled,
+        },
+      });
+    } else {
+      await prisma.contactMessage.create({
+        data: msg,
+      });
+    }
+  }
+  console.log('✅ Örnek iletişim mesajları eklendi.');
+
   console.log('🎉 Seed işlemi başarıyla tamamlandı!');
 }
 
@@ -1088,3 +1394,4 @@ main()
   .finally(() => {
     void prisma.$disconnect();
   });
+
