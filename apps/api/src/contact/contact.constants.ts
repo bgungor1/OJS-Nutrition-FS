@@ -1,0 +1,18 @@
+export const CONTACT_PAGINATION = {
+  DEFAULT_LIMIT: 20,
+  MAX_LIMIT: 100,
+  DEFAULT_OFFSET: 0,
+} as const;
+
+export const CONTACT_LIMITS = {
+  NAME_MIN_LENGTH: 2,
+  NAME_MAX_LENGTH: 100,
+  EMAIL_MAX_LENGTH: 255,
+  MESSAGE_MIN_LENGTH: 10,
+  MESSAGE_MAX_LENGTH: 1000,
+} as const;
+
+export const CONTACT_RATE_LIMIT = {
+  LIMIT: 5,
+  TTL: 60000,
+} as const;
