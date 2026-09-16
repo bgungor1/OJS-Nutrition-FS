@@ -1,8 +1,9 @@
 export interface ApiFaqItem {
-  id: string | number;
+  id: string;
   question: string;
   answer: string;
-  category: 'genel' | 'urunler' | 'kargo' | string;
+  category: string;
+  sort_order: number;
 }
 
 export interface ContactPayload {
@@ -15,3 +16,4 @@ export interface ContactResponse {
   id: string;
   message: string;
 }
+
