@@ -75,18 +75,7 @@ export interface ApiProductDetail {
   average_star: number;
 }
 
-export interface ApiReview {
-  id: string;
-  product_id: string;
-  reviewer_name: string;
-  rating: number;
-  is_verified: boolean;
-  title: string;
-  text: string;
-  images: string[];
-  helpful_count: number;
-  created_at: string;
-}
+export type { ApiReview } from './review';
 
 export type ProductSortOption = 'price_asc' | 'price_desc' | 'newest' | 'rating';
 
