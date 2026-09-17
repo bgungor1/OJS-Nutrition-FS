@@ -2,6 +2,7 @@ export * from './products';
 export * from './categories';
 export * from './faq';
 export * from './contact';
+export * from './reviews';
 export * from './auth';
 export * from './users';
 export * from './locations';
