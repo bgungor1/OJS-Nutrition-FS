@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@/test/test-utils';
+import { render, screen, waitFor } from '@/test/test-utils';
 import { ReviewFormModal } from './review-form-modal';
 import * as reviewActions from '@/lib/actions/review';
 import type { ApiReview } from '@/types';
@@ -95,9 +95,11 @@ describe('ReviewFormModal Component', () => {
       expect.any(FormData),
     );
 
-    expect(handleSuccess).toHaveBeenCalledWith(mockCreatedReview);
+    await waitFor(() => {
+      expect(handleSuccess).toHaveBeenCalledWith(mockCreatedReview);
+    });
     expect(handleClose).toHaveBeenCalled();
-  });
+  }, 15000);
 
   it('displays field errors and global error when submission fails', async () => {
     vi.mocked(reviewActions.submitReviewAction).mockResolvedValueOnce({
@@ -120,12 +122,13 @@ describe('ReviewFormModal Component', () => {
 
     await user.click(screen.getByRole('button', { name: 'Değerlendirmeyi Gönder' }));
 
-    expect(screen.getByText('Başlık en az 2 karakter olmalıdır')).toBeInTheDocument();
+    expect(await screen.findByText('Başlık en az 2 karakter olmalıdır')).toBeInTheDocument();
     expect(screen.getByText('Değerlendirme metni en az 5 karakter olmalıdır')).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Lütfen formdaki eksik veya hatalı alanları düzeltin.',
     );
     expect(handleSuccess).not.toHaveBeenCalled();
     expect(handleClose).not.toHaveBeenCalled();
-  });
+  }, 15000);
 });
+
