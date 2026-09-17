@@ -6,7 +6,7 @@ import {
   CatalogPagination,
 } from '@/components/catalog';
 import { getProducts } from '@/lib/api';
-import type { ApiProduct, PaginatedResponse, ProductSortOption } from '@/types';
+import type { ProductSortOption } from '@/types';
 
 export const revalidate = 60;
 
@@ -30,23 +30,12 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const limit = 12;
   const offset = (currentPage - 1) * limit;
 
-  let data: PaginatedResponse<ApiProduct> = {
-    count: 0,
-    next: null,
-    previous: null,
-    results: [],
-  };
-
-  try {
-    data = await getProducts({
-      limit,
-      offset,
-      category,
-      sort,
-    });
-  } catch (error) {
-    console.warn('Ürün listesi API üzerinden alınamadı:', error);
-  }
+  const data = await getProducts({
+    limit,
+    offset,
+    category,
+    sort,
+  });
 
   const totalPages = Math.ceil(data.count / limit);
 
