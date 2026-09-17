@@ -39,7 +39,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products }) => {
           price={product.price_info.total_price}
           originalPrice={product.price_info.discounted_price}
           discountPercentage={product.price_info.discount_percentage}
-          priority={index < 2}
+          priority={index < 4}
         />
       ))}
     </div>
