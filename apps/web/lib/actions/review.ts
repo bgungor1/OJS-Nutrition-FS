@@ -2,7 +2,7 @@
 
 import { revalidateTag } from 'next/cache';
 import { getAccessToken } from '@/lib/auth-cookies';
-import { createProductReview } from '@/lib/api/reviews';
+import { createProductReview, markReviewHelpful } from '@/lib/api/reviews';
 import { createReviewSchema } from '@/lib/schemas/review';
 import { ApiError } from '@/lib/api-client';
 import type { ApiReview } from '@/types';
@@ -92,3 +92,20 @@ export async function submitReviewAction(
     };
   }
 }
+
+export async function markHelpfulAction(
+  slug: string,
+  reviewId: string,
+): Promise<{ success: boolean; helpful_count?: number; error?: string }> {
+  try {
+    const updated = await markReviewHelpful(slug, reviewId);
+    revalidateTag(`product-${slug}-reviews`);
+    return { success: true, helpful_count: updated.helpful_count };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'İşlem gerçekleştirilemedi.',
+    };
+  }
+}
+
