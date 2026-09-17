@@ -1,24 +1,8 @@
 'use server';
 
-import { z } from 'zod';
 import { submitContact } from '@/lib/api/contact';
-
-const contactSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(2, { message: 'Ad Soyad en az 2 karakter olmalıdır' })
-    .max(100, { message: 'Ad Soyad 100 karakterden uzun olamaz' }),
-  email: z
-    .string()
-    .trim()
-    .email({ message: 'Lütfen geçerli bir e-posta adresi giriniz' }),
-  message: z
-    .string()
-    .trim()
-    .min(10, { message: 'Mesajınız en az 10 karakter olmalıdır' })
-    .max(1000, { message: 'Mesajınız 1000 karakterden uzun olamaz' }),
-});
+import { contactSchema } from '@/lib/schemas/contact';
+import { ApiError } from '@/lib/api-client';
 
 export interface ContactActionResult {
   success: boolean;
@@ -32,7 +16,7 @@ export interface ContactActionResult {
 
 export async function submitContactAction(
   _prevState: ContactActionResult | null,
-  formData: FormData
+  formData: FormData,
 ): Promise<ContactActionResult> {
   const rawData = {
     name: formData.get('name'),
@@ -62,10 +46,23 @@ export async function submitContactAction(
       message: 'Mesajınız başarıyla iletildi. En kısa sürede sizinle iletişime geçeceğiz.',
     };
   } catch (error) {
-    console.warn('Contact server action fallback devrede (backend offline olabilir):', error);
+    if (error instanceof ApiError) {
+      if (error.status === 429) {
+        return {
+          success: false,
+          message: 'Çok fazla istek gönderdiniz, lütfen 1 dakika bekleyin.',
+        };
+      }
+
+      return {
+        success: false,
+        message: error.message || 'Mesajınız iletilemedi. Lütfen tekrar deneyiniz.',
+      };
+    }
+
     return {
-      success: true,
-      message: 'Mesajınız başarıyla alındı! Ekibimiz en kısa sürede dönüş sağlayacaktır.',
+      success: false,
+      message: 'Mesaj gönderilirken bir sunucu hatası oluştu. Lütfen daha sonra tekrar deneyiniz.',
     };
   }
 }
