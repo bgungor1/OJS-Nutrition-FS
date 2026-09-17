@@ -5,3 +5,4 @@ export * from './product-info';
 export * from './product-price-box';
 export * from './variant-selector';
 export * from './product-trust-badges';
+export * from './product-json-ld';

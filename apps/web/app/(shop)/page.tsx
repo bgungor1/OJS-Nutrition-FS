@@ -16,12 +16,22 @@ export const metadata: Metadata = {
   title: 'OJS Nutrition | Türkiye\'nin En Kaliteli Sporcu Besinleri',
   description:
     'Avrupa standartlarında yüksek kaliteli protein tozları, kreatin, BCAA ve sporcu gıdaları. Aynı gün ücretsiz kargo ve memnuniyet garantisiyle.',
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     title: 'OJS Nutrition | Türkiye\'nin En Kaliteli Sporcu Besinleri',
     description:
       'Avrupa standartlarında üretilen yüksek kaliteli whey proteinler, kreatinler ve amino asit takviyeleri.',
+    url: '/',
     type: 'website',
     locale: 'tr_TR',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'OJS Nutrition | Türkiye\'nin En Kaliteli Sporcu Besinleri',
+    description:
+      'Avrupa standartlarında üretilen yüksek kaliteli whey proteinler, kreatinler ve amino asit takviyeleri.',
   },
 };
 
