@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { submitReviewAction } from './review';
+import { submitReviewAction, markHelpfulAction } from './review';
 import { getAccessToken } from '@/lib/auth-cookies';
-import { createProductReview } from '@/lib/api/reviews';
+import { createProductReview, markReviewHelpful } from '@/lib/api/reviews';
 import { revalidateTag } from 'next/cache';
 import { ApiError } from '@/lib/api-client';
 import type { ApiReview } from '@/types';
@@ -16,6 +16,7 @@ vi.mock('@/lib/auth-cookies', () => ({
 
 vi.mock('@/lib/api/reviews', () => ({
   createProductReview: vi.fn(),
+  markReviewHelpful: vi.fn(),
 }));
 
 const mockReview: ApiReview = {
@@ -60,9 +61,9 @@ describe('submitReviewAction', () => {
     vi.mocked(getAccessToken).mockResolvedValue('mock_token');
 
     const formData = new FormData();
-    formData.set('rating', '0'); // invalid: min 1
-    formData.set('title', 'A'); // invalid: min 2
-    formData.set('text', 'Kısa'); // invalid: min 5
+    formData.set('rating', '0');
+    formData.set('title', 'A');
+    formData.set('text', 'Kısa');
 
     const result = await submitReviewAction('whey-protein', null, formData);
 
@@ -133,3 +134,33 @@ describe('submitReviewAction', () => {
     expect(result.message).toMatch(/beklenmeyen bir hata oluştu/i);
   });
 });
+
+describe('markHelpfulAction', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('successfully marks review helpful and revalidates tags', async () => {
+    vi.mocked(markReviewHelpful).mockResolvedValue({
+      ...mockReview,
+      helpful_count: 3,
+    });
+
+    const result = await markHelpfulAction('whey-protein', 'rev_123');
+
+    expect(result.success).toBe(true);
+    expect(result.helpful_count).toBe(3);
+    expect(markReviewHelpful).toHaveBeenCalledWith('whey-protein', 'rev_123');
+    expect(revalidateTag).toHaveBeenCalledWith('product-whey-protein-reviews');
+  });
+
+  it('handles errors gracefully when API call fails', async () => {
+    vi.mocked(markReviewHelpful).mockRejectedValue(new Error('Network error'));
+
+    const result = await markHelpfulAction('whey-protein', 'rev_123');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Network error');
+  });
+});
+
