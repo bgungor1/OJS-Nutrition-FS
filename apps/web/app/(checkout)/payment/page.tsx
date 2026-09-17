@@ -17,20 +17,12 @@ export default async function PaymentPage() {
     redirect('/login?redirect=/payment');
   }
 
-  let addresses: Address[] = [];
-  let countries: Country[] = [];
-
-  try {
-    const [addressesData, countriesData] = await Promise.all([
-      getAddresses(token),
-      getCountries(),
-    ]);
-    addresses = addressesData.results ?? [];
-    countries = countriesData ?? [];
-  } catch {
-    addresses = [];
-    countries = [];
-  }
+  const [addressesData, countriesData] = await Promise.all([
+    getAddresses(token),
+    getCountries(),
+  ]);
+  const addresses: Address[] = addressesData.results ?? [];
+  const countries: Country[] = countriesData ?? [];
 
   return (
     <div className="py-2">

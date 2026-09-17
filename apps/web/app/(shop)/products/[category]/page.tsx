@@ -6,7 +6,7 @@ import {
   CatalogPagination,
 } from '@/components/catalog';
 import { getProducts, getCategories } from '@/lib/api';
-import type { ApiProduct, PaginatedResponse, ProductSortOption } from '@/types';
+import type { ProductSortOption } from '@/types';
 
 export const revalidate = 60;
 
@@ -84,23 +84,12 @@ export default async function CategoryPage({
   const limit = 12;
   const offset = (currentPage - 1) * limit;
 
-  let data: PaginatedResponse<ApiProduct> = {
-    count: 0,
-    next: null,
-    previous: null,
-    results: [],
-  };
-
-  try {
-    data = await getProducts({
-      limit,
-      offset,
-      category,
-      sort,
-    });
-  } catch (error) {
-    console.warn(`"${category}" kategorisi ürünleri API üzerinden alınamadı:`, error);
-  }
+  const data = await getProducts({
+    limit,
+    offset,
+    category,
+    sort,
+  });
 
   const info = CATEGORY_DESCRIPTIONS[category];
   const title = info ? info.title : category.charAt(0).toUpperCase() + category.slice(1);
