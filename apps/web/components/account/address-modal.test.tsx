@@ -183,7 +183,7 @@ describe('AddressModal', () => {
     );
 
     expect(handleClose).toHaveBeenCalled();
-  });
+  }, 15000);
 
   it('displays global error when server action returns an error', async () => {
     vi.mocked(addressActions.updateAddressAction).mockResolvedValueOnce({

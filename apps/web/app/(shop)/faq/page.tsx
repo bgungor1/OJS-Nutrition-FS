@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { getFaqItems } from '@/lib/api/faq';
 import { FaqList } from '@/components/faq/faq-list';
+import type { ApiFaqItem } from '@/types';
 
 export const revalidate = 3600;
 
@@ -19,7 +20,13 @@ export const metadata: Metadata = {
 };
 
 export default async function FaqPage() {
-  const faqItems = await getFaqItems();
+  let faqItems: ApiFaqItem[] = [];
+
+  try {
+    faqItems = await getFaqItems();
+  } catch (error) {
+    console.warn('SSS maddeleri API üzerinden alınamadı:', error);
+  }
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-5xl">
