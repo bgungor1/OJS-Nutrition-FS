@@ -14,6 +14,22 @@ export const metadata: Metadata = {
   title: 'Tüm Ürünler | OJS Nutrition',
   description:
     'En kaliteli sporcu besinleri, protein tozları, amino asitler ve vitamin takviyeleri. Türkiye genelinde aynı gün ücretsiz kargo.',
+  alternates: {
+    canonical: '/products',
+  },
+  openGraph: {
+    title: 'Tüm Ürünler | OJS Nutrition',
+    description:
+      'En kaliteli sporcu besinleri, protein tozları, amino asitler ve vitamin takviyeleri. Türkiye genelinde aynı gün ücretsiz kargo.',
+    url: '/products',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Tüm Ürünler | OJS Nutrition',
+    description:
+      'En kaliteli sporcu besinleri, protein tozları, amino asitler ve vitamin takviyeleri. Türkiye genelinde aynı gün ücretsiz kargo.',
+  },
 };
 
 type ProductsPageProps = {

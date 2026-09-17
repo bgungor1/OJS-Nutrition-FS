@@ -5,6 +5,7 @@ import {
   ProductInfo,
   ProductActions,
   ProductAccordion,
+  ProductJsonLd,
 } from '@/components/product-detail';
 import { ProductReviewsSection } from '@/components/reviews';
 import { BestSellersSection } from '@/components/home';
@@ -33,10 +34,21 @@ export async function generateMetadata({
     return {
       title: `${product.name} | OJS Nutrition`,
       description: product.short_explanation || 'OJS Nutrition yüksek kaliteli sporcu besini.',
+      alternates: {
+        canonical: `/product/${slug}`,
+      },
       openGraph: {
         title: `${product.name} | OJS Nutrition`,
         description: product.short_explanation,
-        images: [{ url: imageUrl }],
+        url: `/product/${slug}`,
+        type: 'website',
+        images: [{ url: imageUrl, alt: product.name }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${product.name} | OJS Nutrition`,
+        description: product.short_explanation,
+        images: [imageUrl],
       },
     };
   } catch {
@@ -81,6 +93,7 @@ export default async function ProductDetailPage({
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <ProductJsonLd product={product} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
         <div className="space-y-8">
           <ProductGallery

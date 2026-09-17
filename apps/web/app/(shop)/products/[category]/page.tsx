@@ -66,11 +66,27 @@ export async function generateMetadata({
   const info = CATEGORY_DESCRIPTIONS[category];
   const title = info ? info.title : category.charAt(0).toUpperCase() + category.slice(1);
 
+  const description =
+    info?.description ||
+    `OJS Nutrition ${title} kategorisindeki en kaliteli sporcu besinleri ve takviyeleri.`;
+
   return {
     title: `${title} | OJS Nutrition`,
-    description:
-      info?.description ||
-      `OJS Nutrition ${title} kategorisindeki en kaliteli sporcu besinleri ve takviyeleri.`,
+    description,
+    alternates: {
+      canonical: `/products/${category}`,
+    },
+    openGraph: {
+      title: `${title} | OJS Nutrition`,
+      description,
+      url: `/products/${category}`,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} | OJS Nutrition`,
+      description,
+    },
   };
 }
 
