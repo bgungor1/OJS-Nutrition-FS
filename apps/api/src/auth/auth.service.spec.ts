@@ -30,6 +30,8 @@ describe('AuthService', () => {
   let tokenService: {
     generateTokens: jest.Mock;
     rotateRefreshToken: jest.Mock;
+    revokeRefreshToken: jest.Mock;
+    revokeAllUserTokens: jest.Mock;
   };
   let auditService: {
     record: jest.Mock;
@@ -60,6 +62,8 @@ describe('AuthService', () => {
         access: 'mock-rotated-access-token',
         refresh: 'mock-rotated-refresh-token',
       }),
+      revokeRefreshToken: jest.fn().mockResolvedValue(undefined),
+      revokeAllUserTokens: jest.fn().mockResolvedValue(2),
     };
 
     auditService = {
@@ -280,6 +284,41 @@ describe('AuthService', () => {
       expect(result).toEqual({
         access: 'mock-rotated-access-token',
         refresh: 'mock-rotated-refresh-token',
+      });
+    });
+  });
+
+  describe('Faz 4.2 (Logout and RevokeAll)', () => {
+    it('logout çağrıldığında tokenService.revokeRefreshToken çağrılmalı ve başarı mesajı dönmeli', async () => {
+      const logoutDto = {
+        refresh: 'test-refresh-token',
+        refreshToken: 'test-refresh-token',
+      };
+
+      const result = await service.logout(logoutDto, '127.0.0.1');
+
+      expect(tokenService.revokeRefreshToken).toHaveBeenCalledWith(
+        'test-refresh-token',
+        '127.0.0.1',
+      );
+      expect(result).toEqual({
+        message: 'Oturum başarıyla sonlandırıldı.',
+      });
+    });
+
+    it('revokeAllSessions çağrıldığında tokenService.revokeAllUserTokens çağrılmalı ve başarı mesajı dönmeli', async () => {
+      const result = await service.revokeAllSessions(
+        'user-uuid-1',
+        '127.0.0.1',
+      );
+
+      expect(tokenService.revokeAllUserTokens).toHaveBeenCalledWith(
+        'user-uuid-1',
+        '127.0.0.1',
+        'USER_REVOKE_ALL',
+      );
+      expect(result).toEqual({
+        message: 'Tüm aktif oturumlar başarıyla sonlandırıldı.',
       });
     });
   });

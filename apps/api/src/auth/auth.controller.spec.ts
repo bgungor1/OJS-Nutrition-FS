@@ -16,6 +16,8 @@ describe('AuthController', () => {
     register: jest.Mock;
     login: jest.Mock;
     refreshToken: jest.Mock;
+    logout: jest.Mock;
+    revokeAllSessions: jest.Mock;
   };
   let googleAuthService: {
     validateOrCreateGoogleUser: jest.Mock;
@@ -31,6 +33,8 @@ describe('AuthController', () => {
       register: jest.fn(),
       login: jest.fn(),
       refreshToken: jest.fn(),
+      logout: jest.fn(),
+      revokeAllSessions: jest.fn(),
     };
 
     googleAuthService = {
@@ -87,6 +91,46 @@ describe('AuthController', () => {
 
       expect(authService.refreshToken).toHaveBeenCalledWith(dto, '127.0.0.1');
       expect(result).toEqual(mockTokens);
+    });
+  });
+
+  describe('logout', () => {
+    it('logout isteğini dto ve IP ile authService.logout metoduna iletmeli', async () => {
+      const dto = {
+        refresh: 'refresh-token-xyz',
+        refreshToken: 'refresh-token-xyz',
+      };
+      const req = { ip: '127.0.0.1' } as Request;
+      const expected = { message: 'Oturum başarıyla sonlandırıldı.' };
+      authService.logout.mockResolvedValue(expected);
+
+      const result = await controller.logout(dto, req);
+
+      expect(authService.logout).toHaveBeenCalledWith(dto, '127.0.0.1');
+      expect(result).toEqual(expected);
+    });
+  });
+
+  describe('revokeAll', () => {
+    it('revoke-all isteğini authenticated user id ve IP ile authService.revokeAllSessions metoduna iletmeli', async () => {
+      const user = {
+        id: 'user-uuid-1',
+        email: 'user@example.com',
+        role: 'customer' as const,
+      };
+      const req = { ip: '127.0.0.1' } as Request;
+      const expected = {
+        message: 'Tüm aktif oturumlar başarıyla sonlandırıldı.',
+      };
+      authService.revokeAllSessions.mockResolvedValue(expected);
+
+      const result = await controller.revokeAll(user, req);
+
+      expect(authService.revokeAllSessions).toHaveBeenCalledWith(
+        'user-uuid-1',
+        '127.0.0.1',
+      );
+      expect(result).toEqual(expected);
     });
   });
 

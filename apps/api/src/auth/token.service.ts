@@ -151,4 +151,91 @@ export class TokenService {
 
     return tokens;
   }
+
+  async revokeRefreshToken(
+    refreshTokenStr: string,
+    ipAddress?: string,
+  ): Promise<void> {
+    if (!refreshTokenStr || typeof refreshTokenStr !== 'string') {
+      throw new UnauthorizedException('Geçersiz yenileme anahtarı.');
+    }
+
+    const tokenHash = this.hashToken(refreshTokenStr);
+    const tokenRecord = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+    });
+
+    if (!tokenRecord) {
+      this.logger.warn(
+        `Veritabanında bulunamayan token için logout denemesi - IP: ${ipAddress ?? 'bilinmiyor'}`,
+      );
+      throw new UnauthorizedException('Geçersiz yenileme anahtarı.');
+    }
+
+    if (tokenRecord.revokedAt === null) {
+      await this.prisma.refreshToken.update({
+        where: { id: tokenRecord.id },
+        data: { revokedAt: new Date() },
+      });
+    }
+
+    this.logger.log(
+      `Oturum başarıyla sonlandırıldı: userId=${tokenRecord.userId} - IP: ${ipAddress ?? 'bilinmiyor'}`,
+    );
+
+    this.auditService?.info(AuditEvent.AUTH_LOGOUT, {
+      ip: ipAddress,
+      userId: tokenRecord.userId,
+      resourceId: tokenRecord.id,
+    });
+  }
+
+  async revokeAllUserTokens(
+    userId: string,
+    ipAddress?: string,
+    reason?: string,
+  ): Promise<number> {
+    const result = await this.prisma.refreshToken.updateMany({
+      where: {
+        userId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+
+    this.logger.log(
+      `Kullanıcının tüm aktif oturumları iptal edildi: userId=${userId} (${result.count} oturum) - IP: ${ipAddress ?? 'bilinmiyor'}`,
+    );
+
+    this.auditService?.info(AuditEvent.AUTH_REVOKE_ALL, {
+      ip: ipAddress,
+      userId,
+      details: {
+        revokedCount: result.count,
+        reason: reason ?? 'USER_REVOKE_ALL',
+      },
+    });
+
+    return result.count;
+  }
+
+  async purgeExpiredTokens(): Promise<number> {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const result = await this.prisma.refreshToken.deleteMany({
+      where: {
+        OR: [
+          { expiresAt: { lt: new Date() } },
+          { revokedAt: { not: null, lt: thirtyDaysAgo } },
+        ],
+      },
+    });
+
+    this.logger.log(
+      `Süresi dolmuş/eski token kayıtları temizlendi: ${result.count} adet silindi.`,
+    );
+
+    return result.count;
+  }
 }
