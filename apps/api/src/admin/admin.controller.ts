@@ -11,12 +11,14 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { ErrorResponseDto } from '../common/dto/error-response.dto';
 import { AuthenticatedUser } from '../common/types/authenticated-user';
 import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminService } from './admin.service';
@@ -53,10 +55,12 @@ export class AdminController {
   @ApiResponse({
     status: 401,
     description: 'Yetkisiz erişim (token eksik veya geçersiz).',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Erişim engellendi (admin rolü gereklidir).',
+    type: ErrorResponseDto,
   })
   async getDashboardStats(): Promise<DashboardStatsResponseDto> {
     return this.dashboardService.getDashboardStats();
@@ -76,10 +80,12 @@ export class AdminController {
   @ApiResponse({
     status: 401,
     description: 'Yetkisiz erişim (token eksik veya geçersiz).',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Erişim engellendi (admin rolü gereklidir).',
+    type: ErrorResponseDto,
   })
   async listUsers(
     @Query() query: AdminUsersQueryDto,
@@ -93,14 +99,30 @@ export class AdminController {
     description:
       'Belirtilen kullanıcının detay profilini, kayıtlı adreslerini ve geçmiş sipariş özetini döner.',
   })
+  @ApiParam({
+    name: 'id',
+    description: 'Kullanıcı UUID',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
   @ApiResponse({
     status: 200,
     description: 'Kullanıcı detayı başarıyla getirildi.',
     type: AdminUserDetailResponseDto,
   })
   @ApiResponse({
+    status: 401,
+    description: 'Yetkisiz erişim (token eksik veya geçersiz).',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Erişim engellendi (admin rolü gereklidir).',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
     status: 404,
     description: 'Kullanıcı bulunamadı.',
+    type: ErrorResponseDto,
   })
   async getUserById(
     @Param('id', ParseUUIDPipe) id: string,
@@ -114,6 +136,11 @@ export class AdminController {
     description:
       'Kullanıcıya yeni bir sistem rolü (customer/admin) atar. Kendi yetkisini kaldırma (self-lockout) ve sistemdeki son admini düşürme (last-admin) korumalıdır.',
   })
+  @ApiParam({
+    name: 'id',
+    description: 'Kullanıcı UUID',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
   @ApiResponse({
     status: 200,
     description: 'Kullanıcı rolü başarıyla güncellendi.',
@@ -123,10 +150,22 @@ export class AdminController {
     status: 400,
     description:
       'Geçersiz işlem (kendi adminliğini kaldırma veya son admini silme girişimi).',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Yetkisiz erişim (token eksik veya geçersiz).',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Erişim engellendi (admin rolü gereklidir).',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Kullanıcı bulunamadı.',
+    type: ErrorResponseDto,
   })
   async updateUserRole(
     @Param('id', ParseUUIDPipe) id: string,

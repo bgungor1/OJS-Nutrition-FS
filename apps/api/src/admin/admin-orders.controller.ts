@@ -11,12 +11,14 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { ErrorResponseDto } from '../common/dto/error-response.dto';
 import { AuthenticatedUser } from '../common/types/authenticated-user';
 import { AdminOrdersService } from './admin-orders.service';
 import {
@@ -47,10 +49,12 @@ export class AdminOrdersController {
   @ApiResponse({
     status: 401,
     description: 'Yetkisiz erişim (token eksik veya geçersiz).',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Erişim engellendi (admin rolü gereklidir).',
+    type: ErrorResponseDto,
   })
   async listOrders(
     @Query() query: AdminOrdersQueryDto,
@@ -64,14 +68,30 @@ export class AdminOrdersController {
     description:
       'Belirtilen siparişin müşteri bilgileri, ürün kalemleri, ödeme ve adres detaylarını döner.',
   })
+  @ApiParam({
+    name: 'id',
+    description: 'Sipariş UUID',
+    example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
+  })
   @ApiResponse({
     status: 200,
     description: 'Sipariş detayı başarıyla getirildi.',
     type: AdminOrderDetailResponseDto,
   })
   @ApiResponse({
+    status: 401,
+    description: 'Yetkisiz erişim (token eksik veya geçersiz).',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Erişim engellendi (admin rolü gereklidir).',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
     status: 404,
     description: 'Sipariş bulunamadı.',
+    type: ErrorResponseDto,
   })
   async getOrderById(
     @Param('id', ParseUUIDPipe) id: string,
@@ -85,6 +105,11 @@ export class AdminOrdersController {
     description:
       'Siparişin durumunu günceller. İptal veya iade durumunda ürün stoklarını otomatik geri yükler ve denetim günlüğü kaydeder.',
   })
+  @ApiParam({
+    name: 'id',
+    description: 'Sipariş UUID',
+    example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
+  })
   @ApiResponse({
     status: 200,
     description: 'Sipariş durumu başarıyla güncellendi.',
@@ -93,10 +118,22 @@ export class AdminOrdersController {
   @ApiResponse({
     status: 400,
     description: 'Geçersiz sipariş durumu geçişi.',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Yetkisiz erişim (token eksik veya geçersiz).',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Erişim engellendi (admin rolü gereklidir).',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Sipariş bulunamadı.',
+    type: ErrorResponseDto,
   })
   async updateOrderStatus(
     @Param('id', ParseUUIDPipe) id: string,

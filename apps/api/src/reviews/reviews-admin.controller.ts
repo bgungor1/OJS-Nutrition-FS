@@ -18,7 +18,7 @@ import { ErrorResponseDto } from '../common/dto';
 import { DeletedIdResponseDto } from './dto';
 import { ReviewsService } from './reviews.service';
 
-@ApiTags('reviews')
+@ApiTags('admin', 'reviews')
 @ApiBearerAuth()
 @Roles(Role.admin)
 @Controller('reviews')
