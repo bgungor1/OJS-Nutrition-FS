@@ -9,13 +9,24 @@ export class ContactQueryDto {
     example: false,
   })
   @IsOptional()
-  @Transform(({ value }: { value: unknown }) => {
-    if (value === 'true' || value === true || value === 1 || value === '1')
-      return true;
-    if (value === 'false' || value === false || value === 0 || value === '0')
-      return false;
-    return value;
-  })
+  @Transform(
+    ({
+      obj,
+      key,
+      value,
+    }: {
+      obj: Record<string, unknown>;
+      key: string;
+      value: unknown;
+    }) => {
+      const raw = obj && obj[key] !== undefined ? obj[key] : value;
+      if (raw === 'false' || raw === false || raw === 0 || raw === '0')
+        return false;
+      if (raw === 'true' || raw === true || raw === 1 || raw === '1')
+        return true;
+      return raw;
+    },
+  )
   @IsBoolean({ message: 'handled alanı boolean (true/false) olmalıdır.' })
   handled?: boolean;
 

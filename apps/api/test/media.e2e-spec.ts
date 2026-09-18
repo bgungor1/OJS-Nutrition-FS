@@ -145,8 +145,8 @@ describe('Media E2E Test Suite (POST /api/v1/media/upload & Static Serving)', ()
     }
   });
 
-  describe('Yetkilendirme ve Güvenlik Sınırları', () => {
-    it('Token olmadan istek atıldığında 401 Unauthorized dönmeli', async () => {
+  describe('Authorization and Security Boundaries', () => {
+    it('should return 401 Unauthorized when request has no token', async () => {
       const res: SupertestResponse = await request(server)
         .post('/api/v1/media/upload')
         .attach('file', validJpegBuffer, 'test.jpg');
@@ -156,7 +156,7 @@ describe('Media E2E Test Suite (POST /api/v1/media/upload & Static Serving)', ()
       expect(body.status).toBe('error');
     });
 
-    it('Normal müşteri (customer rolü) ile istek atıldığında 403 Forbidden dönmeli', async () => {
+    it('should return 403 Forbidden when requested by customer role', async () => {
       const res: SupertestResponse = await request(server)
         .post('/api/v1/media/upload')
         .set('Authorization', `Bearer ${customerAccessToken}`)
@@ -168,8 +168,8 @@ describe('Media E2E Test Suite (POST /api/v1/media/upload & Static Serving)', ()
     });
   });
 
-  describe('Girdi Doğrulama ve Dosya Güvenliği', () => {
-    it('Dosya gövdesi olmadan istek atıldığında 400 Bad Request dönmeli', async () => {
+  describe('Input Validation and File Security', () => {
+    it('should return 400 Bad Request when no file is attached in request', async () => {
       const res: SupertestResponse = await request(server)
         .post('/api/v1/media/upload')
         .set('Authorization', `Bearer ${adminAccessToken}`);
@@ -180,7 +180,7 @@ describe('Media E2E Test Suite (POST /api/v1/media/upload & Static Serving)', ()
       expect(body.message).toContain('Yüklenecek dosya bulunamadı');
     });
 
-    it('SVG dosyası yüklendiğinde 400 Bad Request ile reddedilmeli', async () => {
+    it('should reject SVG file upload with 400 Bad Request', async () => {
       const svgBuffer = Buffer.from(
         '<svg xmlns="http://www.w3.org/2000/svg"><script>alert("xss")</script></svg>',
       );
@@ -196,7 +196,7 @@ describe('Media E2E Test Suite (POST /api/v1/media/upload & Static Serving)', ()
       expect(body.message).toContain('SVG formatındaki dosyalar');
     });
 
-    it('Sahte resim (uzantısı jpg ama içeriği düz metin) 400 Bad Request ile reddedilmeli', async () => {
+    it('should reject fake image with 400 Bad Request (jpg extension but plain text content)', async () => {
       const fakeBuffer = Buffer.from('Plain text content that is not an image');
 
       const res: SupertestResponse = await request(server)
@@ -209,12 +209,26 @@ describe('Media E2E Test Suite (POST /api/v1/media/upload & Static Serving)', ()
       expect(body.status).toBe('error');
       expect(body.message).toContain('Geçersiz dosya formatı');
     });
+
+    it('should reject file upload exceeding 5MB limit with 400 or 413', async () => {
+      const largeBuffer = Buffer.alloc(5 * 1024 * 1024 + 1024);
+      validJpegBuffer.copy(largeBuffer, 0, 0, validJpegBuffer.length);
+
+      const res: SupertestResponse = await request(server)
+        .post('/api/v1/media/upload')
+        .set('Authorization', `Bearer ${adminAccessToken}`)
+        .attach('file', largeBuffer, 'huge.jpg');
+
+      expect([400, 413]).toContain(res.status);
+      const body = res.body as ApiErrorResponse;
+      expect(body.status).toBe('error');
+    });
   });
 
-  describe('Başarılı Dosya Yükleme ve Statik Sunum', () => {
+  describe('Successful File Upload and Static Serving', () => {
     let uploadedFilename: string;
 
-    it('Geçerli JPEG yüklendiğinde 201 Created ve doğru yanıt zarfı dönmeli', async () => {
+    it('should return 201 Created and correct response envelope when valid JPEG is uploaded', async () => {
       const res: SupertestResponse = await request(server)
         .post('/api/v1/media/upload')
         .set('Authorization', `Bearer ${adminAccessToken}`)
@@ -237,7 +251,7 @@ describe('Media E2E Test Suite (POST /api/v1/media/upload & Static Serving)', ()
       uploadedFilename = media.filename;
     });
 
-    it('Geçerli PNG yüklendiğinde 201 Created dönmeli', async () => {
+    it('should return 201 Created when valid PNG is uploaded', async () => {
       const res: SupertestResponse = await request(server)
         .post('/api/v1/media/upload')
         .set('Authorization', `Bearer ${adminAccessToken}`)
@@ -250,7 +264,7 @@ describe('Media E2E Test Suite (POST /api/v1/media/upload & Static Serving)', ()
       expect(body.data.filename.endsWith('.png')).toBe(true);
     });
 
-    it('Yüklenen dosya ServeStaticModule üzerinden GET /media/uploads/... ile erişilebilir olmalı', async () => {
+    it('should serve uploaded file statically via GET /media/uploads/:filename', async () => {
       expect(uploadedFilename).toBeDefined();
 
       const res: SupertestResponse = await request(server).get(
