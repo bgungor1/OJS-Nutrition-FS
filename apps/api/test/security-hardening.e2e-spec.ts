@@ -1,5 +1,7 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import express from 'express';
+import helmet from 'helmet';
 import request, { Response as SupertestResponse } from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -16,7 +18,7 @@ interface ApiErrorResponse {
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-describe('Security Hardening E2E (Faz 4.5)', () => {
+describe('Security Hardening E2E (Phase 4.5)', () => {
   let app: INestApplication;
   let server: Parameters<typeof request>[0];
 
@@ -34,6 +36,13 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
     order: {
       findMany: jest.fn().mockResolvedValue([]),
       count: jest.fn().mockResolvedValue(0),
+    },
+    product: {
+      findMany: jest.fn().mockResolvedValue([]),
+      count: jest.fn().mockResolvedValue(0),
+    },
+    user: {
+      findUnique: jest.fn().mockResolvedValue(null),
     },
     refreshToken: {
       findUnique: jest.fn().mockResolvedValue(null),
@@ -54,6 +63,9 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api/v1');
+    app.use(helmet());
+    app.use(express.json({ limit: '50kb' }));
+    app.use(express.urlencoded({ extended: true, limit: '50kb' }));
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -72,7 +84,7 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
   });
 
   describe('X-Correlation-ID Observability', () => {
-    it('istemci X-Correlation-ID gönderirse yanıt başlığında aynı değer dönmeli', async () => {
+    it('should echo the same correlation ID in response header when client sends X-Correlation-ID', async () => {
       const correlationId = 'client-trace-id-abc123';
 
       const res: SupertestResponse = await request(server)
@@ -82,7 +94,7 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
       expect(res.headers[CORRELATION_ID_HEADER]).toBe(correlationId);
     });
 
-    it('istemci X-Correlation-ID göndermezse sunucu UUID üretmeli ve yanıt başlığına eklemeli', async () => {
+    it('should generate a UUID and add it to response headers when client does not send X-Correlation-ID', async () => {
       const res: SupertestResponse =
         await request(server).get('/api/v1/products');
 
@@ -92,7 +104,7 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
       expect(returnedId).toMatch(UUID_REGEX);
     });
 
-    it('X-Request-ID varsa X-Correlation-ID olarak echo edilmeli (eski istemci uyumu)', async () => {
+    it('should echo X-Request-ID as X-Correlation-ID for legacy client compatibility', async () => {
       const requestId = 'legacy-req-id-xyz';
 
       const res: SupertestResponse = await request(server)
@@ -102,7 +114,7 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
       expect(res.headers[CORRELATION_ID_HEADER]).toBe(requestId);
     });
 
-    it('her istek için farklı UUID üretilmeli (çakışma olmamalı)', async () => {
+    it('should generate unique UUIDs for each request with no collisions', async () => {
       const [res1, res2] = await Promise.all([
         request(server).get('/api/v1/products'),
         request(server).get('/api/v1/products'),
@@ -117,8 +129,8 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
     });
   });
 
-  describe('Hata zarfında correlationId ve statusCode', () => {
-    it('hata yanıtı statusCode içermeli', async () => {
+  describe('CorrelationId and StatusCode in Error Envelope', () => {
+    it('should include statusCode in error response envelope', async () => {
       const res: SupertestResponse = await request(server)
         .get('/api/v1/nonexistent-route')
         .expect(404);
@@ -128,7 +140,7 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
       expect(body.statusCode).toBe(404);
     });
 
-    it('istemci X-Correlation-ID gönderirse hata zarfında correlationId aynı değer olmalı', async () => {
+    it('should match client X-Correlation-ID in error response body', async () => {
       const correlationId = 'error-trace-test-456';
 
       const res: SupertestResponse = await request(server)
@@ -143,7 +155,7 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
       expect(body.correlationId).toBe(correlationId);
     });
 
-    it('validation hatası (400) zarfında statusCode 400 olmalı', async () => {
+    it('should include statusCode 400 in validation error envelope', async () => {
       const res: SupertestResponse = await request(server)
         .post('/api/v1/contact')
         .send({ name: '' })
@@ -155,14 +167,14 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
     });
   });
 
-  describe('Rate Limiting — 429 kurumsal hata zarfı', () => {
+  describe('Rate Limiting — 429 Enterprise Error Envelope', () => {
     const contactPayload = {
       name: 'Test Kullanıcı',
       email: 'test@example.com',
       message: 'Test iletişim mesajı.',
     };
 
-    it('hız sınırı aşıldığında 429 ve standart hata zarfı dönmeli', async () => {
+    it('should return 429 and standard error envelope when rate limit is exceeded', async () => {
       for (let i = 0; i < 3; i++) {
         await request(server).post('/api/v1/contact').send(contactPayload);
       }
@@ -180,7 +192,7 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
       );
     });
 
-    it('429 yanıtında X-Correlation-ID başlığı dönmeli', async () => {
+    it('should include X-Correlation-ID header on 429 responses', async () => {
       const correlationId = 'rate-limit-test-id';
 
       for (let i = 0; i < 3; i++) {
@@ -197,8 +209,8 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
     });
   });
 
-  describe('Helmet Güvenlik Başlıkları', () => {
-    it('X-Frame-Options başlığı SAMEORIGIN veya DENY olarak set edilmeli', async () => {
+  describe('Helmet Security Headers', () => {
+    it('should set X-Frame-Options header to SAMEORIGIN or DENY', async () => {
       const res: SupertestResponse =
         await request(server).get('/api/v1/products');
 
@@ -208,7 +220,7 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
       expect(['SAMEORIGIN', 'DENY']).toContain(xFrameOptions?.toUpperCase());
     });
 
-    it('X-Content-Type-Options başlığı nosniff olarak set edilmeli', async () => {
+    it('should set X-Content-Type-Options header to nosniff', async () => {
       const res: SupertestResponse =
         await request(server).get('/api/v1/products');
 
@@ -216,8 +228,8 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
     });
   });
 
-  describe('JSON Payload Boyutu Sınırı (DoS Koruması)', () => {
-    it('50kb üstü JSON payload 413 döndürmeli', async () => {
+  describe('JSON Payload Size Limit (DoS Protection)', () => {
+    it('should return 413 Payload Too Large when JSON payload exceeds 50kb', async () => {
       const largePayload = {
         name: 'A'.repeat(61_440),
         email: 'test@example.com',
@@ -230,7 +242,7 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
         .expect(413);
     });
 
-    it('50kb altı payload normal şekilde işlenmeli', async () => {
+    it('should process payloads under 50kb normally', async () => {
       const normalPayload = {
         name: 'Test Kullanıcı',
         email: 'test@example.com',
@@ -245,8 +257,8 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
     });
   });
 
-  describe('OrderQueryDto — Query Injection Koruması', () => {
-    it('geçersiz status değeri (SQL-inject girişi) 400 veya 401 dönmeli (413 olmamalı)', async () => {
+  describe('OrderQueryDto — Query Injection Protection', () => {
+    it('should return 400 or 401 for SQL-injection style status values (not 413)', async () => {
       const res: SupertestResponse = await request(server)
         .get('/api/v1/orders')
         .query({ status: "'; DROP TABLE orders; --" });
@@ -254,7 +266,7 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
       expect([400, 401]).toContain(res.status);
     });
 
-    it('geçersiz limit değeri (>100) 400 veya 401 dönmeli', async () => {
+    it('should return 400 or 401 for invalid limit value (>100)', async () => {
       const res: SupertestResponse = await request(server)
         .get('/api/v1/orders')
         .query({ limit: 9999 });
@@ -262,7 +274,7 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
       expect([400, 401]).toContain(res.status);
     });
 
-    it('negatif offset 400 veya 401 dönmeli', async () => {
+    it('should return 400 or 401 for negative offset value', async () => {
       const res: SupertestResponse = await request(server)
         .get('/api/v1/orders')
         .query({ offset: -1 });
@@ -271,8 +283,8 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
     });
   });
 
-  describe('Correlation ID — Uçtan uca iz takibi', () => {
-    it("X-Correlation-ID başarılı yanıtta response header'da mevcut olmalı", async () => {
+  describe('Correlation ID — End-to-End Trace Tracking', () => {
+    it('should present X-Correlation-ID in response header on successful responses', async () => {
       const traceId = 'e2e-trace-success-001';
 
       const res: SupertestResponse = await request(server)
@@ -282,7 +294,7 @@ describe('Security Hardening E2E (Faz 4.5)', () => {
       expect(res.headers[CORRELATION_ID_HEADER]).toBe(traceId);
     });
 
-    it("hata yanıtında hem header hem body'de correlationId olmalı", async () => {
+    it('should present correlationId in both header and body on error responses', async () => {
       const traceId = 'e2e-trace-error-002';
 
       const res: SupertestResponse = await request(server)

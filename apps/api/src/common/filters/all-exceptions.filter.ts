@@ -38,10 +38,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const status: HttpStatus =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status: HttpStatus = this.resolveHttpStatus(exception);
 
     const correlationId =
       (request as Request & { correlationId?: string }).correlationId ??
@@ -72,6 +69,29 @@ export class AllExceptionsFilter implements ExceptionFilter {
     response.status(status).json(body);
   }
 
+  private resolveHttpStatus(exception: unknown): HttpStatus {
+    if (exception instanceof HttpException) {
+      return exception.getStatus();
+    }
+    if (
+      exception &&
+      typeof exception === 'object' &&
+      'statusCode' in exception &&
+      typeof (exception as { statusCode: unknown }).statusCode === 'number'
+    ) {
+      return (exception as { statusCode: number }).statusCode;
+    }
+    if (
+      exception &&
+      typeof exception === 'object' &&
+      'status' in exception &&
+      typeof (exception as { status: unknown }).status === 'number'
+    ) {
+      return (exception as { status: number }).status;
+    }
+    return HttpStatus.INTERNAL_SERVER_ERROR;
+  }
+
   private buildBody(
     exception: unknown,
     status: HttpStatus,
@@ -88,6 +108,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ...base,
         message:
           'Çok fazla istek gönderildi. Lütfen bir süre sonra tekrar deneyiniz.',
+      };
+    }
+
+    if (status === HttpStatus.PAYLOAD_TOO_LARGE) {
+      return {
+        ...base,
+        message: 'İstek boyutu sınırı aşıldı (Payload Too Large).',
       };
     }
 
