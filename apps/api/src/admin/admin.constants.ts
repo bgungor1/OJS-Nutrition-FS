@@ -3,3 +3,10 @@ export const ADMIN_PAGINATION = {
   MAX_LIMIT: 100,
   DEFAULT_OFFSET: 0,
 } as const;
+
+export const ADMIN_DASHBOARD = {
+  LOW_STOCK_THRESHOLD: 10,
+  RECENT_ORDERS_LIMIT: 10,
+  TOP_PRODUCTS_LIMIT: 5,
+  SALES_TREND_DAYS: 30,
+} as const;

@@ -18,12 +18,14 @@ import { Role } from '@prisma/client';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { AuthenticatedUser } from '../common/types/authenticated-user';
+import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminService } from './admin.service';
 import {
   AdminUserDetailResponseDto,
   AdminUserListItemDto,
   AdminUsersPaginatedResponseDto,
   AdminUsersQueryDto,
+  DashboardStatsResponseDto,
   UpdateUserRoleDto,
 } from './dto';
 
@@ -32,7 +34,33 @@ import {
 @Roles(Role.admin)
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly dashboardService: AdminDashboardService,
+  ) {}
+
+  @Get('dashboard/stats')
+  @ApiOperation({
+    summary: 'Dashboard analitik ve istatistiklerini getir',
+    description:
+      'Admin paneli için özet metrikleri, ciro, statü dağılımı, son siparişler, en çok satanlar, kritik stok uyarıları ve 30 günlük satış trendini döner.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard istatistikleri başarıyla getirildi.',
+    type: DashboardStatsResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Yetkisiz erişim (token eksik veya geçersiz).',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Erişim engellendi (admin rolü gereklidir).',
+  })
+  async getDashboardStats(): Promise<DashboardStatsResponseDto> {
+    return this.dashboardService.getDashboardStats();
+  }
 
   @Get('users')
   @ApiOperation({
