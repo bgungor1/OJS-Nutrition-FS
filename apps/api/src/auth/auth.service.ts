@@ -3,9 +3,11 @@ import {
   ConflictException,
   Injectable,
   Logger,
+  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { AuditEvent, SecurityAuditService } from '../common/audit';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -24,6 +26,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokenService: TokenService,
+    @Optional() private readonly auditService?: SecurityAuditService,
   ) {}
 
   async register(dto: RegisterDto): Promise<RegisterResponse> {
@@ -67,6 +70,11 @@ export class AuthService {
       `Yeni kullanıcı başarıyla kaydedildi: ${user.email} (${user.id})`,
     );
 
+    this.auditService?.info(AuditEvent.AUTH_REGISTER, {
+      userId: user.id,
+      details: { email: user.email },
+    });
+
     return {
       user,
       message: 'Kayıt başarıyla tamamlandı.',
@@ -82,6 +90,13 @@ export class AuthService {
       this.logger.warn(
         `Başarısız oturum açma denemesi (Kullanıcı bulunamadı/geçersiz sağlayıcı): ${dto.username} - IP: ${ipAddress ?? 'bilinmiyor'}`,
       );
+      this.auditService?.warn(AuditEvent.AUTH_LOGIN_FAILED, {
+        ip: ipAddress,
+        details: {
+          email: dto.username,
+          reason: 'USER_NOT_FOUND_OR_INVALID_PROVIDER',
+        },
+      });
       throw new UnauthorizedException('Geçersiz e-posta veya şifre.');
     }
 
@@ -94,6 +109,11 @@ export class AuthService {
       this.logger.warn(
         `Başarısız oturum açma denemesi (Hatalı şifre): ${dto.username} - IP: ${ipAddress ?? 'bilinmiyor'}`,
       );
+      this.auditService?.warn(AuditEvent.AUTH_LOGIN_FAILED, {
+        ip: ipAddress,
+        userId: user.id,
+        details: { email: dto.username, reason: 'INVALID_PASSWORD' },
+      });
       throw new UnauthorizedException('Geçersiz e-posta veya şifre.');
     }
 
@@ -106,6 +126,12 @@ export class AuthService {
     this.logger.log(
       `Kullanıcı oturum açtı: ${user.email} (${user.id}) - IP: ${ipAddress ?? 'bilinmiyor'}`,
     );
+
+    this.auditService?.info(AuditEvent.AUTH_LOGIN_SUCCESS, {
+      ip: ipAddress,
+      userId: user.id,
+      details: { email: user.email },
+    });
 
     return tokens;
   }

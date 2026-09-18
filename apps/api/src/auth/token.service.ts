@@ -1,7 +1,13 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  Optional,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'node:crypto';
+import { AuditEvent, SecurityAuditService } from '../common/audit';
 import { AppConfig } from '../config/configuration';
 import { PrismaService } from '../prisma/prisma.service';
 import { TokensResponse } from './interfaces/auth-response.interface';
@@ -15,6 +21,7 @@ export class TokenService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService<AppConfig, true>,
+    @Optional() private readonly auditService?: SecurityAuditService,
   ) {}
 
   hashToken(token: string): string {
@@ -101,6 +108,11 @@ export class TokenService {
       this.logger.warn(
         `GÜVENLİK ALARMI: Token Reuse Attack tespit edildi! Kullanıcı (${tokenRecord.userId}) tüm oturumları iptal ediliyor. - IP: ${ipAddress ?? 'bilinmiyor'}`,
       );
+      this.auditService?.alarm(AuditEvent.AUTH_TOKEN_REUSE_DETECTED, {
+        ip: ipAddress,
+        userId: tokenRecord.userId,
+        details: { reason: 'Revoked refresh token presented' },
+      });
       await this.prisma.refreshToken.updateMany({
         where: { userId: tokenRecord.userId },
         data: { revokedAt: new Date() },
@@ -130,6 +142,12 @@ export class TokenService {
     this.logger.log(
       `Token rotasyonu başarıyla gerçekleştirildi: ${tokenRecord.user.email} (${tokenRecord.user.id}) - IP: ${ipAddress ?? 'bilinmiyor'}`,
     );
+
+    this.auditService?.info(AuditEvent.AUTH_TOKEN_ROTATED, {
+      ip: ipAddress,
+      userId: tokenRecord.user.id,
+      details: { email: tokenRecord.user.email },
+    });
 
     return tokens;
   }

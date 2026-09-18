@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as crypto from 'node:crypto';
+import { AuditEvent, SecurityAuditService } from '../common/audit';
 import { PrismaService } from '../prisma/prisma.service';
 import { TokenService } from './token.service';
 import {
@@ -27,6 +28,12 @@ describe('TokenService', () => {
   };
   let configService: {
     get: jest.Mock;
+  };
+  let auditService: {
+    record: jest.Mock;
+    info: jest.Mock;
+    warn: jest.Mock;
+    alarm: jest.Mock;
   };
 
   const mockRefreshTokenDto = createMockRefreshTokenDto();
@@ -65,12 +72,20 @@ describe('TokenService', () => {
       }),
     };
 
+    auditService = {
+      record: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      alarm: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TokenService,
         { provide: PrismaService, useValue: prisma },
         { provide: JwtService, useValue: jwtService },
         { provide: ConfigService, useValue: configService },
+        { provide: SecurityAuditService, useValue: auditService },
       ],
     }).compile();
 
@@ -154,6 +169,13 @@ describe('TokenService', () => {
         access: 'mock-access-token',
         refresh: 'mock-refresh-token',
       });
+      expect(auditService.info).toHaveBeenCalledWith(
+        AuditEvent.AUTH_TOKEN_ROTATED,
+        expect.objectContaining({
+          userId: 'uuid-1234',
+          ip: '127.0.0.1',
+        }),
+      );
     });
 
     it('JWT doğrulaması başarısız olursa UnauthorizedException fırlatmalı', async () => {
@@ -204,6 +226,13 @@ describe('TokenService', () => {
         where: { userId: 'uuid-1234' },
         data: { revokedAt: expect.any(Date) as unknown as Date },
       });
+      expect(auditService.alarm).toHaveBeenCalledWith(
+        AuditEvent.AUTH_TOKEN_REUSE_DETECTED,
+        expect.objectContaining({
+          userId: 'uuid-1234',
+          ip: '127.0.0.1',
+        }),
+      );
       expect(jwtService.signAsync).not.toHaveBeenCalled();
     });
 
