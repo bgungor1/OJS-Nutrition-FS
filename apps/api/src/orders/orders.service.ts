@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
+import { AuditEvent, SecurityAuditService } from '../common/audit';
 import { PrismaService } from '../prisma';
 import { PaymentsService, PaymentSettingsResponse } from '../payments';
 import { PAGINATION } from '../common';
@@ -27,6 +33,7 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paymentsService: PaymentsService,
+    @Optional() private readonly auditService?: SecurityAuditService,
   ) {}
 
   getPaymentSettings(): PaymentSettingsResponse {
@@ -129,6 +136,16 @@ export class OrdersService {
       `[ORDER_CREATED] OrderNo: ${order.orderNo} | User: ${userId} | Total: ${context.totalPrice} TRY | Items: ${context.cartItems.length}`,
     );
 
+    this.auditService?.info(AuditEvent.ORDER_CREATED, {
+      ip: ipAddress,
+      userId,
+      resourceId: order.orderNo,
+      details: {
+        totalPrice: Number(context.totalPrice),
+        itemsCount: context.cartItems.length,
+      },
+    });
+
     return OrdersMapper.toOrderDetailResponse(order);
   }
 
@@ -142,6 +159,27 @@ export class OrdersService {
     this.logger.warn(
       `[ORDER_STATUS_UPDATED] OrderNo: ${order.orderNo} | Status: ${order.status} -> ${dto.status}${isRestock ? ` | Restocked: ${order.items.length} items` : ''}`,
     );
+
+    if (isRestock) {
+      this.auditService?.warn(AuditEvent.ORDER_CANCELLED_RESTOCKED, {
+        resourceId: order.orderNo,
+        details: {
+          orderId,
+          previousStatus: order.status,
+          newStatus: dto.status,
+          restockedItems: order.items.length,
+        },
+      });
+    } else {
+      this.auditService?.info(AuditEvent.ORDER_STATUS_CHANGED, {
+        resourceId: order.orderNo,
+        details: {
+          orderId,
+          previousStatus: order.status,
+          newStatus: dto.status,
+        },
+      });
+    }
 
     return OrdersMapper.toOrderDetailResponse(updatedOrder);
   }

@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { OrderStatus } from '@prisma/client';
+import { AuditEvent, SecurityAuditService } from '../common/audit';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentsService } from '../payments/payments.service';
 import { OrdersService } from './orders.service';
@@ -24,6 +25,13 @@ describe('OrdersService - Order Status Flow', () => {
     order: { update: jest.Mock };
   };
 
+  let auditService: {
+    info: jest.Mock;
+    warn: jest.Mock;
+    alarm: jest.Mock;
+    record: jest.Mock;
+  };
+
   beforeEach(async () => {
     txMock = {
       productVariant: { update: jest.fn() },
@@ -39,11 +47,19 @@ describe('OrdersService - Order Status Flow', () => {
       ),
     };
 
+    auditService = {
+      info: jest.fn(),
+      warn: jest.fn(),
+      alarm: jest.fn(),
+      record: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrdersService,
         { provide: PrismaService, useValue: prismaService },
         { provide: PaymentsService, useValue: {} },
+        { provide: SecurityAuditService, useValue: auditService },
       ],
     }).compile();
 
@@ -111,6 +127,17 @@ describe('OrdersService - Order Status Flow', () => {
         include: { items: true, payment: true },
       });
       expect(result.status).toBe(OrderStatus.processing);
+      expect(auditService.info).toHaveBeenCalledWith(
+        AuditEvent.ORDER_STATUS_CHANGED,
+        expect.objectContaining({
+          resourceId: mockOrderDetailWithItems.orderNo,
+          details: {
+            orderId,
+            previousStatus: OrderStatus.pending,
+            newStatus: OrderStatus.processing,
+          },
+        }),
+      );
     });
 
     it('iptal durumuna geçişte (processing -> cancelled) kalemlerin stoğunu atomik artırmalı ve durumu güncellemelidir', async () => {
@@ -140,6 +167,18 @@ describe('OrdersService - Order Status Flow', () => {
         include: { items: true, payment: true },
       });
       expect(result.status).toBe(OrderStatus.cancelled);
+      expect(auditService.warn).toHaveBeenCalledWith(
+        AuditEvent.ORDER_CANCELLED_RESTOCKED,
+        expect.objectContaining({
+          resourceId: mockOrderDetailWithItems.orderNo,
+          details: {
+            orderId,
+            previousStatus: OrderStatus.processing,
+            newStatus: OrderStatus.cancelled,
+            restockedItems: 1,
+          },
+        }),
+      );
     });
 
     it('iade durumuna geçişte (delivered -> returned) kalemlerin stoğunu atomik artırmalı ve durumu güncellemelidir', async () => {

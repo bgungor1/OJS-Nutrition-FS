@@ -2,14 +2,19 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import { AuditEvent, SecurityAuditService } from '../../common/audit';
 import { PaymentsService } from '../payments.service';
 
 @Injectable()
 export class IyzicoWebhookGuard implements CanActivate {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    private readonly paymentsService: PaymentsService,
+    @Optional() private readonly auditService?: SecurityAuditService,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
@@ -21,6 +26,10 @@ export class IyzicoWebhookGuard implements CanActivate {
     );
 
     if (!signature) {
+      this.auditService?.alarm(AuditEvent.PAYMENT_WEBHOOK_HMAC_INVALID, {
+        ip: request.ip,
+        details: { reason: 'Missing webhook signature header' },
+      });
       throw new UnauthorizedException('Missing payment webhook signature.');
     }
 
@@ -38,6 +47,10 @@ export class IyzicoWebhookGuard implements CanActivate {
     );
 
     if (!isValid) {
+      this.auditService?.alarm(AuditEvent.PAYMENT_WEBHOOK_HMAC_INVALID, {
+        ip: request.ip,
+        details: { reason: 'Invalid HMAC signature' },
+      });
       throw new UnauthorizedException('Invalid payment webhook signature.');
     }
 
