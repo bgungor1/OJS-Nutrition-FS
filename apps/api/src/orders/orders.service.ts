@@ -73,10 +73,13 @@ export class OrdersService {
   ): Promise<PaginatedOrdersResponse> {
     const limit = query?.limit ?? PAGINATION.DEFAULT_LIMIT;
     const offset = query?.offset ?? PAGINATION.DEFAULT_OFFSET;
+    const statusFilter = query?.status ? { status: query.status } : {};
+
+    const where = { userId, ...statusFilter };
 
     const [orders, count] = await Promise.all([
       this.prisma.order.findMany({
-        where: { userId },
+        where,
         orderBy: { createdAt: 'desc' },
         skip: offset,
         take: limit,
@@ -85,9 +88,7 @@ export class OrdersService {
           payment: true,
         },
       }),
-      this.prisma.order.count({
-        where: { userId },
-      }),
+      this.prisma.order.count({ where }),
     ]);
 
     return OrdersMapper.toPaginatedOrdersResponse(orders, count);

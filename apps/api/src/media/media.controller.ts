@@ -28,7 +28,7 @@ import { MediaService } from './media.service';
 @Roles('admin')
 @Controller('media')
 export class MediaController {
-  constructor(private readonly mediaService: MediaService) { }
+  constructor(private readonly mediaService: MediaService) {}
 
   @Post('upload')
   @ApiOperation({

@@ -8,7 +8,8 @@ export const PAGINATION = {
   DEFAULT_OFFSET: 0,
 } as const;
 
-/** Misafir sepeti için HttpOnly cookie adı — bkz. BACKEND_PLAN §5.5. */
 export const GUEST_CART_COOKIE = 'guest_cart_id';
 
 export const REQUEST_ID_HEADER = 'x-request-id';
+
+export const CORRELATION_ID_HEADER = 'x-correlation-id';

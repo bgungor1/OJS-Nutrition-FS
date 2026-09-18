@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -10,6 +10,7 @@ import { PrismaModule } from './prisma';
 
 import {
   AllExceptionsFilter,
+  CorrelationIdMiddleware,
   ResponseInterceptor,
   JwtAuthGuard,
   RolesGuard,
@@ -85,4 +86,13 @@ import { AdminModule } from './admin';
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  /**
+   * CorrelationIdMiddleware tüm route'lara global olarak uygulanır.
+   * Her istek X-Correlation-ID başlığı alır/üretir; hata zarflarına ve loglara eklenir.
+   * Bkz. BACKEND_PLAN Faz 4.5 — Observability.
+   */
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(CorrelationIdMiddleware).forRoutes('*');
+  }
+}
