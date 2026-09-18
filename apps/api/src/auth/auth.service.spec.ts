@@ -6,6 +6,7 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthProvider } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { AuditEvent, SecurityAuditService } from '../common/audit';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 import { TokenService } from './token.service';
@@ -29,6 +30,12 @@ describe('AuthService', () => {
   let tokenService: {
     generateTokens: jest.Mock;
     rotateRefreshToken: jest.Mock;
+  };
+  let auditService: {
+    record: jest.Mock;
+    info: jest.Mock;
+    warn: jest.Mock;
+    alarm: jest.Mock;
   };
 
   const mockRegisterDto = createMockRegisterDto();
@@ -55,11 +62,19 @@ describe('AuthService', () => {
       }),
     };
 
+    auditService = {
+      record: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      alarm: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: PrismaService, useValue: prisma },
         { provide: TokenService, useValue: tokenService },
+        { provide: SecurityAuditService, useValue: auditService },
       ],
     }).compile();
 
@@ -160,6 +175,10 @@ describe('AuthService', () => {
       expect(
         (result.user as unknown as Record<string, unknown>).passwordHash,
       ).toBeUndefined();
+      expect(auditService.info).toHaveBeenCalledWith(
+        AuditEvent.AUTH_REGISTER,
+        expect.objectContaining({ userId: createdUser.id }),
+      );
     });
   });
 
@@ -187,6 +206,13 @@ describe('AuthService', () => {
         access: 'mock-access-token',
         refresh: 'mock-refresh-token',
       });
+      expect(auditService.info).toHaveBeenCalledWith(
+        AuditEvent.AUTH_LOGIN_SUCCESS,
+        expect.objectContaining({
+          userId: mockUser.id,
+          ip: '127.0.0.1',
+        }),
+      );
     });
 
     it('kullanıcı bulunamadığında genel UnauthorizedException fırlatmalı (user enumeration engeli)', async () => {
@@ -200,6 +226,10 @@ describe('AuthService', () => {
       );
 
       expect(tokenService.generateTokens).not.toHaveBeenCalled();
+      expect(auditService.warn).toHaveBeenCalledWith(
+        AuditEvent.AUTH_LOGIN_FAILED,
+        expect.objectContaining({ ip: '127.0.0.1' }),
+      );
     });
 
     it('kullanıcı sağlayıcısı local değilse genel UnauthorizedException fırlatmalı', async () => {

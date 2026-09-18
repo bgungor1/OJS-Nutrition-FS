@@ -1,6 +1,7 @@
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from '@prisma/client';
+import { AuditEvent, SecurityAuditService } from '../audit';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { RolesGuard } from './roles.guard';
 
@@ -9,12 +10,20 @@ describe('RolesGuard', () => {
   let mockReflector: {
     getAllAndOverride: jest.Mock;
   };
+  let mockAuditService: {
+    warn: jest.Mock;
+    info: jest.Mock;
+    alarm: jest.Mock;
+    record: jest.Mock;
+  };
   let mockRequest: {
     user?: {
       id: string;
       email: string;
       role: Role;
     };
+    ip?: string;
+    path?: string;
   };
   let mockContext: ExecutionContext;
 
@@ -22,10 +31,22 @@ describe('RolesGuard', () => {
     mockReflector = {
       getAllAndOverride: jest.fn(),
     };
+    mockAuditService = {
+      warn: jest.fn(),
+      info: jest.fn(),
+      alarm: jest.fn(),
+      record: jest.fn(),
+    };
 
-    guard = new RolesGuard(mockReflector as unknown as Reflector);
+    guard = new RolesGuard(
+      mockReflector as unknown as Reflector,
+      mockAuditService as unknown as SecurityAuditService,
+    );
 
-    mockRequest = {};
+    mockRequest = {
+      ip: '127.0.0.1',
+      path: '/admin/dashboard',
+    };
 
     mockContext = {
       getHandler: jest.fn(),
@@ -79,6 +100,18 @@ describe('RolesGuard', () => {
     };
 
     expect(() => guard.canActivate(mockContext)).toThrow(ForbiddenException);
+    expect(mockAuditService.warn).toHaveBeenCalledWith(
+      AuditEvent.ADMIN_ACCESS_DENIED,
+      expect.objectContaining({
+        ip: '127.0.0.1',
+        userId: 'user-1',
+        details: {
+          userRole: Role.customer,
+          requiredRoles: [Role.admin],
+          path: '/admin/dashboard',
+        },
+      }),
+    );
   });
 
   it('kullanıcı gerekli role sahipse (admin) true dönmeli', () => {

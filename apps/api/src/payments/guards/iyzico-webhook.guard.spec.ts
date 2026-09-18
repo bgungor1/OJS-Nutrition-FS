@@ -1,5 +1,6 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { AuditEvent, SecurityAuditService } from '../../common/audit';
 import { IyzicoWebhookGuard } from './iyzico-webhook.guard';
 import { PaymentsService } from '../payments.service';
 
@@ -7,6 +8,12 @@ describe('IyzicoWebhookGuard', () => {
   let guard: IyzicoWebhookGuard;
   let paymentsService: {
     verifyWebhookSignature: jest.Mock;
+  };
+  let auditService: {
+    alarm: jest.Mock;
+    warn: jest.Mock;
+    info: jest.Mock;
+    record: jest.Mock;
   };
 
   const createMockExecutionContext = (
@@ -18,6 +25,7 @@ describe('IyzicoWebhookGuard', () => {
       headers,
       body,
       rawBody,
+      ip: '127.0.0.1',
     };
 
     return {
@@ -31,6 +39,12 @@ describe('IyzicoWebhookGuard', () => {
     paymentsService = {
       verifyWebhookSignature: jest.fn(),
     };
+    auditService = {
+      alarm: jest.fn(),
+      warn: jest.fn(),
+      info: jest.fn(),
+      record: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -38,6 +52,10 @@ describe('IyzicoWebhookGuard', () => {
         {
           provide: PaymentsService,
           useValue: paymentsService,
+        },
+        {
+          provide: SecurityAuditService,
+          useValue: auditService,
         },
       ],
     }).compile();
@@ -150,6 +168,13 @@ describe('IyzicoWebhookGuard', () => {
         new UnauthorizedException('Missing payment webhook signature.'),
       );
       expect(paymentsService.verifyWebhookSignature).not.toHaveBeenCalled();
+      expect(auditService.alarm).toHaveBeenCalledWith(
+        AuditEvent.PAYMENT_WEBHOOK_HMAC_INVALID,
+        expect.objectContaining({
+          ip: '127.0.0.1',
+          details: { reason: 'Missing webhook signature header' },
+        }),
+      );
     });
 
     it('should throw UnauthorizedException when signature verification fails', () => {
@@ -162,6 +187,13 @@ describe('IyzicoWebhookGuard', () => {
 
       expect(() => guard.canActivate(context)).toThrow(
         new UnauthorizedException('Invalid payment webhook signature.'),
+      );
+      expect(auditService.alarm).toHaveBeenCalledWith(
+        AuditEvent.PAYMENT_WEBHOOK_HMAC_INVALID,
+        expect.objectContaining({
+          ip: '127.0.0.1',
+          details: { reason: 'Invalid HMAC signature' },
+        }),
       );
     });
   });

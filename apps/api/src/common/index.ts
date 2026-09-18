@@ -1,3 +1,4 @@
+export * from './audit';
 export * from './constants';
 export * from './decorators';
 export * from './filters';
