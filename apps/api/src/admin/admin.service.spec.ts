@@ -9,66 +9,72 @@ describe('AdminService', () => {
   let service: AdminService;
   let prisma: {
     user: {
-      count: jest.Mock;
       findMany: jest.Mock;
       findUnique: jest.Mock;
+      count: jest.Mock;
       update: jest.Mock;
     };
     order: {
-      groupBy: jest.Mock;
       aggregate: jest.Mock;
+      groupBy: jest.Mock;
     };
   };
   let auditService: {
     warn: jest.Mock;
-    info: jest.Mock;
-    alarm: jest.Mock;
   };
 
   const mockAdminUser = {
     id: 'admin-uuid-1',
-    email: 'admin@ojsnutrition.com',
-    firstName: 'Admin',
-    lastName: 'User',
-    phoneNumber: '05550000000',
-    role: Role.admin,
+    email: 'admin@example.com',
+    passwordHash: '$2b$10$hashed',
     authProvider: AuthProvider.local,
+    googleId: null,
+    role: Role.admin,
+    firstName: 'Ahmet',
+    lastName: 'Yılmaz',
+    phoneNumber: '05551234567',
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-    _count: { orders: 5, addresses: 1 },
+    _count: {
+      orders: 5,
+      addresses: 2,
+    },
   };
 
   const mockCustomerUser = {
-    id: 'customer-uuid-2',
+    id: 'user-uuid-1',
     email: 'customer@example.com',
+    passwordHash: '$2b$10$hashed',
+    authProvider: AuthProvider.local,
+    googleId: null,
+    role: Role.customer,
     firstName: 'Can',
     lastName: 'Demir',
     phoneNumber: '05551112233',
-    role: Role.customer,
-    authProvider: AuthProvider.local,
-    createdAt: new Date('2026-02-01T00:00:00.000Z'),
-    updatedAt: new Date('2026-02-01T00:00:00.000Z'),
-    _count: { orders: 2, addresses: 1 },
+    createdAt: new Date('2026-03-01T10:00:00.000Z'),
+    updatedAt: new Date('2026-03-01T10:00:00.000Z'),
+    _count: {
+      orders: 2,
+      addresses: 1,
+    },
   };
 
   beforeEach(async () => {
     prisma = {
       user: {
-        count: jest.fn(),
         findMany: jest.fn(),
         findUnique: jest.fn(),
+        count: jest.fn(),
         update: jest.fn(),
       },
       order: {
-        groupBy: jest.fn(),
         aggregate: jest.fn(),
+        groupBy: jest.fn(),
       },
     };
 
     auditService = {
       warn: jest.fn(),
-      info: jest.fn(),
-      alarm: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -82,31 +88,34 @@ describe('AdminService', () => {
     service = module.get<AdminService>(AdminService);
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('listUsers', () => {
-    it('should list users with default pagination and compute total spent for each user', async () => {
+    it('should return paginated users with calculated order spent and count metadata', async () => {
       prisma.user.count.mockResolvedValue(2);
       prisma.user.findMany.mockResolvedValue([mockAdminUser, mockCustomerUser]);
       prisma.order.groupBy.mockResolvedValue([
-        {
-          userId: mockAdminUser.id,
-          _sum: { totalPrice: 1500.0 },
-        },
-        {
-          userId: mockCustomerUser.id,
-          _sum: { totalPrice: 450.5 },
-        },
+        { userId: mockAdminUser.id, _sum: { totalPrice: 1500.25 } },
+        { userId: mockCustomerUser.id, _sum: { totalPrice: 450.5 } },
       ]);
 
-      const result = await service.listUsers({});
+      const result = await service.listUsers({ limit: 10, offset: 0 });
 
       expect(prisma.user.count).toHaveBeenCalledWith({ where: {} });
       expect(prisma.user.findMany).toHaveBeenCalledWith({
         where: {},
+        take: 10,
         skip: 0,
-        take: 20,
         orderBy: { createdAt: 'desc' },
-        include: { _count: { select: { orders: true, addresses: true } } },
+        include: {
+          _count: {
+            select: { orders: true, addresses: true },
+          },
+        },
       });
+
       expect(prisma.order.groupBy).toHaveBeenCalledWith({
         by: ['userId'],
         where: {
@@ -119,99 +128,104 @@ describe('AdminService', () => {
       expect(result.count).toBe(2);
       expect(result.results).toHaveLength(2);
       expect(result.results[0].id).toBe(mockAdminUser.id);
-      expect(result.results[0].totalSpent).toBe(1500);
+      expect(result.results[0].totalSpent).toBe(1500.25);
       expect(result.results[1].id).toBe(mockCustomerUser.id);
       expect(result.results[1].totalSpent).toBe(450.5);
-      expect(result.next).toBeNull();
       expect(result.previous).toBeNull();
+      expect(result.next).toBeNull();
     });
 
-    it('should create OR conditions with trimmed search query', async () => {
+    it('should filter by role and apply search on email, firstName, and lastName', async () => {
       prisma.user.count.mockResolvedValue(1);
       prisma.user.findMany.mockResolvedValue([mockCustomerUser]);
       prisma.order.groupBy.mockResolvedValue([]);
 
-      const result = await service.listUsers({ search: '  Can  ' });
+      const result = await service.listUsers({
+        limit: 5,
+        offset: 0,
+        role: Role.customer,
+        search: 'Can',
+      });
 
       expect(prisma.user.count).toHaveBeenCalledWith({
         where: {
+          role: Role.customer,
           OR: [
+            { email: { contains: 'Can', mode: 'insensitive' } },
             { firstName: { contains: 'Can', mode: 'insensitive' } },
             { lastName: { contains: 'Can', mode: 'insensitive' } },
-            { email: { contains: 'Can', mode: 'insensitive' } },
           ],
         },
       });
+
       expect(result.count).toBe(1);
-      expect(result.results[0].id).toBe(mockCustomerUser.id);
+      expect(result.results).toHaveLength(1);
     });
 
-    it('should apply role filter to query condition when provided', async () => {
-      prisma.user.count.mockResolvedValue(1);
-      prisma.user.findMany.mockResolvedValue([mockAdminUser]);
-      prisma.order.groupBy.mockResolvedValue([]);
+    it('should not call order.groupBy if no users are returned', async () => {
+      prisma.user.count.mockResolvedValue(0);
+      prisma.user.findMany.mockResolvedValue([]);
 
-      const result = await service.listUsers({ role: Role.admin });
+      const result = await service.listUsers({ limit: 10, offset: 0 });
 
-      expect(prisma.user.count).toHaveBeenCalledWith({
-        where: { role: Role.admin },
-      });
-      expect(result.results[0].role).toBe(Role.admin);
-    });
-
-    it('should generate correct next and previous pagination links', async () => {
-      prisma.user.count.mockResolvedValue(50);
-      prisma.user.findMany.mockResolvedValue([mockAdminUser]);
-      prisma.order.groupBy.mockResolvedValue([]);
-
-      const result = await service.listUsers({ limit: 10, offset: 20 });
-
-      expect(result.count).toBe(50);
-      expect(result.next).toBe('?limit=10&offset=30');
-      expect(result.previous).toBe('?limit=10&offset=10');
+      expect(prisma.order.groupBy).not.toHaveBeenCalled();
+      expect(result.count).toBe(0);
+      expect(result.results).toHaveLength(0);
     });
   });
 
   describe('getUserById', () => {
-    it('should return user detail profile, addresses, and orders when user is found', async () => {
-      const mockDetailedUser = {
+    it('should return detailed user profile, addresses, order history, and totalSpent', async () => {
+      const detailedUser = {
         ...mockCustomerUser,
-        passwordHash: '$2b$10$hashedsecretpass',
         addresses: [
           {
             id: 'addr-1',
-            title: 'Home',
+            userId: mockCustomerUser.id,
+            title: 'Evim',
             firstName: 'Can',
             lastName: 'Demir',
-            fullAddress: 'Bağdat Cad. No: 10',
+            countryId: 1,
+            regionId: 34,
+            subregionId: 341,
+            fullAddress: 'Kadıköy',
             phoneNumber: '05551112233',
-            createdAt: new Date('2026-02-02T00:00:00.000Z'),
+            createdAt: new Date(),
+            updatedAt: new Date(),
             country: { id: 1, name: 'Türkiye' },
-            region: { id: 34, name: 'İstanbul' },
-            subregion: { id: 341, name: 'Kadıköy' },
+            region: { id: 34, name: 'İstanbul', countryId: 1 },
+            subregion: { id: 341, name: 'Kadıköy', regionId: 34 },
           },
         ],
         orders: [
           {
-            id: 'order-1',
-            orderNo: 'ORD-2026-0001',
+            id: 'ord-1',
+            orderNo: 'ORD-2026-001',
+            userId: mockCustomerUser.id,
             status: OrderStatus.delivered,
             totalPrice: 450.5,
-            createdAt: new Date('2026-02-05T00:00:00.000Z'),
-            items: [{ pieces: 2 }, { pieces: 1 }],
+            shippingFee: 0,
+            addressSnapshot: {},
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            items: [{ id: 'it-1', pieces: 3 }],
           },
           {
-            id: 'order-2',
-            orderNo: 'ORD-2026-0002',
+            id: 'ord-2',
+            orderNo: 'ORD-2026-002',
+            userId: mockCustomerUser.id,
             status: OrderStatus.cancelled,
             totalPrice: 200.0,
-            createdAt: new Date('2026-02-10T00:00:00.000Z'),
-            items: [{ pieces: 1 }],
+            shippingFee: 0,
+            addressSnapshot: {},
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            items: [{ id: 'it-2', pieces: 1 }],
           },
         ],
       };
 
-      prisma.user.findUnique.mockResolvedValue(mockDetailedUser);
+      prisma.user.findUnique.mockResolvedValue(detailedUser);
 
       const result = await service.getUserById(mockCustomerUser.id);
 

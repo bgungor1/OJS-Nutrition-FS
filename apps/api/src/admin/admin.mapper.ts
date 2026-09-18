@@ -1,125 +1,45 @@
+import { OrderStatus, Role } from '@prisma/client';
 import {
-  Role,
-  User,
-  Address,
-  Country,
-  Region,
-  Subregion,
-  Order,
-  OrderItem,
-} from '@prisma/client';
+  AdminDashboardMapper,
+  LowStockVariantRelation,
+  OrderWithUserAndItems,
+} from './admin-dashboard.mapper';
 import {
-  AdminUserAddressDto,
+  AdminUserMapper,
+  UserDetailRelation,
+  UserWithCountRelation,
+} from './admin-user.mapper';
+import {
   AdminUserDetailResponseDto,
   AdminUserListItemDto,
-  AdminUserOrderSummaryDto,
   AdminUsersPaginatedResponseDto,
 } from './dto/admin-user-response.dto';
+import {
+  AdminLowStockVariantDto,
+  AdminRecentOrderDto,
+  AdminSalesTrendItemDto,
+  AdminTopProductDto,
+  DashboardSummaryDto,
+  OrdersByStatusDto,
+} from './dto/dashboard-stats-response.dto';
 
-export type UserWithCountRelation = User & {
-  _count?: {
-    orders: number;
-    addresses: number;
-  };
-};
-
-export type AddressWithLocation = Address & {
-  country: Country;
-  region: Region;
-  subregion: Subregion;
-};
-
-export type OrderWithItems = Order & {
-  items: OrderItem[];
-};
-
-export type UserDetailRelation = User & {
-  addresses: AddressWithLocation[];
-  orders: OrderWithItems[];
-  _count?: {
-    orders: number;
-    addresses: number;
-  };
-};
+export * from './admin-user.mapper';
+export * from './admin-dashboard.mapper';
 
 export class AdminMapper {
+  // User mappings
   static toUserListItem(
     user: UserWithCountRelation,
     totalSpent: number = 0,
   ): AdminUserListItemDto {
-    return {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      phoneNumber: user.phoneNumber,
-      role: user.role,
-      authProvider: user.authProvider,
-      ordersCount: user._count?.orders ?? 0,
-      totalSpent: Math.round(totalSpent * 100) / 100,
-      addressesCount: user._count?.addresses ?? 0,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
+    return AdminUserMapper.toUserListItem(user, totalSpent);
   }
 
   static toUserDetail(
     user: UserDetailRelation,
     totalSpent: number = 0,
   ): AdminUserDetailResponseDto {
-    const addresses: AdminUserAddressDto[] = (user.addresses || []).map(
-      (addr) => ({
-        id: addr.id,
-        title: addr.title,
-        firstName: addr.firstName,
-        lastName: addr.lastName,
-        country: {
-          id: addr.country.id,
-          name: addr.country.name,
-        },
-        region: {
-          id: addr.region.id,
-          name: addr.region.name,
-        },
-        subregion: {
-          id: addr.subregion.id,
-          name: addr.subregion.name,
-        },
-        fullAddress: addr.fullAddress,
-        phoneNumber: addr.phoneNumber,
-        createdAt: addr.createdAt,
-      }),
-    );
-
-    const recentOrders: AdminUserOrderSummaryDto[] = (user.orders || []).map(
-      (order) => ({
-        id: order.id,
-        orderNo: order.orderNo,
-        status: order.status,
-        totalPrice: Number(order.totalPrice),
-        itemsCount: (order.items || []).reduce(
-          (sum, item) => sum + item.pieces,
-          0,
-        ),
-        createdAt: order.createdAt,
-      }),
-    );
-
-    return {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      phoneNumber: user.phoneNumber,
-      role: user.role,
-      authProvider: user.authProvider,
-      ordersCount: user._count?.orders ?? user.orders?.length ?? 0,
-      totalSpent: Math.round(totalSpent * 100) / 100,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      addresses,
-      recentOrders,
-    };
+    return AdminUserMapper.toUserDetail(user, totalSpent);
   }
 
   static toPaginatedResponse(
@@ -130,24 +50,66 @@ export class AdminMapper {
     search?: string,
     role?: Role,
   ): AdminUsersPaginatedResponseDto {
-    const buildQuery = (newOffset: number): string => {
-      const params = new URLSearchParams();
-      params.set('limit', limit.toString());
-      params.set('offset', newOffset.toString());
-      if (search) params.set('search', search);
-      if (role) params.set('role', role);
-      return `?${params.toString()}`;
-    };
-
-    const next = offset + limit < count ? buildQuery(offset + limit) : null;
-    const previous =
-      offset > 0 ? buildQuery(Math.max(0, offset - limit)) : null;
-
-    return {
+    return AdminUserMapper.toPaginatedResponse(
       count,
-      next,
-      previous,
       results,
-    };
+      limit,
+      offset,
+      search,
+      role,
+    );
+  }
+
+  // Dashboard mappings
+  static toDashboardSummary(
+    totalOrders: number,
+    totalRevenue: number,
+    totalUsers: number,
+    totalProducts: number,
+  ): DashboardSummaryDto {
+    return AdminDashboardMapper.toDashboardSummary(
+      totalOrders,
+      totalRevenue,
+      totalUsers,
+      totalProducts,
+    );
+  }
+
+  static toOrdersByStatus(
+    statusCounts: Array<{ status: OrderStatus; _count: { id: number } }>,
+  ): OrdersByStatusDto {
+    return AdminDashboardMapper.toOrdersByStatus(statusCounts);
+  }
+
+  static toRecentOrders(
+    orders: OrderWithUserAndItems[],
+  ): AdminRecentOrderDto[] {
+    return AdminDashboardMapper.toRecentOrders(orders);
+  }
+
+  static toTopProducts(
+    topItems: Array<{
+      productId: string;
+      productName: string;
+      _sum: {
+        pieces: number | null;
+        totalPrice: unknown;
+      };
+    }>,
+    productPhotos: Map<string, string | null> = new Map(),
+  ): AdminTopProductDto[] {
+    return AdminDashboardMapper.toTopProducts(topItems, productPhotos);
+  }
+
+  static toLowStockVariants(
+    variants: LowStockVariantRelation[],
+  ): AdminLowStockVariantDto[] {
+    return AdminDashboardMapper.toLowStockVariants(variants);
+  }
+
+  static toSalesTrend(
+    dailyData: Map<string, { orderCount: number; totalRevenue: number }>,
+  ): AdminSalesTrendItemDto[] {
+    return AdminDashboardMapper.toSalesTrend(dailyData);
   }
 }

@@ -7,7 +7,7 @@ import { OrderStatus, Prisma, Role } from '@prisma/client';
 import { AuditEvent, SecurityAuditService } from '../common/audit';
 import { PrismaService } from '../prisma';
 import { ADMIN_PAGINATION } from './admin.constants';
-import { AdminMapper } from './admin.mapper';
+import { AdminUserMapper } from './admin-user.mapper';
 import {
   AdminUserDetailResponseDto,
   AdminUserListItemDto,
@@ -38,9 +38,9 @@ export class AdminService {
 
     if (search) {
       where.OR = [
+        { email: { contains: search, mode: 'insensitive' } },
         { firstName: { contains: search, mode: 'insensitive' } },
         { lastName: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -48,22 +48,26 @@ export class AdminService {
       this.prisma.user.count({ where }),
       this.prisma.user.findMany({
         where,
-        skip: offset,
         take: limit,
+        skip: offset,
         orderBy: { createdAt: 'desc' },
         include: {
           _count: {
-            select: { orders: true, addresses: true },
+            select: {
+              orders: true,
+              addresses: true,
+            },
           },
         },
       }),
     ]);
 
+    // N+1 önleme: Listelenen kullanıcıların sipariş harcamaları toplu olarak tek gruplamayla hesaplanır
     const userIds = users.map((u) => u.id);
     const spentMap = new Map<string, number>();
 
     if (userIds.length > 0) {
-      const orderAggregates = await this.prisma.order.groupBy({
+      const spentAggregations = await this.prisma.order.groupBy({
         by: ['userId'],
         where: {
           userId: { in: userIds },
@@ -74,7 +78,7 @@ export class AdminService {
         },
       });
 
-      for (const agg of orderAggregates) {
+      for (const agg of spentAggregations) {
         if (agg.userId && agg._sum.totalPrice) {
           spentMap.set(agg.userId, Number(agg._sum.totalPrice));
         }
@@ -82,10 +86,10 @@ export class AdminService {
     }
 
     const results: AdminUserListItemDto[] = users.map((user) =>
-      AdminMapper.toUserListItem(user, spentMap.get(user.id) ?? 0),
+      AdminUserMapper.toUserListItem(user, spentMap.get(user.id) ?? 0),
     );
 
-    return AdminMapper.toPaginatedResponse(
+    return AdminUserMapper.toPaginatedResponse(
       totalUsers,
       results,
       limit,
@@ -126,7 +130,7 @@ export class AdminService {
       0,
     );
 
-    return AdminMapper.toUserDetail(user, totalSpent);
+    return AdminUserMapper.toUserDetail(user, totalSpent);
   }
 
   async updateUserRole(
@@ -196,6 +200,6 @@ export class AdminService {
       ? Number(spentAgg._sum.totalPrice)
       : 0;
 
-    return AdminMapper.toUserListItem(updatedUser, totalSpent);
+    return AdminUserMapper.toUserListItem(updatedUser, totalSpent);
   }
 }
