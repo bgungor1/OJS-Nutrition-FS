@@ -21,6 +21,7 @@ describe('AllExceptionsFilter', () => {
     method: string;
     url: string;
     ip?: string;
+    correlationId?: string;
   };
   let mockAuditService: {
     warn: jest.Mock;
@@ -77,6 +78,8 @@ describe('AllExceptionsFilter', () => {
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
+        statusCode: HttpStatus.NOT_FOUND,
+        correlationId: undefined,
         message: 'Kayıt bulunamadı',
       });
       expect(loggerErrorSpy).not.toHaveBeenCalled();
@@ -92,6 +95,8 @@ describe('AllExceptionsFilter', () => {
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
+        statusCode: HttpStatus.BAD_REQUEST,
+        correlationId: undefined,
         message: 'Geçersiz parametre değeri',
       });
       expect(loggerErrorSpy).not.toHaveBeenCalled();
@@ -112,6 +117,8 @@ describe('AllExceptionsFilter', () => {
       expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
+        statusCode: HttpStatus.BAD_REQUEST,
+        correlationId: undefined,
         reason: {
           email: ['email must be an email', 'email should not be empty'],
           first_name: ['first_name en az 2 karakter olmalıdır.'],
@@ -124,26 +131,42 @@ describe('AllExceptionsFilter', () => {
       filter.catch(new UnauthorizedException({}), mockHost);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
+        statusCode: HttpStatus.UNAUTHORIZED,
+        correlationId: undefined,
         message: 'Kimlik doğrulaması gerekli.',
       });
 
       filter.catch(new ForbiddenException({}), mockHost);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
+        statusCode: HttpStatus.FORBIDDEN,
+        correlationId: undefined,
         message: 'Bu işlem için yetkiniz yok.',
       });
 
       filter.catch(new NotFoundException({}), mockHost);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
+        statusCode: HttpStatus.NOT_FOUND,
+        correlationId: undefined,
         message: 'Kayıt bulunamadı.',
       });
 
       filter.catch(new ConflictException({}), mockHost);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
+        statusCode: HttpStatus.CONFLICT,
+        correlationId: undefined,
         message: 'İstek işlenemedi.',
       });
+    });
+
+    it('req.correlationId mevcut olduğunda hata zarfına eklenmeli', () => {
+      mockRequest.correlationId = 'test-corr-id-001';
+      filter.catch(new NotFoundException('Test'), mockHost);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({ correlationId: 'test-corr-id-001' }),
+      );
     });
   });
 
@@ -162,10 +185,12 @@ describe('AllExceptionsFilter', () => {
       );
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        correlationId: undefined,
         message: 'Beklenmeyen bir hata oluştu.',
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith(
-        'POST /api/v1/orders -> 500',
+        '[-] POST /api/v1/orders -> 500',
         internalError.stack,
       );
     });
@@ -178,10 +203,12 @@ describe('AllExceptionsFilter', () => {
       );
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        correlationId: undefined,
         message: 'Beklenmeyen bir hata oluştu.',
       });
       expect(loggerErrorSpy).toHaveBeenCalledWith(
-        'GET /api/v1/test -> 500',
+        '[-] GET /api/v1/test -> 500',
         'Beklenmeyen bir string fırlatıldı',
       );
     });
@@ -205,6 +232,8 @@ describe('AllExceptionsFilter', () => {
       );
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
+        statusCode: HttpStatus.TOO_MANY_REQUESTS,
+        correlationId: undefined,
         message:
           'Çok fazla istek gönderildi. Lütfen bir süre sonra tekrar deneyiniz.',
       });
@@ -215,6 +244,7 @@ describe('AllExceptionsFilter', () => {
           details: {
             method: 'POST',
             url: '/api/v1/contact',
+            correlationId: undefined,
           },
         },
       );
@@ -237,6 +267,8 @@ describe('AllExceptionsFilter', () => {
       );
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
+        statusCode: HttpStatus.TOO_MANY_REQUESTS,
+        correlationId: undefined,
         message:
           'Çok fazla istek gönderildi. Lütfen bir süre sonra tekrar deneyiniz.',
       });

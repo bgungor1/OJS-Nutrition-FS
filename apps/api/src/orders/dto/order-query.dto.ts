@@ -1,7 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { OrderStatus } from '@prisma/client';
 import { PAGINATION } from '../../common/constants';
+
+const ALLOWED_ORDER_STATUSES = Object.values(OrderStatus);
 
 export class OrderQueryDto {
   @ApiPropertyOptional({
@@ -30,4 +33,14 @@ export class OrderQueryDto {
   @IsInt({ message: 'offset bir tam sayı olmalıdır.' })
   @Min(0, { message: 'offset negatif olamaz.' })
   offset: number = PAGINATION.DEFAULT_OFFSET;
+
+  @ApiPropertyOptional({
+    description: 'Sipariş durumuna göre filtrele',
+    enum: OrderStatus,
+  })
+  @IsOptional()
+  @IsIn(ALLOWED_ORDER_STATUSES, {
+    message: `status yalnızca şu değerlerden biri olabilir: ${ALLOWED_ORDER_STATUSES.join(', ')}.`,
+  })
+  status?: OrderStatus;
 }
