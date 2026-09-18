@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthProvider, Role } from '@prisma/client';
 import { AuthenticatedUser } from '../common/types/authenticated-user';
+import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import {
@@ -18,6 +19,9 @@ describe('AdminController', () => {
     getUserById: jest.Mock;
     updateUserRole: jest.Mock;
   };
+  let dashboardService: {
+    getDashboardStats: jest.Mock;
+  };
 
   const mockAdminUser: AuthenticatedUser = {
     id: 'admin-uuid-1',
@@ -32,9 +36,16 @@ describe('AdminController', () => {
       updateUserRole: jest.fn(),
     };
 
+    dashboardService = {
+      getDashboardStats: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AdminController],
-      providers: [{ provide: AdminService, useValue: adminService }],
+      providers: [
+        { provide: AdminService, useValue: adminService },
+        { provide: AdminDashboardService, useValue: dashboardService },
+      ],
     }).compile();
 
     controller = module.get<AdminController>(AdminController);
@@ -128,6 +139,37 @@ describe('AdminController', () => {
         ip,
       );
       expect(result).toEqual(mockUpdated);
+    });
+  });
+
+  describe('getDashboardStats', () => {
+    it('should call AdminDashboardService.getDashboardStats and return dashboard statistics', async () => {
+      const mockStats = {
+        summary: {
+          totalOrders: 100,
+          totalRevenue: 50000,
+          totalUsers: 40,
+          totalProducts: 15,
+        },
+        ordersByStatus: {
+          pending: 5,
+          processing: 10,
+          shipped: 15,
+          delivered: 70,
+          cancelled: 0,
+          returned: 0,
+        },
+        recentOrders: [],
+        topProducts: [],
+        lowStockVariants: [],
+        salesTrend: [],
+      };
+      dashboardService.getDashboardStats.mockResolvedValue(mockStats);
+
+      const result = await controller.getDashboardStats();
+
+      expect(dashboardService.getDashboardStats).toHaveBeenCalled();
+      expect(result).toEqual(mockStats);
     });
   });
 });
