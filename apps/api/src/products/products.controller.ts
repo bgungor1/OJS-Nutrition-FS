@@ -1,7 +1,13 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
-import { ProductsQueryDto } from './dto/products-query.dto';
+import { ErrorResponseDto } from '../common/dto';
+import {
+  ApiBestSellerProductDto,
+  ApiPaginatedProductsDto,
+  ApiProductDetailDto,
+  ProductsQueryDto,
+} from './dto';
 import {
   ApiBestSellerProduct,
   ApiPaginatedProducts,
@@ -9,11 +15,6 @@ import {
 } from './interfaces/product-response.interface';
 import { ProductsService } from './products.service';
 
-/**
- * BACKEND_PLAN §5.3 — Katalog ve Ürün Rotaları (@Public).
- * Controller yalnızca HTTP isteğini karşılar ve servise delege eder;
- * sıfır iş mantığı kuralı (ENGINEERING_STANDARDS §2).
- */
 @ApiTags('products')
 @Public()
 @Controller('products')
@@ -27,6 +28,12 @@ export class ProductsController {
   @ApiResponse({
     status: 200,
     description: 'Ürün listesi başarıyla getirildi',
+    type: ApiPaginatedProductsDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Geçersiz sorgu parametresi veya sayfalama sınır aşımı',
+    type: ErrorResponseDto,
   })
   async list(@Query() query: ProductsQueryDto): Promise<ApiPaginatedProducts> {
     return this.productsService.list(query);
@@ -37,6 +44,7 @@ export class ProductsController {
   @ApiResponse({
     status: 200,
     description: 'Çok satan ürünler listesi',
+    type: [ApiBestSellerProductDto],
   })
   async bestSellers(): Promise<ApiBestSellerProduct[]> {
     return this.productsService.bestSellers();
@@ -46,13 +54,20 @@ export class ProductsController {
   @ApiOperation({
     summary: 'Slug değerine göre ürün detayını varyantları ile döner',
   })
+  @ApiParam({
+    name: 'slug',
+    description: 'Ürünün URL dostu benzersiz tanıtıcısı',
+    example: 'whey-protein',
+  })
   @ApiResponse({
     status: 200,
     description: 'Ürün detayı başarıyla getirildi',
+    type: ApiProductDetailDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Ürün bulunamadı',
+    type: ErrorResponseDto,
   })
   async getBySlug(@Param('slug') slug: string): Promise<ApiProductDetail> {
     return this.productsService.getBySlug(slug);

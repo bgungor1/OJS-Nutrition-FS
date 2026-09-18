@@ -20,8 +20,16 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { Role } from '@prisma/client';
 import { Public, Roles } from '../common';
+import { ErrorResponseDto, SuccessIdResponseDto } from '../common/dto';
 import { CONTACT_RATE_LIMIT } from './contact.constants';
-import { ContactQueryDto, CreateContactDto, UpdateContactDto } from './dto';
+import {
+  ContactListResponseDto,
+  ContactMessageResponseDto,
+  ContactQueryDto,
+  ContactSubmitResponseDto,
+  CreateContactDto,
+  UpdateContactDto,
+} from './dto';
 import {
   ContactListResponse,
   ContactMessageResponse,
@@ -45,18 +53,23 @@ export class ContactController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'İletişim formu mesajı gönderir (Public, IP rate-limited)',
+    description:
+      'Yalnızca anonim kullanıcılar dahil herkese açıktır. IP başına dakikada 5 istek limit uygulanır.',
   })
   @ApiResponse({
     status: 201,
     description: 'Mesaj başarıyla alındı.',
+    type: ContactSubmitResponseDto,
   })
   @ApiResponse({
     status: 400,
     description: 'Geçersiz DTO girdi parametreleri.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 429,
     description: 'İstek limiti aşıldı (IP başına dakikada maks 5 istek).',
+    type: ErrorResponseDto,
   })
   async submit(@Body() dto: CreateContactDto): Promise<ContactSubmitResponse> {
     return this.contactService.submit(dto);
@@ -72,10 +85,17 @@ export class ContactController {
   @ApiResponse({
     status: 200,
     description: 'İletişim mesajları başarıyla listelendi.',
+    type: ContactListResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Yetkilendirme başarısız.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Yetkisiz erişim — Admin rolü gereklidir.',
+    type: ErrorResponseDto,
   })
   async findAll(@Query() query: ContactQueryDto): Promise<ContactListResponse> {
     return this.contactService.findAll(query);
@@ -96,14 +116,22 @@ export class ContactController {
   @ApiResponse({
     status: 200,
     description: 'İletişim mesajı başarıyla getirildi.',
+    type: ContactMessageResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Yetkilendirme başarısız.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Yetkisiz erişim — Admin rolü gereklidir.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'İletişim mesajı bulunamadı.',
+    type: ErrorResponseDto,
   })
   async findById(@Param('id') id: string): Promise<ContactMessageResponse> {
     return this.contactService.findById(id);
@@ -124,18 +152,27 @@ export class ContactController {
   @ApiResponse({
     status: 200,
     description: 'İletişim mesajı başarıyla güncellendi.',
+    type: ContactMessageResponseDto,
   })
   @ApiResponse({
     status: 400,
     description: 'Geçersiz DTO girdisi.',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Yetkilendirme başarısız.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Yetkisiz erişim — Admin rolü gereklidir.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'İletişim mesajı bulunamadı.',
+    type: ErrorResponseDto,
   })
   async update(
     @Param('id') id: string,
@@ -159,14 +196,22 @@ export class ContactController {
   @ApiResponse({
     status: 200,
     description: 'İletişim mesajı başarıyla silindi.',
+    type: SuccessIdResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Yetkilendirme başarısız.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Yetkisiz erişim — Admin rolü gereklidir.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'İletişim mesajı bulunamadı.',
+    type: ErrorResponseDto,
   })
   async delete(@Param('id') id: string): Promise<{ id: string }> {
     return this.contactService.delete(id);

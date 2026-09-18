@@ -14,10 +14,12 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser, AuthenticatedUser } from '../common';
+import { ErrorResponseDto } from '../common/dto';
 import { AddressesService } from './addresses.service';
 import { AddressesQueryDto, CreateAddressDto, UpdateAddressDto } from './dto';
 import {
@@ -43,6 +45,7 @@ export class AddressesController {
   @ApiResponse({
     status: 401,
     description: 'Yetkisiz erişim — Bearer token eksik veya geçersiz.',
+    type: ErrorResponseDto,
   })
   async list(
     @CurrentUser() user: AuthenticatedUser,
@@ -54,18 +57,30 @@ export class AddressesController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Belirli bir adresin detaylarını getirir' })
+  @ApiParam({
+    name: 'id',
+    description: 'Adres benzersiz UUID değeri',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
   @ApiResponse({
     status: 200,
     description: 'Adres detayları başarıyla getirildi.',
     type: AddressResponseDto,
   })
   @ApiResponse({
+    status: 400,
+    description: 'Geçersiz UUID parametresi.',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
     status: 401,
     description: 'Yetkisiz erişim — Bearer token eksik veya geçersiz.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Adres bulunamadı.',
+    type: ErrorResponseDto,
   })
   async getById(
     @CurrentUser() user: AuthenticatedUser,
@@ -85,10 +100,12 @@ export class AddressesController {
   @ApiResponse({
     status: 400,
     description: 'Geçersiz veri veya eşleşmeyen coğrafi hiyerarşi.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Yetkisiz erişim — Bearer token eksik veya geçersiz.',
+    type: ErrorResponseDto,
   })
   async create(
     @CurrentUser() user: AuthenticatedUser,
@@ -100,6 +117,11 @@ export class AddressesController {
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mevcut bir adresi günceller' })
+  @ApiParam({
+    name: 'id',
+    description: 'Adres benzersiz UUID değeri',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
   @ApiResponse({
     status: 200,
     description: 'Adres başarıyla güncellendi.',
@@ -108,14 +130,17 @@ export class AddressesController {
   @ApiResponse({
     status: 400,
     description: 'Geçersiz veri veya eşleşmeyen coğrafi hiyerarşi.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Yetkisiz erişim — Bearer token eksik veya geçersiz.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Adres bulunamadı.',
+    type: ErrorResponseDto,
   })
   async update(
     @CurrentUser() user: AuthenticatedUser,
@@ -128,18 +153,30 @@ export class AddressesController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mevcut bir adresi siler' })
+  @ApiParam({
+    name: 'id',
+    description: 'Adres benzersiz UUID değeri',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
   @ApiResponse({
     status: 200,
     description: 'Adres başarıyla silindi.',
     type: DeleteAddressResponseDto,
   })
   @ApiResponse({
+    status: 400,
+    description: 'Geçersiz UUID parametresi.',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
     status: 401,
     description: 'Yetkisiz erişim — Bearer token eksik veya geçersiz.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Adres bulunamadı.',
+    type: ErrorResponseDto,
   })
   async delete(
     @CurrentUser() user: AuthenticatedUser,

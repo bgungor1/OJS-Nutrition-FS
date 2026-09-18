@@ -18,6 +18,7 @@ import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { ErrorResponseDto } from '../common/dto';
 import { AuthenticatedUser } from '../common/types/authenticated-user';
 import { MediaUploadResponse } from './interfaces/media-upload-response.interface';
 import { MEDIA_MAX_FILE_SIZE, MEDIA_RATE_LIMIT } from './media.constants';
@@ -59,15 +60,22 @@ export class MediaController {
     status: 400,
     description:
       'Geçersiz dosya boyutu (maks 5MB), geçersiz format veya SVG engeli',
+    type: ErrorResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Yetkisiz erişim' })
+  @ApiResponse({
+    status: 401,
+    description: 'Yetkisiz erişim',
+    type: ErrorResponseDto,
+  })
   @ApiResponse({
     status: 403,
     description: 'Yetersiz yetki (Yalnızca admin erişebilir)',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 429,
     description: 'Hız sınırı aşıldı (Dakikada en fazla 10 yükleme)',
+    type: ErrorResponseDto,
   })
   @Throttle({
     default: {

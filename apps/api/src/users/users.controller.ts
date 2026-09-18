@@ -13,6 +13,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser, AuthenticatedUser } from '../common';
+import { ErrorResponseDto } from '../common/dto';
 import { UpdateProfileDto } from './dto';
 import { AccountProfile, AccountProfileDto } from './interfaces';
 import { UsersService } from './users.service';
@@ -34,10 +35,12 @@ export class UsersController {
   @ApiResponse({
     status: 401,
     description: 'Yetkisiz erişim — Bearer token eksik veya geçersiz.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Kullanıcı hesabı bulunamadı.',
+    type: ErrorResponseDto,
   })
   async getMyAccount(
     @CurrentUser() user: AuthenticatedUser,
@@ -56,14 +59,17 @@ export class UsersController {
   @ApiResponse({
     status: 400,
     description: 'Geçersiz veri formatı veya alan kısıtı ihlali.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Yetkisiz erişim — Bearer token eksik veya geçersiz.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Kullanıcı hesabı bulunamadı.',
+    type: ErrorResponseDto,
   })
   async updateMyAccount(
     @CurrentUser() user: AuthenticatedUser,

@@ -1,13 +1,10 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
+import { CategoryTreeDto } from './dto';
 import { CategoryTree } from './interfaces/product-response.interface';
 import { ProductsService } from './products.service';
 
-/**
- * BACKEND_PLAN §5.3 — Kategori Rotaları (@Public).
- * Frontend Next.js dinamik route generateStaticParams ve kategori menüsü için kullanılır.
- */
 @ApiTags('categories')
 @Public()
 @Controller('categories')
@@ -21,6 +18,7 @@ export class CategoriesController {
   @ApiResponse({
     status: 200,
     description: 'Kategori listesi başarıyla getirildi',
+    type: [CategoryTreeDto],
   })
   async categories(): Promise<CategoryTree[]> {
     return this.productsService.categories();

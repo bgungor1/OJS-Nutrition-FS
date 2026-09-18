@@ -55,9 +55,43 @@ async function bootstrap(): Promise<void> {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('OJS Nutrition API')
-    .setDescription('OJS Nutrition REST API dokümantasyonu ve sözleşmesi')
+    .setDescription(
+      'OJS Nutrition e-ticaret platformu kurumsal REST API sözleşmesi ve canlı OpenAPI dokümantasyonu.',
+    )
     .setVersion('1.0')
     .addBearerAuth()
+    .addTag(
+      'auth',
+      'Kimlik doğrulama, oturum yönetimi, token rotasyonu ve oturum iptali',
+    )
+    .addTag('users', 'Kullanıcı hesap ve profil yönetimi')
+    .addTag(
+      'products',
+      'Ürün kataloğu, arama, filtreleme, sayfalama ve çok satanlar',
+    )
+    .addTag('categories', 'Kategori hiyerarşisi ve menü ağacı')
+    .addTag('cart', 'Kullanıcı ve misafir sepeti, sepet birleştirme')
+    .addTag('addresses', 'Teslimat ve fatura adresleri yönetimi')
+    .addTag('locations', 'Ülke, il ve ilçe coğrafi hiyerarşi lookup servisleri')
+    .addTag(
+      'orders',
+      'Sipariş oluşturma, kargo hesaplama, sipariş geçmişi ve durum yönetimi',
+    )
+    .addTag(
+      'reviews',
+      'Ürün yorumları, puanlama istatistikleri ve admin moderasyonu',
+    )
+    .addTag('faq', 'Sıkça sorulan sorular (SSS) yönetimi')
+    .addTag('contact', 'İletişim formu mesaj gönderimi ve admin mesaj takibi')
+    .addTag(
+      'media',
+      'Güvenli görsel yükleme (magic bytes, MIME kontrolü ve 5MB sınır)',
+    )
+    .addTag(
+      'payments',
+      'iyzico ödeme sağlayıcısı webhook bildirim entegrasyonu',
+    )
+    .addTag('admin', 'Yönetici paneli ve sistem metrikleri')
     .build();
   SwaggerModule.setup(
     'docs',

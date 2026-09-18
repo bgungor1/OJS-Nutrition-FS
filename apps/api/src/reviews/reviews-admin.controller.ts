@@ -14,6 +14,8 @@ import {
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { Roles } from '../common';
+import { ErrorResponseDto } from '../common/dto';
+import { DeletedIdResponseDto } from './dto';
 import { ReviewsService } from './reviews.service';
 
 @ApiTags('reviews')
@@ -37,14 +39,22 @@ export class ReviewsAdminController {
   @ApiResponse({
     status: 200,
     description: 'Yorum başarıyla silindi.',
+    type: DeletedIdResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Yetkilendirme başarısız.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Yetkisiz erişim — Admin rolü gereklidir.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Yorum bulunamadı.',
+    type: ErrorResponseDto,
   })
   async delete(@Param('id') id: string): Promise<{ id: string }> {
     return this.reviewsService.delete(id);
