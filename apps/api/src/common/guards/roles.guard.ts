@@ -3,10 +3,12 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  Optional,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from '@prisma/client';
 import type { Request } from 'express';
+import { AuditEvent, SecurityAuditService } from '../audit';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { AuthenticatedUser } from '../types/authenticated-user';
 
@@ -16,7 +18,10 @@ import { AuthenticatedUser } from '../types/authenticated-user';
  */
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    @Optional() private readonly auditService?: SecurityAuditService,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<Role[] | undefined>(
@@ -32,6 +37,15 @@ export class RolesGuard implements CanActivate {
     const user = request.user as AuthenticatedUser | undefined;
 
     if (!user || !requiredRoles.includes(user.role)) {
+      this.auditService?.warn(AuditEvent.ADMIN_ACCESS_DENIED, {
+        ip: request.ip,
+        userId: user?.id,
+        details: {
+          userRole: user?.role,
+          requiredRoles,
+          path: request.path,
+        },
+      });
       throw new ForbiddenException('Bu işlem için yetkiniz yok.');
     }
 
