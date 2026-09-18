@@ -1,4 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsArray, IsString, ValidateNested } from 'class-validator';
 
 export class ApiProductVariantSizeDto {
   @ApiProperty({ example: 1000, description: 'Gram cinsinden net ağırlık' })
@@ -50,39 +52,54 @@ export class ApiProductVariantDto {
 
 export class NutritionalIngredientDto {
   @ApiProperty({ example: 'Çikolata' })
+  @IsString()
   aroma!: string;
 
   @ApiProperty({
     example:
       'Peynir Altı Suyu Proteini Konsantresi, Kakao Tozu, Doğal Aroma...',
   })
+  @IsString()
   value!: string;
 }
 
 export class NutritionFactItemDto {
   @ApiProperty({ example: 'Enerji' })
+  @IsString()
   name!: string;
 
   @ApiProperty({ example: ['120 kcal', '6%'], type: [String] })
+  @IsArray()
+  @IsString({ each: true })
   amounts!: string[];
 }
 
 export class NutritionFactsDto {
   @ApiProperty({ type: [NutritionFactItemDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => NutritionFactItemDto)
   ingredients!: NutritionFactItemDto[];
 
   @ApiProperty({
     example: ['1 Porsiyon (30g)', '% Günlük Değer'],
     type: [String],
   })
+  @IsArray()
+  @IsString({ each: true })
   portion_sizes!: string[];
 }
 
 export class AminoAcidFactsDto {
   @ApiProperty({ type: [NutritionFactItemDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => NutritionFactItemDto)
   ingredients!: NutritionFactItemDto[];
 
   @ApiProperty({ example: ['100g Proteinde'], type: [String] })
+  @IsArray()
+  @IsString({ each: true })
   portion_sizes!: string[];
 }
 
