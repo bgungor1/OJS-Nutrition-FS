@@ -10,13 +10,18 @@ import {
 } from './interfaces/product-response.interface';
 import { ProductsMapper } from './products.mapper';
 
+/**
+ * OJS Nutrition — Storefront Ürün & Katalog Servisi.
+ * Sayfalanmış ürün listeleme, filtreleme, sıralama, en çok satanlar ve
+ * kategori ağacı okuma işlemlerini yürütür (Salt-okunur / Public).
+ */
 @Injectable()
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Sayfalanmış, filtrelenmiş ve sıralanmış ürün listesini döner.
-   * N+1 sorgu engeli: varyantlar tek sorguda include edilir.
+   * N+1 guard: varyantlar tek sorguda include edilir.
    */
   async list(query: ProductsQueryDto): Promise<ApiPaginatedProducts> {
     const limit = query.limit ?? 20;
@@ -36,8 +41,7 @@ export class ProductsService {
 
     let results: ApiPaginatedProducts['results'] = [];
 
-    // Fiyat sıralaması Prisma 1-N ilişkisinde relation üzerinden doğrudan yapılamadığı için
-    // eşleşen ürünler çekilip en düşük varyant fiyatına göre bellekte sıralanır ve sayfalanır.
+    // Fiyata göre sıralama ilişkisel varyant üzerinden bellekte yapılır
     if (sort === 'price_asc' || sort === 'price_desc') {
       const allMatching = await this.prisma.product.findMany({
         where,
@@ -97,25 +101,32 @@ export class ProductsService {
           )
         : null;
 
-    return {
-      count,
-      next,
-      previous,
-      results,
-    };
+    return { count, next, previous, results };
   }
 
   /**
-   * Slug değerine göre tekil ürün detayını varyantları ile birlikte döner.
-   * Bulunamazsa 404 NotFoundException fırlatır.
+   * En çok satan ürünleri döner (isBestSeller=true).
+   */
+  async bestSellers(): Promise<ApiBestSellerProduct[]> {
+    const products = await this.prisma.product.findMany({
+      where: { isBestSeller: true },
+      orderBy: { bestSellerRank: 'asc' },
+      include: {
+        variants: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+
+    return products.map((p) => ProductsMapper.toBestSeller(p));
+  }
+
+  /**
+   * Slug ile tekil ürün detayını varyantlarıyla birlikte döner.
    */
   async getBySlug(slug: string): Promise<ApiProductDetail> {
     const product = await this.prisma.product.findUnique({
       where: { slug },
       include: {
-        variants: {
-          orderBy: { createdAt: 'asc' },
-        },
+        variants: { orderBy: { createdAt: 'asc' } },
       },
     });
 
@@ -126,20 +137,9 @@ export class ProductsService {
     return ProductsMapper.toProductDetail(product);
   }
 
-  async bestSellers(): Promise<ApiBestSellerProduct[]> {
-    const products = await this.prisma.product.findMany({
-      where: { isBestSeller: true },
-      orderBy: { bestSellerRank: 'asc' },
-      include: {
-        variants: {
-          orderBy: { createdAt: 'asc' },
-        },
-      },
-    });
-
-    return products.map((p) => ProductsMapper.toBestSeller(p));
-  }
-
+  /**
+   * Hiyerarşik kategori ağacını döner (ana kategori -> alt kategoriler).
+   */
   async categories(): Promise<CategoryTree[]> {
     const categories = await this.prisma.category.findMany({
       include: {
