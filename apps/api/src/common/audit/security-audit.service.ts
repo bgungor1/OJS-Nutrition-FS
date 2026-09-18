@@ -116,6 +116,7 @@ export class SecurityAuditService {
       case AuditEvent.ORDER_CANCELLED_RESTOCKED:
       case AuditEvent.RATE_LIMIT_EXCEEDED:
       case AuditEvent.ADMIN_ACCESS_DENIED:
+      case AuditEvent.ADMIN_USER_ROLE_CHANGED:
       case AuditEvent.MEDIA_REJECTED:
         return AuditLogLevel.WARN;
 
