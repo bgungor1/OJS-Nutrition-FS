@@ -9,6 +9,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AllExceptionsFilter } from './all-exceptions.filter';
+import { AuditEvent } from '../audit';
 
 describe('AllExceptionsFilter', () => {
   let filter: AllExceptionsFilter;
@@ -19,12 +20,20 @@ describe('AllExceptionsFilter', () => {
   let mockRequest: {
     method: string;
     url: string;
+    ip?: string;
+  };
+  let mockAuditService: {
+    warn: jest.Mock;
   };
   let mockHost: ArgumentsHost;
   let loggerErrorSpy: jest.SpyInstance;
 
   beforeEach(() => {
-    filter = new AllExceptionsFilter();
+    mockAuditService = {
+      warn: jest.fn(),
+    };
+
+    filter = new AllExceptionsFilter(mockAuditService as never);
 
     mockResponse = {
       status: jest.fn().mockReturnThis(),
@@ -34,6 +43,7 @@ describe('AllExceptionsFilter', () => {
     mockRequest = {
       method: 'GET',
       url: '/api/v1/test',
+      ip: '127.0.0.1',
     };
 
     mockHost = {
@@ -174,6 +184,62 @@ describe('AllExceptionsFilter', () => {
         'GET /api/v1/test -> 500',
         'Beklenmeyen bir string fırlatıldı',
       );
+    });
+  });
+
+  describe('429 Too Many Requests & Rate Limiting', () => {
+    it('429 durumunda standart Türkçe hata mesajı dönmeli ve RATE_LIMIT_EXCEEDED audit logu düşmeli', () => {
+      mockRequest.method = 'POST';
+      mockRequest.url = '/api/v1/contact';
+      mockRequest.ip = '198.51.100.1';
+
+      const exception = new HttpException(
+        'ThrottlerException: Too Many Requests',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+
+      filter.catch(exception, mockHost);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        status: 'error',
+        message:
+          'Çok fazla istek gönderildi. Lütfen bir süre sonra tekrar deneyiniz.',
+      });
+      expect(mockAuditService.warn).toHaveBeenCalledWith(
+        AuditEvent.RATE_LIMIT_EXCEEDED,
+        {
+          ip: '198.51.100.1',
+          details: {
+            method: 'POST',
+            url: '/api/v1/contact',
+          },
+        },
+      );
+    });
+
+    it('auditService enjekte edilmediğinde de hata fırlatmadan 429 dönmeli', () => {
+      const filterWithoutAudit = new AllExceptionsFilter();
+
+      const exception = new HttpException(
+        'Too Many Requests',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+
+      expect(() => {
+        filterWithoutAudit.catch(exception, mockHost);
+      }).not.toThrow();
+
+      expect(mockResponse.status).toHaveBeenCalledWith(
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        status: 'error',
+        message:
+          'Çok fazla istek gönderildi. Lütfen bir süre sonra tekrar deneyiniz.',
+      });
     });
   });
 });

@@ -17,7 +17,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
+import { Throttle } from '@nestjs/throttler';
 import { AuthenticatedUser, CurrentUser, Public, Roles } from '../common';
+import { REVIEW_RATE_LIMIT } from './reviews.constants';
 import { CreateReviewDto, ReviewQueryDto } from './dto';
 import { ApiReview, PaginatedReviewsResponse } from './interfaces';
 import { ReviewsService } from './reviews.service';
@@ -56,6 +58,12 @@ export class ReviewsController {
 
   @Post()
   @ApiBearerAuth()
+  @Throttle({
+    default: {
+      limit: REVIEW_RATE_LIMIT.LIMIT,
+      ttl: REVIEW_RATE_LIMIT.TTL,
+    },
+  })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Giriş yapmış kullanıcı adına ürüne yeni değerlendirme ekler',

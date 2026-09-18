@@ -17,7 +17,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser, Roles, AuthenticatedUser } from '../common';
+import { ORDER_CHECKOUT_RATE_LIMIT } from './order.constants';
 import { OrdersService } from './orders.service';
 import {
   CompleteShoppingDto,
@@ -108,6 +110,12 @@ export class OrdersController {
   }
 
   @Post('complete-shopping')
+  @Throttle({
+    default: {
+      limit: ORDER_CHECKOUT_RATE_LIMIT.LIMIT,
+      ttl: ORDER_CHECKOUT_RATE_LIMIT.TTL,
+    },
+  })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Sepetteki ürünleri satın alır ve siparişi tamamlar',
