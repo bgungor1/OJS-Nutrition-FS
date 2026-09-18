@@ -13,6 +13,7 @@ import {
   ResponseInterceptor,
   JwtAuthGuard,
   RolesGuard,
+  AuditModule,
 } from './common';
 
 import { AuthModule } from './auth';
@@ -58,6 +59,7 @@ import { AdminModule } from './admin';
       ],
     }),
     PrismaModule,
+    AuditModule,
 
     AuthModule,
     UsersModule,
