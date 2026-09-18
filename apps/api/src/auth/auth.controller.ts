@@ -18,9 +18,17 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { AuthenticatedUser, CurrentUser, Public } from '../common';
+import { ErrorResponseDto, SuccessMessageDto } from '../common/dto';
 import { AuthService } from './auth.service';
 import { GoogleAuthService } from './google-auth.service';
-import { LoginDto, LogoutDto, RefreshTokenDto, RegisterDto } from './dto';
+import {
+  LoginDto,
+  LogoutDto,
+  RefreshTokenDto,
+  RegisterDto,
+  RegisterResponseDto,
+  TokensResponseDto,
+} from './dto';
 import { GoogleOAuthGuard } from './guards';
 import { GoogleProfile, RegisterResponse, TokensResponse } from './interfaces';
 
@@ -40,14 +48,17 @@ export class AuthController {
   @ApiResponse({
     status: 201,
     description: 'Kullanıcı başarıyla kaydedildi.',
+    type: RegisterResponseDto,
   })
   @ApiResponse({
     status: 400,
     description: 'Doğrulama hatası veya şifreler eşleşmiyor.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 409,
     description: 'Bu e-posta adresi zaten kullanımda.',
+    type: ErrorResponseDto,
   })
   async register(@Body() dto: RegisterDto): Promise<RegisterResponse> {
     return this.authService.register(dto);
@@ -63,10 +74,12 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Giriş başarılı, token çifti döndürüldü.',
+    type: TokensResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Geçersiz e-posta veya şifre.',
+    type: ErrorResponseDto,
   })
   async login(
     @Body() dto: LoginDto,
@@ -86,11 +99,13 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Yeni token çifti başarıyla üretildi.',
+    type: TokensResponseDto,
   })
   @ApiResponse({
     status: 401,
     description:
       'Geçersiz, süresi dolmuş veya iptal edilmiş yenileme anahtarı.',
+    type: ErrorResponseDto,
   })
   async refreshToken(
     @Body() dto: RefreshTokenDto,
@@ -110,14 +125,17 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Oturum başarıyla sonlandırıldı.',
+    type: SuccessMessageDto,
   })
   @ApiResponse({
     status: 400,
     description: 'Yenileme anahtarı zorunludur.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Geçersiz veya süresi dolmuş yenileme anahtarı.',
+    type: ErrorResponseDto,
   })
   async logout(
     @Body() dto: LogoutDto,
@@ -132,14 +150,18 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Kullanıcının tüm aktif oturumlarını anında sonlandırır',
+    description:
+      "Şifre değişikliği veya güvenlik ihlali durumunda tüm aktif refresh token'ları atomik olarak iptal eder.",
   })
   @ApiResponse({
     status: 200,
     description: 'Tüm aktif oturumlar başarıyla sonlandırıldı.',
+    type: SuccessMessageDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Yetkilendirme başarısız.',
+    type: ErrorResponseDto,
   })
   async revokeAll(
     @CurrentUser() user: AuthenticatedUser,

@@ -24,6 +24,7 @@ import {
   OptionalAuthGuard,
   AuthenticatedUser,
 } from '../common';
+import { ErrorResponseDto } from '../common/dto';
 import {
   clearGuestCartCookie,
   GUEST_CART_COOKIE,
@@ -70,10 +71,12 @@ export class CartController {
   @ApiResponse({
     status: 400,
     description: 'Yetersiz stok veya satışa kapalı ürün.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Ürün veya varyant bulunamadı.',
+    type: ErrorResponseDto,
   })
   async addToCart(
     @Body() dto: AddToCartDto,
@@ -97,8 +100,14 @@ export class CartController {
     type: [CartItemResponseDto],
   })
   @ApiResponse({
+    status: 400,
+    description: 'Geçersiz DTO girdisi.',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
     status: 404,
     description: 'Ürün sepette bulunamadı.',
+    type: ErrorResponseDto,
   })
   async removeFromCart(
     @Body() dto: RemoveFromCartDto,
@@ -144,6 +153,7 @@ export class CartController {
   @ApiResponse({
     status: 401,
     description: 'Yetkisiz erişim — Bearer token zorunludur.',
+    type: ErrorResponseDto,
   })
   async mergeGuestCart(
     @Req() req: Request,

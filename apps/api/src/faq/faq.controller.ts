@@ -19,7 +19,13 @@ import {
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { Public, Roles } from '../common';
-import { CreateFaqDto, FaqQueryDto, UpdateFaqDto } from './dto';
+import { ErrorResponseDto, SuccessIdResponseDto } from '../common/dto';
+import {
+  CreateFaqDto,
+  FaqItemResponseDto,
+  FaqQueryDto,
+  UpdateFaqDto,
+} from './dto';
 import { ApiFaqItem } from './interfaces';
 import { FaqService } from './faq.service';
 
@@ -37,6 +43,7 @@ export class FaqController {
   @ApiResponse({
     status: 200,
     description: 'SSS listesi başarıyla getirildi.',
+    type: [FaqItemResponseDto],
   })
   async findAll(@Query() query: FaqQueryDto): Promise<ApiFaqItem[]> {
     return this.faqService.findAll(query);
@@ -56,10 +63,12 @@ export class FaqController {
   @ApiResponse({
     status: 200,
     description: 'SSS maddesi başarıyla getirildi.',
+    type: FaqItemResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'SSS maddesi bulunamadı.',
+    type: ErrorResponseDto,
   })
   async findById(@Param('id') id: string): Promise<ApiFaqItem> {
     return this.faqService.findById(id);
@@ -75,14 +84,22 @@ export class FaqController {
   @ApiResponse({
     status: 201,
     description: 'SSS maddesi başarıyla oluşturuldu.',
+    type: FaqItemResponseDto,
   })
   @ApiResponse({
     status: 400,
     description: 'Geçersiz DTO girdisi.',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Yetkilendirme başarısız.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Yetkisiz erişim — Admin rolü gereklidir.',
+    type: ErrorResponseDto,
   })
   async create(@Body() dto: CreateFaqDto): Promise<ApiFaqItem> {
     return this.faqService.create(dto);
@@ -103,18 +120,27 @@ export class FaqController {
   @ApiResponse({
     status: 200,
     description: 'SSS maddesi başarıyla güncellendi.',
+    type: FaqItemResponseDto,
   })
   @ApiResponse({
     status: 400,
     description: 'Geçersiz DTO girdisi.',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Yetkilendirme başarısız.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Yetkisiz erişim — Admin rolü gereklidir.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'SSS maddesi bulunamadı.',
+    type: ErrorResponseDto,
   })
   async update(
     @Param('id') id: string,
@@ -138,14 +164,22 @@ export class FaqController {
   @ApiResponse({
     status: 200,
     description: 'SSS maddesi başarıyla silindi.',
+    type: SuccessIdResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Yetkilendirme başarısız.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Yetkisiz erişim — Admin rolü gereklidir.',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'SSS maddesi bulunamadı.',
+    type: ErrorResponseDto,
   })
   async delete(@Param('id') id: string): Promise<{ id: string }> {
     return this.faqService.delete(id);
