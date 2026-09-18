@@ -5,8 +5,10 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { AuditEvent, SecurityAuditService } from '../audit';
 
 interface ErrorResponseBody {
   status: 'error';
@@ -24,16 +26,29 @@ interface ErrorResponseBody {
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
+  constructor(
+    @Optional() private readonly auditService?: SecurityAuditService,
+  ) {}
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    // HttpException.getStatus() number döner ama değeri her zaman bir HttpStatus'tur.
     const status: HttpStatus =
       exception instanceof HttpException
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    if (status === HttpStatus.TOO_MANY_REQUESTS) {
+      this.auditService?.warn(AuditEvent.RATE_LIMIT_EXCEEDED, {
+        ip: request.ip,
+        details: {
+          method: request.method,
+          url: request.url,
+        },
+      });
+    }
 
     const body = this.buildBody(exception, status);
 
@@ -48,6 +63,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }
 
   private buildBody(exception: unknown, status: HttpStatus): ErrorResponseBody {
+    if (status === HttpStatus.TOO_MANY_REQUESTS) {
+      return {
+        status: 'error',
+        message:
+          'Çok fazla istek gönderildi. Lütfen bir süre sonra tekrar deneyiniz.',
+      };
+    }
+
     if (!(exception instanceof HttpException)) {
       return { status: 'error', message: 'Beklenmeyen bir hata oluştu.' };
     }

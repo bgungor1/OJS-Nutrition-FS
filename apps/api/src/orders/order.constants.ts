@@ -20,3 +20,8 @@ export const RESTOCKABLE_STATUSES: OrderStatus[] = [
   OrderStatus.cancelled,
   OrderStatus.returned,
 ];
+
+export const ORDER_CHECKOUT_RATE_LIMIT = {
+  LIMIT: 5,
+  TTL: 60000,
+} as const;

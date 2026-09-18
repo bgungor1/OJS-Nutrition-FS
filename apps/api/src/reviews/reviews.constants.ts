@@ -13,3 +13,8 @@ export const REVIEW_SORT_OPTIONS = [
 ] as const;
 
 export type ReviewSortOption = (typeof REVIEW_SORT_OPTIONS)[number];
+
+export const REVIEW_RATE_LIMIT = {
+  LIMIT: 5,
+  TTL: 60000,
+} as const;

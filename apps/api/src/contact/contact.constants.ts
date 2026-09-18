@@ -13,6 +13,6 @@ export const CONTACT_LIMITS = {
 } as const;
 
 export const CONTACT_RATE_LIMIT = {
-  LIMIT: 5,
+  LIMIT: 3,
   TTL: 60000,
 } as const;

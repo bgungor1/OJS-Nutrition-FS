@@ -26,10 +26,6 @@ const SENSITIVE_KEY_PATTERNS = [
 export class SecurityAuditService {
   private readonly logger = new Logger('SecurityAudit');
 
-  /**
-   * Kayıt altına alınan olayları PII/gizli bilgi filtrelemesinden geçirerek
-   * yapısal JSON formatında stdout/logger'a yazar.
-   */
   record(params: {
     event: AuditEvent;
     level?: AuditLogLevel;
