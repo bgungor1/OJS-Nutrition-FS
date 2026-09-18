@@ -305,7 +305,9 @@ describe('Products E2E Test Suite (/api/v1/products & /api/v1/categories)', () =
       expect(body.status).toBe('success');
       expect(body.data.id).toBe('prod-1');
       expect(body.data.name).toBe('WHEY PROTEIN');
-      expect(body.data.explanation.usage).toBe('1 ölçek su ile karıştırılır');
+      expect(body.data.explanation.usage).toBe(
+        'Mix 1 scoop (30g) with cold water or milk.',
+      );
       expect(body.data.variants).toHaveLength(1);
 
       const variant = body.data.variants[0];
