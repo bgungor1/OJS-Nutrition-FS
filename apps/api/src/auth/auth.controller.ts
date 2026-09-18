@@ -9,13 +9,18 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
-import { Public } from '../common';
+import { AuthenticatedUser, CurrentUser, Public } from '../common';
 import { AuthService } from './auth.service';
 import { GoogleAuthService } from './google-auth.service';
-import { LoginDto, RefreshTokenDto, RegisterDto } from './dto';
+import { LoginDto, LogoutDto, RefreshTokenDto, RegisterDto } from './dto';
 import { GoogleOAuthGuard } from './guards';
 import { GoogleProfile, RegisterResponse, TokensResponse } from './interfaces';
 
@@ -92,6 +97,55 @@ export class AuthController {
     @Req() req: Request,
   ): Promise<TokensResponse> {
     return this.authService.refreshToken(dto, req.ip);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      "Kullanıcı oturumunu ve sunulan refresh token'ı iptal eder (Logout)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Oturum başarıyla sonlandırıldı.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Yenileme anahtarı zorunludur.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Geçersiz veya süresi dolmuş yenileme anahtarı.',
+  })
+  async logout(
+    @Body() dto: LogoutDto,
+    @Req() req: Request,
+  ): Promise<{ message: string }> {
+    return this.authService.logout(dto, req.ip);
+  }
+
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Post('revoke-all')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Kullanıcının tüm aktif oturumlarını anında sonlandırır',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Tüm aktif oturumlar başarıyla sonlandırıldı.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Yetkilendirme başarısız.',
+  })
+  async revokeAll(
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() req: Request,
+  ): Promise<{ message: string }> {
+    return this.authService.revokeAllSessions(user.id, req.ip);
   }
 
   @Public()

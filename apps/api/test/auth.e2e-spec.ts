@@ -35,6 +35,7 @@ describe('Auth E2E Test Suite (/api/v1/auth)', () => {
       create: jest.Mock;
       update: jest.Mock;
       updateMany: jest.Mock;
+      deleteMany: jest.Mock;
     };
   };
 
@@ -67,6 +68,7 @@ describe('Auth E2E Test Suite (/api/v1/auth)', () => {
         create: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn(),
+        deleteMany: jest.fn(),
       },
     };
 

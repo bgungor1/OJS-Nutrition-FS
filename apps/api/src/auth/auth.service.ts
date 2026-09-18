@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { AuditEvent, SecurityAuditService } from '../common/audit';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import { LogoutDto } from './dto/logout.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import {
@@ -141,5 +142,25 @@ export class AuthService {
     ipAddress?: string,
   ): Promise<TokensResponse> {
     return this.tokenService.rotateRefreshToken(dto.refresh, ipAddress);
+  }
+
+  async logout(
+    dto: LogoutDto,
+    ipAddress?: string,
+  ): Promise<{ message: string }> {
+    await this.tokenService.revokeRefreshToken(dto.refreshToken, ipAddress);
+    return { message: 'Oturum başarıyla sonlandırıldı.' };
+  }
+
+  async revokeAllSessions(
+    userId: string,
+    ipAddress?: string,
+  ): Promise<{ message: string }> {
+    await this.tokenService.revokeAllUserTokens(
+      userId,
+      ipAddress,
+      'USER_REVOKE_ALL',
+    );
+    return { message: 'Tüm aktif oturumlar başarıyla sonlandırıldı.' };
   }
 }
