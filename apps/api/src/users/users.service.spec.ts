@@ -1,5 +1,6 @@
 import { Logger, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { AuditEvent, SecurityAuditService } from '../common/audit';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from './users.service';
 
@@ -10,6 +11,12 @@ describe('UsersService', () => {
       findUnique: jest.Mock;
       update: jest.Mock;
     };
+  };
+  let auditService: {
+    info: jest.Mock;
+    warn: jest.Mock;
+    alarm: jest.Mock;
+    record: jest.Mock;
   };
 
   const mockDbUser = {
@@ -27,6 +34,12 @@ describe('UsersService', () => {
         update: jest.fn(),
       },
     };
+    auditService = {
+      info: jest.fn(),
+      warn: jest.fn(),
+      alarm: jest.fn(),
+      record: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -34,6 +47,10 @@ describe('UsersService', () => {
         {
           provide: PrismaService,
           useValue: prisma,
+        },
+        {
+          provide: SecurityAuditService,
+          useValue: auditService,
         },
       ],
     }).compile();
@@ -126,6 +143,13 @@ describe('UsersService', () => {
         last_name: 'Yılmaz',
         phone_number: '+905559998877',
       });
+      expect(auditService.info).toHaveBeenCalledWith(
+        AuditEvent.USER_PROFILE_UPDATED,
+        expect.objectContaining({
+          userId: 'user-uuid-1',
+          details: { updatedFields: ['firstName', 'lastName', 'phoneNumber'] },
+        }),
+      );
     });
 
     it('kısmi güncellemede sadece verilen alanları güncellemeli', async () => {

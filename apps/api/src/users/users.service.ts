@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
+import { AuditEvent, SecurityAuditService } from '../common/audit';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { AccountProfile } from './interfaces/account-profile.interface';
@@ -16,7 +22,10 @@ export class UsersService {
     phoneNumber: true,
   } as const;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly auditService?: SecurityAuditService,
+  ) {}
 
   async getMyAccount(userId: string): Promise<AccountProfile> {
     const user = await this.prisma.user.findUnique({
@@ -57,6 +66,10 @@ export class UsersService {
       this.logger.log(
         `[Audit] User ${userId} updated profile: ${updatedFields.join(', ')}`,
       );
+      this.auditService?.info(AuditEvent.USER_PROFILE_UPDATED, {
+        userId,
+        details: { updatedFields },
+      });
     }
 
     return UsersMapper.toAccountProfile(updatedUser);
