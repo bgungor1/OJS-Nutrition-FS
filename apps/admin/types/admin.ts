@@ -1,50 +1,73 @@
 import type { Role } from './auth';
 
+export type AdminOrderStatus =
+  | 'pending'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled'
+  | 'returned';
+
+export interface DashboardSummary {
+  totalOrders: number;
+  totalRevenue: number;
+  totalUsers: number;
+  totalProducts: number;
+}
+
+export interface OrdersByStatus {
+  pending: number;
+  processing: number;
+  shipped: number;
+  delivered: number;
+  cancelled: number;
+  returned: number;
+}
+
 export interface AdminRecentOrder {
   id: string;
   orderNo: string;
-  status: string;
-  totalAmount: number;
+  customerName: string;
+  customerEmail: string;
+  totalPrice: number;
+  status: AdminOrderStatus;
+  itemsCount: number;
   createdAt: string;
-  user: {
-    firstName: string | null;
-    lastName: string | null;
-    email: string;
-  };
-  itemCount: number;
 }
 
 export interface AdminTopProduct {
   productId: string;
-  name: string;
-  slug: string;
-  totalSold: number;
-  revenue: number;
+  productName: string;
+  totalQuantitySold: number;
+  totalRevenue: number;
+  photoSrc: string | null;
 }
 
-export interface AdminCriticalStock {
+export interface AdminLowStockVariant {
   variantId: string;
   productId: string;
   productName: string;
-  size: string | null;
-  aroma: string | null;
-  stock: number;
+  productSlug: string;
+  aroma: string;
+  gram: number;
+  stockQuantity: number;
+  isAvailable: boolean;
+  photoSrc: string;
 }
 
-export interface AdminSalesTrendDay {
+export interface AdminSalesTrendItem {
   date: string;
-  totalSales: number;
   orderCount: number;
+  totalRevenue: number;
 }
 
 export interface DashboardStatsResponse {
-  totalOrders: number;
-  totalRevenue: number;
-  ordersByStatus: Record<string, number>;
+  summary: DashboardSummary;
+  ordersByStatus: OrdersByStatus;
   recentOrders: AdminRecentOrder[];
   topProducts: AdminTopProduct[];
-  criticalStockAlerts: AdminCriticalStock[];
-  salesTrend: AdminSalesTrendDay[];
+  lowStockVariants: AdminLowStockVariant[];
+  salesTrend: AdminSalesTrendItem[];
 }
 
 export interface AdminUsersQuery {
