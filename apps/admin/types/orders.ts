@@ -6,22 +6,68 @@ export type OrderStatus =
   | 'cancelled'
   | 'refunded';
 
+export interface AdminOrderCustomer {
+  id: string;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  phoneNumber?: string | null;
+}
+
 export interface AdminOrderItem {
   id: string;
-  variantId: string;
-  quantity: number;
+  productId: string;
+  productVariantId: string;
+  productName: string;
+  variantName?: string | null;
+  pieces: number;
   unitPrice: number;
   totalPrice: number;
-  variant: {
-    id: string;
-    size: string | null;
-    aroma: string | null;
-    product: {
-      id: string;
-      name: string;
-      slug: string;
-    };
-  };
+  photo?: string | null;
+}
+
+export interface AdminOrderPayment {
+  provider: string;
+  providerRef: string;
+  cardType: string;
+  last4: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface AdminOrderListItem {
+  id: string;
+  orderNo: string;
+  status: OrderStatus;
+  totalPrice: number;
+  shippingFee: number;
+  itemCount: number;
+  createdAt: string;
+  user: AdminOrderCustomer;
+  payment?: AdminOrderPayment | null;
+}
+
+export interface AdminOrderDetail {
+  id: string;
+  orderNo: string;
+  status: OrderStatus;
+  totalPrice: number;
+  shippingFee: number;
+  addressSnapshot: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  user: AdminOrderCustomer;
+  items: AdminOrderItem[];
+  payment?: AdminOrderPayment | null;
+}
+
+export interface AdminOrdersPaginatedResponse {
+  count: number;
+  limit: number;
+  offset: number;
+  search?: string | null;
+  status?: OrderStatus | null;
+  results: AdminOrderListItem[];
 }
 
 export interface AdminOrdersQuery {
@@ -29,48 +75,11 @@ export interface AdminOrdersQuery {
   offset?: number;
   status?: OrderStatus;
   search?: string;
+  startDate?: string;
+  endDate?: string;
+  sort?: string;
 }
 
-export interface AdminOrderListItem {
-  id: string;
-  orderNo: string;
-  status: OrderStatus;
-  totalAmount: number;
-  subtotal: number;
-  shippingFee: number;
-  createdAt: string;
-  updatedAt: string;
-  user: {
-    id: string;
-    email: string;
-    firstName: string | null;
-    lastName: string | null;
-  };
-  itemCount: number;
-}
-
-export interface AdminOrderDetail extends AdminOrderListItem {
-  items: AdminOrderItem[];
-  shippingAddress?: {
-    title: string;
-    firstName?: string;
-    lastName?: string;
-    phone?: string;
-    city: string;
-    district: string;
-    fullAddress: string;
-  } | null;
-  payment?: {
-    id: string;
-    status: string;
-    providerRef?: string | null;
-    last4?: string | null;
-    cardType?: string | null;
-    amount: number;
-    createdAt: string;
-  } | null;
-}
-
-export interface UpdateAdminOrderStatusDto {
+export interface UpdateAdminOrderStatusInput {
   status: OrderStatus;
 }
