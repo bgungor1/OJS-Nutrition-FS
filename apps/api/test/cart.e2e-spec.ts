@@ -208,8 +208,8 @@ describe('Cart E2E Test Suite (/api/v1/cart)', () => {
     );
   });
 
-  describe('1. Misafir Sepeti ve Çerez Yaşam Döngüsü', () => {
-    it('çerezsiz GET /api/v1/cart isteğinde misafire Set-Cookie ile guest_cart_id vermeli ve boş sepet dönmeli', async () => {
+  describe('1. Guest Cart and Cookie Lifecycle', () => {
+    it('should give guest_cart_id with Set-Cookie and return empty cart for cookie-less GET /api/v1/cart request', async () => {
       mockPrisma.cartItem.findMany.mockResolvedValue([]);
 
       const res = await request(server).get('/api/v1/cart').expect(200);
@@ -228,7 +228,7 @@ describe('Cart E2E Test Suite (/api/v1/cart)', () => {
       );
     });
 
-    it('var olan guest_cart_id çereziyle GET çağrıldığında mevcut çerezi koruyarak sepeti listelemeli', async () => {
+    it('should list cart while preserving existing cookie when GET is called with existing guest_cart_id cookie', async () => {
       const dbItem = makeDbCartItem();
       mockPrisma.cartItem.findMany.mockResolvedValue([dbItem]);
 
@@ -249,8 +249,8 @@ describe('Cart E2E Test Suite (/api/v1/cart)', () => {
     });
   });
 
-  describe('2. Sepete Ekleme ve Stok Validasyonları (POST /api/v1/cart)', () => {
-    it('geçerli misafir isteğinde ürünü sepete eklemeli ve zenginleştirilmiş sepeti dönmeli', async () => {
+  describe('2. Add to Cart and Stock Validations (POST /api/v1/cart)', () => {
+    it('should add product to cart and return enriched cart on valid guest request', async () => {
       mockPrisma.productVariant.findUnique.mockResolvedValue(mockVariant);
       mockPrisma.cartItem.findFirst.mockResolvedValue(null);
       mockPrisma.cartItem.create.mockResolvedValue(makeDbCartItem());
@@ -272,7 +272,7 @@ describe('Cart E2E Test Suite (/api/v1/cart)', () => {
       expect(mockPrisma.cartItem.create).toHaveBeenCalled();
     });
 
-    it('talep edilen adet mevcut stoğu aşıyorsa 400 Bad Request fırlatmalı', async () => {
+    it('should throw 400 Bad Request when requested pieces exceed available stock', async () => {
       mockPrisma.productVariant.findUnique.mockResolvedValue(mockVariant); // stok = 10
       mockPrisma.cartItem.findFirst.mockResolvedValue(null);
 
@@ -290,7 +290,7 @@ describe('Cart E2E Test Suite (/api/v1/cart)', () => {
       expect(body.status).toBe('error');
     });
 
-    it('satışa kapalı veya stoğu tükenmiş ürün eklendiğinde 400 Bad Request fırlatmalı', async () => {
+    it('should throw 400 Bad Request when adding unavailable or out-of-stock product', async () => {
       mockPrisma.productVariant.findUnique.mockResolvedValue(
         mockUnavailableVariant,
       );
@@ -309,7 +309,7 @@ describe('Cart E2E Test Suite (/api/v1/cart)', () => {
       expect(body.status).toBe('error');
     });
 
-    it('olmayan ürün veya varyant IDsi verildiğinde 404 Not Found fırlatmalı', async () => {
+    it('should throw 404 Not Found when non-existent product or variant ID is given', async () => {
       mockPrisma.productVariant.findUnique.mockResolvedValue(null);
 
       const res = await request(server)
@@ -327,8 +327,8 @@ describe('Cart E2E Test Suite (/api/v1/cart)', () => {
     });
   });
 
-  describe('3. Sepetten Eksiltme ve Temizleme (DELETE /api/v1/cart)', () => {
-    it('sepetteki ürünün adedini eksiltmeli', async () => {
+  describe('3. Decrement and Clear Cart (DELETE /api/v1/cart)', () => {
+    it('should decrement pieces of product in cart', async () => {
       const existingItem = makeDbCartItem({ pieces: 3 });
       mockPrisma.cartItem.findFirst.mockResolvedValue(existingItem);
       mockPrisma.cartItem.update.mockResolvedValue({
@@ -354,7 +354,7 @@ describe('Cart E2E Test Suite (/api/v1/cart)', () => {
       expect(body.data[0].pieces).toBe(2);
     });
 
-    it('DELETE /api/v1/cart/clear ile tüm sepeti boşaltmalı', async () => {
+    it('should clear entire cart with DELETE /api/v1/cart/clear', async () => {
       mockPrisma.cartItem.deleteMany.mockResolvedValue({ count: 2 });
 
       const res = await request(server)
@@ -369,12 +369,12 @@ describe('Cart E2E Test Suite (/api/v1/cart)', () => {
     });
   });
 
-  describe('4. Kullanıcı Girişi ve Sepet Birleştirme (POST /api/v1/cart/merge)', () => {
-    it('Bearer token olmadan merge çağrıldığında 401 Unauthorized dönmeli', async () => {
+  describe('4. User Login and Cart Merge (POST /api/v1/cart/merge)', () => {
+    it('should return 401 Unauthorized when merge is called without Bearer token', async () => {
       await request(server).post('/api/v1/cart/merge').expect(401);
     });
 
-    it('giriş yapmış kullanıcıda misafir sepetini kullanıcıya aktarmalı ve misafir çerezini temizlemeli', async () => {
+    it('should transfer guest cart to user and clear guest cookie for authenticated user', async () => {
       const guestItem = makeDbCartItem({
         id: 'guest-item-1',
         guestSessionId: 'guest-session-123',
@@ -417,8 +417,8 @@ describe('Cart E2E Test Suite (/api/v1/cart)', () => {
     });
   });
 
-  describe('5. Kullanıcılar Arası Sepet İzolasyonu', () => {
-    it('Kullanıcı B, Kullanıcı A nın sepetindeki ürünleri görmemeli', async () => {
+  describe('5. Inter-User Cart Isolation', () => {
+    it('should prevent User B from seeing products in User A cart', async () => {
       mockPrisma.cartItem.findMany.mockImplementation(
         ({ where }: { where: { userId?: string } }) => {
           if (where.userId === mockUserA.id) {

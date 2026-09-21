@@ -110,8 +110,8 @@ describe('Products E2E Test Suite (/api/v1/products & /api/v1/categories)', () =
     jest.clearAllMocks();
   });
 
-  describe('GET /api/v1/products (Ürün Listesi & Sayfalama & Sıralama)', () => {
-    it('Token olmadan public olarak 200 OK ve standart zarfta sayfalanmış liste dönmeli', async () => {
+  describe('GET /api/v1/products (Product List & Pagination & Sorting)', () => {
+    it('should return 200 OK and paginated list in standard envelope publicly without token', async () => {
       mockPrisma.product.count.mockResolvedValue(1);
       mockPrisma.product.findMany.mockResolvedValue([sampleProduct]);
 
@@ -140,7 +140,7 @@ describe('Products E2E Test Suite (/api/v1/products & /api/v1/categories)', () =
       expect(item.photo_src).toBe('media/products/whey-protein.jpg');
     });
 
-    it('limit ve offset query parametreleri ile sayfalama linklerini üretmeli', async () => {
+    it('should generate pagination links with limit and offset query parameters', async () => {
       mockPrisma.product.count.mockResolvedValue(50);
       mockPrisma.product.findMany.mockResolvedValue([sampleProduct]);
 
@@ -154,7 +154,7 @@ describe('Products E2E Test Suite (/api/v1/products & /api/v1/categories)', () =
       expect(body.data.previous).toBe('?limit=10&offset=0&category=protein');
     });
 
-    it('kategori filtresi verildiğinde Prisma sorgusuna kategori OR filtresi eklemeli', async () => {
+    it('should add category OR filter to Prisma query when category filter is provided', async () => {
       mockPrisma.product.count.mockResolvedValue(0);
       mockPrisma.product.findMany.mockResolvedValue([]);
 
@@ -178,7 +178,7 @@ describe('Products E2E Test Suite (/api/v1/products & /api/v1/categories)', () =
       );
     });
 
-    it('sort=price_asc ile ürünleri en düşük fiyata göre artan sırada listelemeli', async () => {
+    it('should list products in ascending order of lowest price with sort=price_asc', async () => {
       const cheapProduct = createMockProduct({
         id: 'prod-cheap',
         name: 'UCUZ URUN',
@@ -226,7 +226,7 @@ describe('Products E2E Test Suite (/api/v1/products & /api/v1/categories)', () =
       expect(body.data.results[1].id).toBe('prod-exp');
     });
 
-    it('sort=rating ile averageStar azalan sırada sorgu yapmalı', async () => {
+    it('should query averageStar in descending order with sort=rating', async () => {
       mockPrisma.product.count.mockResolvedValue(1);
       mockPrisma.product.findMany.mockResolvedValue([sampleProduct]);
 
@@ -239,7 +239,7 @@ describe('Products E2E Test Suite (/api/v1/products & /api/v1/categories)', () =
       );
     });
 
-    it('Güvenlik: Whitelist dışı geçersiz sıralama parametresinde 400 Bad Request dönmeli (Query DoS engeli)', async () => {
+    it('Security: should return 400 Bad Request on invalid sorting parameter outside whitelist (Query DoS prevention)', async () => {
       const response: SupertestResponse = await request(server)
         .get('/api/v1/products?sort=malicious_sql_injection')
         .expect(400);
@@ -250,7 +250,7 @@ describe('Products E2E Test Suite (/api/v1/products & /api/v1/categories)', () =
       expect(body.reason?.sort).toBeDefined();
     });
 
-    it('Güvenlik: limit değeri negatif veya sınır (100) üstünde verildiğinde 400 dönmeli', async () => {
+    it('Security: should return 400 when limit value is negative or above threshold (100)', async () => {
       const negativeLimitRes: SupertestResponse = await request(server)
         .get('/api/v1/products?limit=0')
         .expect(400);
@@ -265,8 +265,8 @@ describe('Products E2E Test Suite (/api/v1/products & /api/v1/categories)', () =
     });
   });
 
-  describe('GET /api/v1/products/best-sellers (Çok Satan Ürünler)', () => {
-    it('Token olmadan public olarak çok satanları dönmeli ve id içermemeli', async () => {
+  describe('GET /api/v1/products/best-sellers (Best Sellers)', () => {
+    it('should return best sellers publicly without token and without id field', async () => {
       mockPrisma.product.findMany.mockResolvedValue([sampleProduct]);
 
       const response: SupertestResponse = await request(server)
@@ -293,8 +293,8 @@ describe('Products E2E Test Suite (/api/v1/products & /api/v1/categories)', () =
     });
   });
 
-  describe('GET /api/v1/products/:slug (Ürün Detayı)', () => {
-    it('Mevcut slug ile çağrıldığında 200 OK ve varyant detaylarını dönmeli', async () => {
+  describe('GET /api/v1/products/:slug (Product Detail)', () => {
+    it('should return 200 OK and variant details when called with existing slug', async () => {
       mockPrisma.product.findUnique.mockResolvedValue(sampleProduct);
 
       const response: SupertestResponse = await request(server)
@@ -317,7 +317,7 @@ describe('Products E2E Test Suite (/api/v1/products & /api/v1/categories)', () =
       expect(variant.price.profit).toBe(50);
     });
 
-    it('Bulunamayan slug ile çağrıldığında 404 Not Found dönmeli', async () => {
+    it('should return 404 Not Found when called with non-existent slug', async () => {
       mockPrisma.product.findUnique.mockResolvedValue(null);
 
       const response: SupertestResponse = await request(server)
@@ -330,8 +330,8 @@ describe('Products E2E Test Suite (/api/v1/products & /api/v1/categories)', () =
     });
   });
 
-  describe('GET /api/v1/categories (Kategori Ağacı)', () => {
-    it('Token olmadan public olarak hiyerarşik kategori ağacını dönmeli', async () => {
+  describe('GET /api/v1/categories (Category Tree)', () => {
+    it('should return hierarchical category tree publicly without token', async () => {
       mockPrisma.category.findMany.mockResolvedValue(mockCategoriesFromDb);
 
       const response: SupertestResponse = await request(server)

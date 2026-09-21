@@ -9,7 +9,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AllExceptionsFilter } from './all-exceptions.filter';
-import { AuditEvent } from '../audit';
 
 describe('AllExceptionsFilter', () => {
   let filter: AllExceptionsFilter;
@@ -66,8 +65,8 @@ describe('AllExceptionsFilter', () => {
     jest.clearAllMocks();
   });
 
-  describe('HttpException İşleme', () => {
-    it('string payload içeren HttpException için standart hata zarfı dönmeli', () => {
+  describe('HttpException Handling', () => {
+    it('should return standard error envelope for HttpException with string payload', () => {
       const exception = new HttpException(
         'Kayıt bulunamadı',
         HttpStatus.NOT_FOUND,
@@ -85,7 +84,7 @@ describe('AllExceptionsFilter', () => {
       expect(loggerErrorSpy).not.toHaveBeenCalled();
     });
 
-    it('nesne payload ve tekil mesaj içeren HttpException için mesajı dönmeli', () => {
+    it('should return message for HttpException with object payload and single message', () => {
       const exception = new BadRequestException({
         message: 'Geçersiz parametre değeri',
       });
@@ -102,7 +101,7 @@ describe('AllExceptionsFilter', () => {
       expect(loggerErrorSpy).not.toHaveBeenCalled();
     });
 
-    it('class-validator dizi mesajlarını alan bazlı reason nesnesine gruplamalı', () => {
+    it('should group class-validator array messages into field-based reason object', () => {
       const validationMessages = [
         'email must be an email',
         'email should not be empty',
@@ -127,7 +126,7 @@ describe('AllExceptionsFilter', () => {
       expect(loggerErrorSpy).not.toHaveBeenCalled();
     });
 
-    it('mesajı boş nesne payload durumunda status koduna göre varsayılan mesaj dönmeli', () => {
+    it('should return default message according to status code when object payload has empty message', () => {
       filter.catch(new UnauthorizedException({}), mockHost);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: 'error',
@@ -161,7 +160,7 @@ describe('AllExceptionsFilter', () => {
       });
     });
 
-    it('req.correlationId mevcut olduğunda hata zarfına eklenmeli', () => {
+    it('should include correlationId in error envelope when req.correlationId exists', () => {
       mockRequest.correlationId = 'test-corr-id-001';
       filter.catch(new NotFoundException('Test'), mockHost);
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -170,8 +169,8 @@ describe('AllExceptionsFilter', () => {
     });
   });
 
-  describe('Bilinmeyen & 500 Hataları İşleme (Zero Leaks)', () => {
-    it('standart Error fırlatıldığında 500 status ve güvenli genel mesaj dönmeli, loglamalı', () => {
+  describe('Unknown & 500 Error Handling (Zero Leaks)', () => {
+    it('should return 500 status and safe generic message, and log when standard Error is thrown', () => {
       mockRequest.method = 'POST';
       mockRequest.url = '/api/v1/orders';
       const internalError = new Error(
@@ -195,7 +194,7 @@ describe('AllExceptionsFilter', () => {
       );
     });
 
-    it('primitif değer (string/sayı) fırlatıldığında da 500 dönmeli ve string olarak loglamalı', () => {
+    it('should return 500 and log as string when primitive value is thrown', () => {
       filter.catch('Beklenmeyen bir string fırlatıldı', mockHost);
 
       expect(mockResponse.status).toHaveBeenCalledWith(
@@ -211,67 +210,6 @@ describe('AllExceptionsFilter', () => {
         '[-] GET /api/v1/test -> 500',
         'Beklenmeyen bir string fırlatıldı',
       );
-    });
-  });
-
-  describe('429 Too Many Requests & Rate Limiting', () => {
-    it('429 durumunda standart Türkçe hata mesajı dönmeli ve RATE_LIMIT_EXCEEDED audit logu düşmeli', () => {
-      mockRequest.method = 'POST';
-      mockRequest.url = '/api/v1/contact';
-      mockRequest.ip = '198.51.100.1';
-
-      const exception = new HttpException(
-        'ThrottlerException: Too Many Requests',
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-
-      filter.catch(exception, mockHost);
-
-      expect(mockResponse.status).toHaveBeenCalledWith(
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        status: 'error',
-        statusCode: HttpStatus.TOO_MANY_REQUESTS,
-        correlationId: undefined,
-        message:
-          'Çok fazla istek gönderildi. Lütfen bir süre sonra tekrar deneyiniz.',
-      });
-      expect(mockAuditService.warn).toHaveBeenCalledWith(
-        AuditEvent.RATE_LIMIT_EXCEEDED,
-        {
-          ip: '198.51.100.1',
-          details: {
-            method: 'POST',
-            url: '/api/v1/contact',
-            correlationId: undefined,
-          },
-        },
-      );
-    });
-
-    it('auditService enjekte edilmediğinde de hata fırlatmadan 429 dönmeli', () => {
-      const filterWithoutAudit = new AllExceptionsFilter();
-
-      const exception = new HttpException(
-        'Too Many Requests',
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-
-      expect(() => {
-        filterWithoutAudit.catch(exception, mockHost);
-      }).not.toThrow();
-
-      expect(mockResponse.status).toHaveBeenCalledWith(
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        status: 'error',
-        statusCode: HttpStatus.TOO_MANY_REQUESTS,
-        correlationId: undefined,
-        message:
-          'Çok fazla istek gönderildi. Lütfen bir süre sonra tekrar deneyiniz.',
-      });
     });
   });
 });

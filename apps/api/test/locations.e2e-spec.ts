@@ -89,7 +89,7 @@ describe('Locations E2E Test Suite (/api/v1/locations)', () => {
   });
 
   describe('GET /api/v1/locations/countries', () => {
-    it('herkese açık olarak tüm ülkeleri 200 ile listelemeli', async () => {
+    it('should list all countries publicly with 200', async () => {
       mockPrisma.country.findMany.mockResolvedValue([mockCountry]);
 
       const response: SupertestResponse = await request(server)
@@ -103,7 +103,7 @@ describe('Locations E2E Test Suite (/api/v1/locations)', () => {
   });
 
   describe('GET /api/v1/locations/countries/:countryId/regions', () => {
-    it('belirtilen ülkeye ait illeri 200 ile listelemeli', async () => {
+    it('should list regions for the specified country with 200', async () => {
       mockPrisma.country.findUnique.mockResolvedValue(mockCountry);
       mockPrisma.region.findMany.mockResolvedValue([mockRegion]);
 
@@ -122,7 +122,7 @@ describe('Locations E2E Test Suite (/api/v1/locations)', () => {
       ]);
     });
 
-    it('ülke bulunamadığında 404 dönmeli', async () => {
+    it('should return 404 when country is not found', async () => {
       mockPrisma.country.findUnique.mockResolvedValue(null);
 
       const response: SupertestResponse = await request(server)
@@ -134,7 +134,7 @@ describe('Locations E2E Test Suite (/api/v1/locations)', () => {
       expect(body.message).toBe('Ülke bulunamadı.');
     });
 
-    it('sayısal olmayan countryId için 400 Bad Request dönmeli (ParseIntPipe)', async () => {
+    it('should return 400 Bad Request for non-numeric countryId (ParseIntPipe)', async () => {
       const response: SupertestResponse = await request(server)
         .get('/api/v1/locations/countries/invalid-id/regions')
         .expect(400);
@@ -145,7 +145,7 @@ describe('Locations E2E Test Suite (/api/v1/locations)', () => {
   });
 
   describe('GET /api/v1/locations/regions/:regionId/subregions', () => {
-    it('belirtilen ile ait ilçeleri 200 ile listelemeli', async () => {
+    it('should list subregions for the specified region with 200', async () => {
       mockPrisma.region.findUnique.mockResolvedValue(mockRegion);
       mockPrisma.subregion.findMany.mockResolvedValue([mockSubregion]);
 
@@ -164,7 +164,7 @@ describe('Locations E2E Test Suite (/api/v1/locations)', () => {
       ]);
     });
 
-    it('il bulunamadığında 404 dönmeli', async () => {
+    it('should return 404 when region is not found', async () => {
       mockPrisma.region.findUnique.mockResolvedValue(null);
 
       const response: SupertestResponse = await request(server)
@@ -176,7 +176,7 @@ describe('Locations E2E Test Suite (/api/v1/locations)', () => {
       expect(body.message).toBe('İl bulunamadı.');
     });
 
-    it('sayısal olmayan regionId için 400 Bad Request dönmeli (ParseIntPipe)', async () => {
+    it('should return 400 Bad Request for non-numeric regionId (ParseIntPipe)', async () => {
       const response: SupertestResponse = await request(server)
         .get('/api/v1/locations/regions/invalid-id/subregions')
         .expect(400);

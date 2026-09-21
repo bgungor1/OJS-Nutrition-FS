@@ -2,8 +2,8 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { AddressesService } from './addresses.service';
-import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
+import { mockAddress, mockCreateAddressDto } from './test/addresses.fixtures';
 
 describe('AddressesService', () => {
   let service: AddressesService;
@@ -16,29 +16,7 @@ describe('AddressesService', () => {
       update: jest.Mock;
       delete: jest.Mock;
     };
-    subregion: {
-      findFirst: jest.Mock;
-    };
-  };
-
-  const mockDate = new Date('2026-09-09T12:00:00.000Z');
-
-  const mockAddress = {
-    id: 'addr-1',
-    userId: 'user-1',
-    title: 'Ev',
-    firstName: 'Berkant',
-    lastName: 'Güngör',
-    countryId: 1,
-    regionId: 1,
-    subregionId: 1,
-    fullAddress: 'Caferağa Mah. Moda Cad.',
-    phoneNumber: '05551234567',
-    createdAt: mockDate,
-    updatedAt: mockDate,
-    country: { id: 1, name: 'Türkiye' },
-    region: { id: 1, name: 'İstanbul', countryId: 1 },
-    subregion: { id: 1, name: 'Kadıköy', regionId: 1 },
+    subregion: { findFirst: jest.Mock };
   };
 
   beforeEach(async () => {
@@ -51,9 +29,7 @@ describe('AddressesService', () => {
         update: jest.fn(),
         delete: jest.fn(),
       },
-      subregion: {
-        findFirst: jest.fn(),
-      },
+      subregion: { findFirst: jest.fn() },
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -67,7 +43,7 @@ describe('AddressesService', () => {
   });
 
   describe('validateLocationHierarchy', () => {
-    it('hiyerarşi doğru olduğunda sorunsuz tamamlanmalı', async () => {
+    it('should complete without errors when hierarchy is valid', async () => {
       mockPrisma.subregion.findFirst.mockResolvedValue({ id: 1 });
 
       await expect(
@@ -75,15 +51,11 @@ describe('AddressesService', () => {
       ).resolves.toBeUndefined();
 
       expect(mockPrisma.subregion.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: 1,
-          regionId: 1,
-          region: { countryId: 1 },
-        },
+        where: { id: 1, regionId: 1, region: { countryId: 1 } },
       });
     });
 
-    it('hiyerarşi eşleşmediğinde BadRequestException fırlatmalı', async () => {
+    it('should throw BadRequestException when hierarchy does not match', async () => {
       mockPrisma.subregion.findFirst.mockResolvedValue(null);
 
       await expect(
@@ -93,7 +65,7 @@ describe('AddressesService', () => {
   });
 
   describe('list', () => {
-    it('kullanıcının adreslerini ve toplam sayısını sayfalı dönmeli', async () => {
+    it('should return paginated user addresses and total count', async () => {
       mockPrisma.address.findMany.mockResolvedValue([mockAddress]);
       mockPrisma.address.count.mockResolvedValue(1);
 
@@ -116,7 +88,7 @@ describe('AddressesService', () => {
   });
 
   describe('getById', () => {
-    it('adresi ID ve userId ile sorgulayıp dönmeli', async () => {
+    it('should query and return address with id and userId', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(mockAddress);
 
       const result = await service.getById('user-1', 'addr-1');
@@ -128,7 +100,7 @@ describe('AddressesService', () => {
       expect(result.id).toBe('addr-1');
     });
 
-    it('adres bulunamadığında veya başka kullanıcıya ait olduğunda NotFoundException fırlatmalı (IDOR)', async () => {
+    it('should throw NotFoundException when address not found or belongs to another user (IDOR)', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(null);
 
       await expect(service.getById('user-2', 'addr-1')).rejects.toThrow(
@@ -138,18 +110,9 @@ describe('AddressesService', () => {
   });
 
   describe('create', () => {
-    const createDto: CreateAddressDto = {
-      title: 'Ev',
-      first_name: 'Berkant',
-      last_name: 'Güngör',
-      country_id: 1,
-      region_id: 1,
-      subregion_id: 1,
-      full_address: 'Caferağa Mah. Moda Cad.',
-      phone_number: '05551234567',
-    };
+    const createDto = mockCreateAddressDto;
 
-    it('hiyerarşi geçerliyse adresi oluşturup dönmeli', async () => {
+    it('should create and return address when hierarchy is valid', async () => {
       mockPrisma.subregion.findFirst.mockResolvedValue({ id: 1 });
       mockPrisma.address.create.mockResolvedValue(mockAddress);
 
@@ -172,7 +135,7 @@ describe('AddressesService', () => {
       expect(result.id).toBe('addr-1');
     });
 
-    it('geçersiz coğrafi hiyerarşide adresi oluşturmadan hata fırlatmalı', async () => {
+    it('should throw BadRequestException without creating address on invalid hierarchy', async () => {
       mockPrisma.subregion.findFirst.mockResolvedValue(null);
 
       await expect(service.create('user-1', createDto)).rejects.toThrow(
@@ -189,7 +152,7 @@ describe('AddressesService', () => {
       subregion_id: 2,
     };
 
-    it('adres kullanıcıya aitse ve hiyerarşi geçerliyse güncellemeli', async () => {
+    it('should update address when it belongs to user and hierarchy is valid', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(mockAddress);
       mockPrisma.subregion.findFirst.mockResolvedValue({ id: 2 });
       mockPrisma.address.update.mockResolvedValue({
@@ -205,17 +168,13 @@ describe('AddressesService', () => {
       });
       expect(mockPrisma.address.update).toHaveBeenCalledWith({
         where: { id: 'addr-1' },
-        data: {
-          title: 'İş Yeri',
-          regionId: 1,
-          subregionId: 2,
-        },
+        data: { title: 'İş Yeri', regionId: 1, subregionId: 2 },
         include: { country: true, region: true, subregion: true },
       });
       expect(result.title).toBe('İş Yeri');
     });
 
-    it('adres başka bir kullanıcıya aitse NotFoundException fırlatmalı (IDOR)', async () => {
+    it('should throw NotFoundException when address belongs to another user (IDOR)', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(null);
 
       await expect(
@@ -226,7 +185,7 @@ describe('AddressesService', () => {
   });
 
   describe('delete', () => {
-    it('adres kullanıcıya aitse silmeli ve { id } dönmeli', async () => {
+    it('should delete address and return { id } when it belongs to user', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(mockAddress);
       mockPrisma.address.delete.mockResolvedValue(mockAddress);
 
@@ -241,7 +200,7 @@ describe('AddressesService', () => {
       expect(result).toEqual({ id: 'addr-1' });
     });
 
-    it('adres başka bir kullanıcıya aitse NotFoundException fırlatmalı (IDOR)', async () => {
+    it('should throw NotFoundException when address belongs to another user (IDOR)', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(null);
 
       await expect(service.delete('user-2', 'addr-1')).rejects.toThrow(

@@ -60,7 +60,7 @@ describe('LocationsService', () => {
   });
 
   describe('findCountries', () => {
-    it('ülkeleri alfabetik sıralı getirmeli', async () => {
+    it('should return countries sorted alphabetically', async () => {
       mockPrisma.country.findMany.mockResolvedValue(mockCountries);
 
       const result = await service.findCountries();
@@ -76,7 +76,7 @@ describe('LocationsService', () => {
   });
 
   describe('findRegionsByCountryId', () => {
-    it('ülke mevcutsa illeri doğru formatta getirmeli', async () => {
+    it('should return regions in correct format when country exists', async () => {
       mockPrisma.country.findUnique.mockResolvedValue(mockCountries[0]);
       mockPrisma.region.findMany.mockResolvedValue(mockRegions);
 
@@ -95,7 +95,7 @@ describe('LocationsService', () => {
       ]);
     });
 
-    it('ülke bulunamadığında NotFoundException fırlatmalı', async () => {
+    it('should throw NotFoundException when country is not found', async () => {
       mockPrisma.country.findUnique.mockResolvedValue(null);
 
       await expect(service.findRegionsByCountryId(999)).rejects.toThrow(
@@ -106,7 +106,7 @@ describe('LocationsService', () => {
   });
 
   describe('findSubregionsByRegionId', () => {
-    it('il mevcutsa ilçeleri doğru formatta getirmeli', async () => {
+    it('should return subregions in correct format when region exists', async () => {
       mockPrisma.region.findUnique.mockResolvedValue(mockRegions[0]);
       mockPrisma.subregion.findMany.mockResolvedValue(mockSubregions);
 
@@ -125,7 +125,7 @@ describe('LocationsService', () => {
       ]);
     });
 
-    it('il bulunamadığında NotFoundException fırlatmalı', async () => {
+    it('should throw NotFoundException when region is not found', async () => {
       mockPrisma.region.findUnique.mockResolvedValue(null);
 
       await expect(service.findSubregionsByRegionId(999)).rejects.toThrow(

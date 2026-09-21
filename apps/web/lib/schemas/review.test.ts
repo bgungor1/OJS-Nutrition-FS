@@ -9,7 +9,7 @@ describe('createReviewSchema', () => {
     images: ['https://example.com/photo1.jpg'],
   };
 
-  it('geçerli veriyi başarıyla doğrular', () => {
+  it('should validate valid review successfully', () => {
     const result = createReviewSchema.safeParse(validReview);
     expect(result.success).toBe(true);
     if (result.success) {
@@ -20,7 +20,7 @@ describe('createReviewSchema', () => {
     }
   });
 
-  it('görsel dizisi verilmediğinde boş dizi varsayılanını atar', () => {
+  it('should default images to empty array when omitted', () => {
     const withoutImages = {
       rating: validReview.rating,
       title: validReview.title,
@@ -33,7 +33,7 @@ describe('createReviewSchema', () => {
     }
   });
 
-  it('başlık ve metin alanlarındaki boşlukları trim eder', () => {
+  it('should trim whitespace from title and text fields', () => {
     const reviewWithSpaces = {
       ...validReview,
       title: '   Güzel Tat   ',
@@ -47,8 +47,8 @@ describe('createReviewSchema', () => {
     }
   });
 
-  describe('puan (rating) doğrulamaları', () => {
-    it('puan eksik olduğunda hata verir', () => {
+  describe('rating validations', () => {
+    it('should fail when rating is missing', () => {
       const result = createReviewSchema.safeParse({ ...validReview, rating: undefined });
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -56,7 +56,7 @@ describe('createReviewSchema', () => {
       }
     });
 
-    it('puan 1-den küçük olduğunda hata verir', () => {
+    it('should fail when rating is less than 1', () => {
       const result = createReviewSchema.safeParse({ ...validReview, rating: 0 });
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -64,7 +64,7 @@ describe('createReviewSchema', () => {
       }
     });
 
-    it('puan 5-ten büyük olduğunda hata verir', () => {
+    it('should fail when rating is greater than 5', () => {
       const result = createReviewSchema.safeParse({ ...validReview, rating: 6 });
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -72,7 +72,7 @@ describe('createReviewSchema', () => {
       }
     });
 
-    it('puan ondalıklı olduğunda hata verir', () => {
+    it('should fail when rating is not an integer', () => {
       const result = createReviewSchema.safeParse({ ...validReview, rating: 4.5 });
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -81,8 +81,8 @@ describe('createReviewSchema', () => {
     });
   });
 
-  describe('başlık (title) doğrulamaları', () => {
-    it('başlık 2 karakterden kısa olduğunda hata verir', () => {
+  describe('title validations', () => {
+    it('should fail when title is shorter than 2 characters', () => {
       const result = createReviewSchema.safeParse({ ...validReview, title: 'A' });
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -90,7 +90,7 @@ describe('createReviewSchema', () => {
       }
     });
 
-    it('başlık 150 karakterden uzun olduğunda hata verir', () => {
+    it('should fail when title exceeds 150 characters', () => {
       const result = createReviewSchema.safeParse({ ...validReview, title: 'a'.repeat(151) });
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -99,8 +99,8 @@ describe('createReviewSchema', () => {
     });
   });
 
-  describe('yorum metni (text) doğrulamaları', () => {
-    it('yorum 5 karakterden kısa olduğunda hata verir', () => {
+  describe('text validations', () => {
+    it('should fail when text is shorter than 5 characters', () => {
       const result = createReviewSchema.safeParse({ ...validReview, text: 'Test' });
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -108,7 +108,7 @@ describe('createReviewSchema', () => {
       }
     });
 
-    it('yorum 2000 karakterden uzun olduğunda hata verir', () => {
+    it('should fail when text exceeds 2000 characters', () => {
       const result = createReviewSchema.safeParse({ ...validReview, text: 'a'.repeat(2001) });
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -117,8 +117,8 @@ describe('createReviewSchema', () => {
     });
   });
 
-  describe('görseller (images) doğrulamaları', () => {
-    it('geçersiz url formatında hata verir', () => {
+  describe('images validations', () => {
+    it('should fail when image URL format is invalid', () => {
       const result = createReviewSchema.safeParse({ ...validReview, images: ['gecersiz-url'] });
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -126,7 +126,7 @@ describe('createReviewSchema', () => {
       }
     });
 
-    it('5-ten fazla görsel eklendiğinde hata verir', () => {
+    it('should fail when more than 5 images are provided', () => {
       const result = createReviewSchema.safeParse({
         ...validReview,
         images: [

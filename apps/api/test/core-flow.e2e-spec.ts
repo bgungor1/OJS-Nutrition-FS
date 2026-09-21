@@ -29,7 +29,7 @@ interface ApiErrorResponse {
   reason?: Record<string, string[]>;
 }
 
-describe('Core Flow E2E Integration Suite (Faz 1 Çekirdek Kullanıcı Yaşam Döngüsü)', () => {
+describe('Core Flow E2E Integration Suite (Phase 1 Core User Lifecycle)', () => {
   let app: INestApplication;
   let server: Parameters<typeof request>[0];
 
@@ -150,11 +150,11 @@ describe('Core Flow E2E Integration Suite (Faz 1 Çekirdek Kullanıcı Yaşam D�
     jest.clearAllMocks();
   });
 
-  describe('Faz 1 Bütünleşik Kullanıcı Akışı', () => {
+  describe('Phase 1 Integrated User Flow', () => {
     let accessToken: string;
     let refreshToken: string;
 
-    it('1. Public Keşif: Anonim ziyaretçi kategorileri ve çok satanları listeleyebilmeli', async () => {
+    it('1. Public Discovery: Anonymous visitor should list categories and best sellers', async () => {
       mockPrisma.category.findMany.mockResolvedValue(mockCategories);
       mockPrisma.product.findMany.mockResolvedValue([mockProduct]);
 
@@ -182,7 +182,7 @@ describe('Core Flow E2E Integration Suite (Faz 1 Çekirdek Kullanıcı Yaşam D�
       expect(bestBody.data[0].name).toBe('WHEY PROTEIN CORE');
     });
 
-    it('2. Ürün İnceleme: Ziyaretçi kategori filtresiyle arama yapıp detay görüntüleyebilmeli', async () => {
+    it('2. Product Inspection: Visitor should search with category filter and view details', async () => {
       mockPrisma.product.count.mockResolvedValue(1);
       mockPrisma.product.findMany.mockResolvedValue([mockProduct]);
       mockPrisma.product.findUnique.mockResolvedValue(mockProduct);
@@ -209,7 +209,7 @@ describe('Core Flow E2E Integration Suite (Faz 1 Çekirdek Kullanıcı Yaşam D�
       expect(detailBody.data.variants[0].is_available).toBe(true);
     });
 
-    it('3. Güvenlik Duvarı: Giriş yapmamış kullanıcı korumalı profile erişememeli (401 Unauthorized)', async () => {
+    it('3. Security Firewall: Unauthenticated user must not access protected profile (401 Unauthorized)', async () => {
       const response: SupertestResponse = await request(server)
         .get('/api/v1/users/my-account')
         .expect(401);
@@ -219,7 +219,7 @@ describe('Core Flow E2E Integration Suite (Faz 1 Çekirdek Kullanıcı Yaşam D�
       expect(body.message).toBe('Unauthorized');
     });
 
-    it('4. Kayıt Denemesi: Hatalı şifre reddedilmeli, geçerli bilgilerle kullanıcı oluşturulmalı', async () => {
+    it('4. Registration: Invalid password must be rejected, user created with valid data', async () => {
       // 4a. Hatalı şifre (küçük harf yok)
       const invalidRegisterRes: SupertestResponse = await request(server)
         .post('/api/v1/auth/register')
@@ -268,7 +268,7 @@ describe('Core Flow E2E Integration Suite (Faz 1 Çekirdek Kullanıcı Yaşam D�
       expect('passwordHash' in validBody.data.user).toBe(false);
     });
 
-    it('5. Oturum Açma: Kullanıcı giriş yapıp access ve refresh token alabilmeli', async () => {
+    it('5. Login: User should log in and receive access & refresh tokens', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(registeredUser);
       mockPrisma.refreshToken.create.mockResolvedValue({
         id: 'rt-uuid-1',
@@ -293,7 +293,7 @@ describe('Core Flow E2E Integration Suite (Faz 1 Çekirdek Kullanıcı Yaşam D�
       refreshToken = loginBody.data.refresh;
     });
 
-    it('6. Profil Görüntüleme: Bearer token ile profil bilgisi (passwordHash sızmadan) alınabilmeli', async () => {
+    it('6. Profile Retrieval: Profile details (without leaking passwordHash) should be fetched with Bearer token', async () => {
       mockPrisma.user.findUnique.mockResolvedValue({
         id: registeredUser.id,
         email: registeredUser.email,
@@ -317,7 +317,7 @@ describe('Core Flow E2E Integration Suite (Faz 1 Çekirdek Kullanıcı Yaşam D�
       expect('passwordHash' in profileBody.data).toBe(false);
     });
 
-    it('7. Profil Güncelleme: Ad, soyad ve telefon güncellenebilmeli', async () => {
+    it('7. Profile Update: First name, last name, and phone number should be updatable', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(registeredUser);
       mockPrisma.user.update.mockResolvedValue({
         ...registeredUser,
@@ -341,7 +341,7 @@ describe('Core Flow E2E Integration Suite (Faz 1 Çekirdek Kullanıcı Yaşam D�
       expect(updateBody.data.phone_number).toBe('+905551112233');
     });
 
-    it('8. Token Yenileme (Rotation): Refresh token ile yeni token çifti alınabilmeli', async () => {
+    it('8. Token Rotation: New token pair should be obtained with refresh token', async () => {
       mockPrisma.refreshToken.findUnique.mockResolvedValue({
         id: 'rt-db-1',
         tokenHash: 'hash',
@@ -371,7 +371,7 @@ describe('Core Flow E2E Integration Suite (Faz 1 Çekirdek Kullanıcı Yaşam D�
       expect(mockPrisma.refreshToken.update).toHaveBeenCalled();
     });
 
-    it('9. Yetkisiz Token Engeli: Geçersiz/sahte token ile yapılan istekler 401 ile engellenmeli', async () => {
+    it('9. Unauthorized Token Blocker: Requests with invalid/forged token must be blocked with 401', async () => {
       const invalidTokenRes: SupertestResponse = await request(server)
         .get('/api/v1/users/my-account')
         .set('Authorization', 'Bearer invalid.forged.jwt.token')

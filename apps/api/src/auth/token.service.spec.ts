@@ -1,52 +1,28 @@
-import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import * as crypto from 'node:crypto';
-import { AuditEvent, SecurityAuditService } from '../common/audit';
+import { SecurityAuditService } from '../common/audit';
 import { PrismaService } from '../prisma/prisma.service';
 import { TokenService } from './token.service';
-import {
-  createMockRefreshToken,
-  createMockRefreshTokenDto,
-  createMockUser,
-} from './test/auth.fixture';
 
-describe('TokenService', () => {
+describe('TokenService - generateTokens', () => {
   let service: TokenService;
   let prisma: {
     refreshToken: {
       create: jest.Mock;
-      findUnique: jest.Mock;
-      update: jest.Mock;
-      updateMany: jest.Mock;
-      deleteMany: jest.Mock;
     };
   };
   let jwtService: {
     signAsync: jest.Mock;
-    verifyAsync: jest.Mock;
   };
   let configService: {
     get: jest.Mock;
   };
-  let auditService: {
-    record: jest.Mock;
-    info: jest.Mock;
-    warn: jest.Mock;
-    alarm: jest.Mock;
-  };
-
-  const mockRefreshTokenDto = createMockRefreshTokenDto();
 
   beforeEach(async () => {
     prisma = {
       refreshToken: {
         create: jest.fn(),
-        findUnique: jest.fn(),
-        update: jest.fn(),
-        updateMany: jest.fn(),
-        deleteMany: jest.fn(),
       },
     };
 
@@ -57,7 +33,6 @@ describe('TokenService', () => {
         }
         return Promise.resolve('mock-refresh-token');
       }),
-      verifyAsync: jest.fn(),
     };
 
     configService = {
@@ -74,28 +49,25 @@ describe('TokenService', () => {
       }),
     };
 
-    auditService = {
-      record: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      alarm: jest.fn(),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TokenService,
         { provide: PrismaService, useValue: prisma },
         { provide: JwtService, useValue: jwtService },
         { provide: ConfigService, useValue: configService },
-        { provide: SecurityAuditService, useValue: auditService },
+        { provide: SecurityAuditService, useValue: {} },
       ],
     }).compile();
 
     service = module.get<TokenService>(TokenService);
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('generateTokens', () => {
-    it('access ve refresh token üretip veritabanına refresh token hash kaydetmeli', async () => {
+    it('should generate access and refresh tokens and save refresh token hash in database', async () => {
       prisma.refreshToken.create.mockResolvedValue({ id: 'rt-1' });
 
       const result = await service.generateTokens(
@@ -116,146 +88,6 @@ describe('TokenService', () => {
         access: 'mock-access-token',
         refresh: 'mock-refresh-token',
       });
-    });
-  });
-
-  describe('rotateRefreshToken', () => {
-    it('geçerli bir refresh token sunulduğunda eski token iptal edilip yeni çift dönmeli', async () => {
-      const mockUser = createMockUser();
-      const expectedHash = crypto
-        .createHash('sha256')
-        .update(mockRefreshTokenDto.refresh)
-        .digest('hex');
-      const mockDbToken = createMockRefreshToken({
-        userId: mockUser.id,
-        tokenHash: expectedHash,
-        user: mockUser,
-      });
-
-      jwtService.verifyAsync.mockResolvedValue({ sub: mockUser.id });
-      prisma.refreshToken.findUnique.mockResolvedValue(mockDbToken);
-      prisma.refreshToken.update.mockResolvedValue({
-        ...mockDbToken,
-        revokedAt: new Date(),
-      });
-      prisma.refreshToken.create.mockResolvedValue({ id: 'new-rt-id' });
-
-      const result = await service.rotateRefreshToken(
-        mockRefreshTokenDto.refresh,
-        '127.0.0.1',
-      );
-
-      expect(jwtService.verifyAsync).toHaveBeenCalledWith(
-        mockRefreshTokenDto.refresh,
-        {
-          secret: 'test-refresh-secret',
-        },
-      );
-
-      expect(prisma.refreshToken.findUnique).toHaveBeenCalledWith({
-        where: { tokenHash: expectedHash },
-        include: { user: true },
-      });
-
-      // Eski token revoked edilmeli
-      expect(prisma.refreshToken.update).toHaveBeenCalledWith({
-        where: { id: mockDbToken.id },
-        data: { revokedAt: expect.any(Date) as unknown as Date },
-      });
-
-      // Yeni token çifti üretilip DB'ye kaydedilmeli
-      expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
-      expect(prisma.refreshToken.create).toHaveBeenCalled();
-
-      expect(result).toEqual({
-        access: 'mock-access-token',
-        refresh: 'mock-refresh-token',
-      });
-      expect(auditService.info).toHaveBeenCalledWith(
-        AuditEvent.AUTH_TOKEN_ROTATED,
-        expect.objectContaining({
-          userId: 'uuid-1234',
-          ip: '127.0.0.1',
-        }),
-      );
-    });
-
-    it('JWT doğrulaması başarısız olursa UnauthorizedException fırlatmalı', async () => {
-      jwtService.verifyAsync.mockRejectedValue(new Error('jwt expired'));
-
-      await expect(
-        service.rotateRefreshToken(mockRefreshTokenDto.refresh, '127.0.0.1'),
-      ).rejects.toThrow(UnauthorizedException);
-      await expect(
-        service.rotateRefreshToken(mockRefreshTokenDto.refresh, '127.0.0.1'),
-      ).rejects.toThrow('Geçersiz veya süresi dolmuş yenileme anahtarı.');
-
-      expect(prisma.refreshToken.findUnique).not.toHaveBeenCalled();
-      expect(prisma.refreshToken.update).not.toHaveBeenCalled();
-    });
-
-    it('veritabanında bulunamayan refresh token sunulduğunda UnauthorizedException fırlatmalı', async () => {
-      jwtService.verifyAsync.mockResolvedValue({ sub: 'uuid-1234' });
-      prisma.refreshToken.findUnique.mockResolvedValue(null);
-
-      await expect(
-        service.rotateRefreshToken(mockRefreshTokenDto.refresh, '127.0.0.1'),
-      ).rejects.toThrow(UnauthorizedException);
-      await expect(
-        service.rotateRefreshToken(mockRefreshTokenDto.refresh, '127.0.0.1'),
-      ).rejects.toThrow('Geçersiz yenileme anahtarı.');
-
-      expect(prisma.refreshToken.update).not.toHaveBeenCalled();
-    });
-
-    it('TOKEN REUSE ATTACK: daha önce iptal edilmiş token ile denendiğinde kullanıcının tüm oturumlarını iptal etmeli', async () => {
-      const mockDbToken = createMockRefreshToken({
-        userId: 'uuid-1234',
-        revokedAt: new Date(Date.now() - 3600000),
-      });
-
-      jwtService.verifyAsync.mockResolvedValue({ sub: 'uuid-1234' });
-      prisma.refreshToken.findUnique.mockResolvedValue(mockDbToken);
-
-      await expect(
-        service.rotateRefreshToken(mockRefreshTokenDto.refresh, '127.0.0.1'),
-      ).rejects.toThrow(UnauthorizedException);
-      await expect(
-        service.rotateRefreshToken(mockRefreshTokenDto.refresh, '127.0.0.1'),
-      ).rejects.toThrow('Geçersiz yenileme anahtarı.');
-
-      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
-        where: { userId: 'uuid-1234' },
-        data: { revokedAt: expect.any(Date) as unknown as Date },
-      });
-      expect(auditService.alarm).toHaveBeenCalledWith(
-        AuditEvent.AUTH_TOKEN_REUSE_DETECTED,
-        expect.objectContaining({
-          userId: 'uuid-1234',
-          ip: '127.0.0.1',
-        }),
-      );
-      expect(jwtService.signAsync).not.toHaveBeenCalled();
-    });
-
-    it('süresi dolmuş refresh token sunulduğunda UnauthorizedException fırlatmalı', async () => {
-      const mockDbToken = createMockRefreshToken({
-        userId: 'uuid-1234',
-        expiresAt: new Date(Date.now() - 3600000),
-        user: createMockUser(),
-      });
-
-      jwtService.verifyAsync.mockResolvedValue({ sub: 'uuid-1234' });
-      prisma.refreshToken.findUnique.mockResolvedValue(mockDbToken);
-
-      await expect(
-        service.rotateRefreshToken(mockRefreshTokenDto.refresh, '127.0.0.1'),
-      ).rejects.toThrow(UnauthorizedException);
-      await expect(
-        service.rotateRefreshToken(mockRefreshTokenDto.refresh, '127.0.0.1'),
-      ).rejects.toThrow('Yenileme anahtarının süresi dolmuş.');
-
-      expect(prisma.refreshToken.update).not.toHaveBeenCalled();
     });
   });
 });

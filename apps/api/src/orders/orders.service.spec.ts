@@ -24,11 +24,7 @@ describe('OrdersService - Query & Settings', () => {
   let prismaService: {
     address: { findFirst: jest.Mock };
     cartItem: { findMany: jest.Mock };
-    order: {
-      findMany: jest.Mock;
-      findFirst: jest.Mock;
-      count: jest.Mock;
-    };
+    order: { findMany: jest.Mock; findFirst: jest.Mock; count: jest.Mock };
   };
 
   let paymentsService: {
@@ -40,11 +36,7 @@ describe('OrdersService - Query & Settings', () => {
     prismaService = {
       address: { findFirst: jest.fn() },
       cartItem: { findMany: jest.fn() },
-      order: {
-        findMany: jest.fn(),
-        findFirst: jest.fn(),
-        count: jest.fn(),
-      },
+      order: { findMany: jest.fn(), findFirst: jest.fn(), count: jest.fn() },
     };
 
     paymentsService = {
@@ -68,7 +60,7 @@ describe('OrdersService - Query & Settings', () => {
   });
 
   describe('getPaymentSettings', () => {
-    it('ödeme ayarlarını PaymentsService üzerinden delege ederek dönmelidir', () => {
+    it('should delegate and return payment settings from PaymentsService', () => {
       const result = service.getPaymentSettings();
 
       expect(paymentsService.getPaymentSettings).toHaveBeenCalledTimes(1);
@@ -84,7 +76,7 @@ describe('OrdersService - Query & Settings', () => {
     const userId = MOCK_USER_ID;
     const addressId = MOCK_ADDRESS_ID;
 
-    it('adres bulunamazsa veya kullanıcıya ait değilse NotFoundException fırlatmalıdır (IDOR Koruması)', async () => {
+    it('should throw NotFoundException if address not found or not owned by user (IDOR protection)', async () => {
       prismaService.address.findFirst.mockResolvedValue(null);
 
       await expect(
@@ -96,7 +88,7 @@ describe('OrdersService - Query & Settings', () => {
       });
     });
 
-    it('sepet tutarı 500 TL altında kaldığında standart kargo ücreti dönmelidir', async () => {
+    it('should return default shipping fee when cart total is below 500 TL', async () => {
       prismaService.address.findFirst.mockResolvedValue({
         id: addressId,
         userId,
@@ -121,7 +113,7 @@ describe('OrdersService - Query & Settings', () => {
       });
     });
 
-    it('sepet tutarı 500 TL veya üzeri olduğunda ücretsiz kargo (fee: 0, is_free: true) dönmelidir', async () => {
+    it('should return free shipping (fee: 0, is_free: true) when cart total is 500 TL or above', async () => {
       prismaService.address.findFirst.mockResolvedValue({
         id: addressId,
         userId,
@@ -150,7 +142,7 @@ describe('OrdersService - Query & Settings', () => {
   describe('findUserOrders', () => {
     const userId = MOCK_USER_ID;
 
-    it('kullanıcının siparişlerini sayfalı ve tarihe göre azalan sırada getirmelidir', async () => {
+    it('should fetch user orders paginated in descending date order', async () => {
       prismaService.order.findMany.mockResolvedValue(mockOrdersList);
       prismaService.order.count.mockResolvedValue(1);
 
@@ -164,10 +156,7 @@ describe('OrdersService - Query & Settings', () => {
         orderBy: { createdAt: 'desc' },
         skip: 5,
         take: 10,
-        include: {
-          items: true,
-          payment: true,
-        },
+        include: { items: true, payment: true },
       });
 
       expect(prismaService.order.count).toHaveBeenCalledWith({
@@ -180,17 +169,14 @@ describe('OrdersService - Query & Settings', () => {
       expect(result.results[0].item_count).toBe(2);
     });
 
-    it('sorgu parametresi verilmediğinde varsayılan sayfalama değerlerini kullanmalıdır', async () => {
+    it('should use default pagination values when no query parameters are provided', async () => {
       prismaService.order.findMany.mockResolvedValue([]);
       prismaService.order.count.mockResolvedValue(0);
 
       const result = await service.findUserOrders(userId);
 
       expect(prismaService.order.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          skip: 0,
-          take: 20,
-        }),
+        expect.objectContaining({ skip: 0, take: 20 }),
       );
       expect(result).toEqual({ count: 0, results: [] });
     });
@@ -200,24 +186,21 @@ describe('OrdersService - Query & Settings', () => {
     const userId = MOCK_USER_ID;
     const orderId = MOCK_ORDER_ID;
 
-    it('sipariş bulunduğunda ve kullanıcıya ait olduğunda detaylı siparişi dönmelidir', async () => {
+    it('should return detailed order when found and owned by user', async () => {
       prismaService.order.findFirst.mockResolvedValue(mockOrderDetail);
 
       const result = await service.findUserOrderById(userId, orderId);
 
       expect(prismaService.order.findFirst).toHaveBeenCalledWith({
         where: { id: orderId, userId },
-        include: {
-          items: true,
-          payment: true,
-        },
+        include: { items: true, payment: true },
       });
 
       expect(result.id).toBe(orderId);
       expect(result.order_no).toBe(MOCK_ORDER_NO);
     });
 
-    it('sipariş bulunamazsa veya başka kullanıcıya aitse NotFoundException fırlatmalıdır (IDOR Koruması)', async () => {
+    it('should throw NotFoundException if order not found or belongs to another user (IDOR protection)', async () => {
       prismaService.order.findFirst.mockResolvedValue(null);
 
       await expect(service.findUserOrderById(userId, orderId)).rejects.toThrow(
@@ -226,10 +209,7 @@ describe('OrdersService - Query & Settings', () => {
 
       expect(prismaService.order.findFirst).toHaveBeenCalledWith({
         where: { id: orderId, userId },
-        include: {
-          items: true,
-          payment: true,
-        },
+        include: { items: true, payment: true },
       });
     });
   });

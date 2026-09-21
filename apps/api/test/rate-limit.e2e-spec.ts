@@ -63,14 +63,14 @@ describe('Rate Limiting E2E Test Suite (429 & Standard Envelope)', () => {
     await app.close();
   });
 
-  describe('POST /api/v1/contact hız sınırı kontrolü (limit: 3 / min)', () => {
+  describe('POST /api/v1/contact rate limit check (limit: 3 / min)', () => {
     const contactPayload = {
       name: 'Ahmet Yılmaz',
       email: 'ahmet@example.com',
       message: 'Sipariş durumum hakkında bilgi almak istiyorum.',
     };
 
-    it('3 ardışık istek başarıyla 201 dönmeli, 4. istekte standart 429 hata zarfı dönmeli', async () => {
+    it('should return 201 for 3 consecutive requests and return standard 429 error envelope on 4th request', async () => {
       // 1. İstek (Başarılı)
       const res1: SupertestResponse = await request(server)
         .post('/api/v1/contact')

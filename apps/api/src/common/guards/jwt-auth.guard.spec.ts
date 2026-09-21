@@ -28,7 +28,7 @@ describe('JwtAuthGuard', () => {
     jest.clearAllMocks();
   });
 
-  it('@Public() ile işaretlenmiş endpoint için doğrulamayı atlayıp true dönmeli', () => {
+  it('should skip authentication and return true for endpoint marked with @Public()', () => {
     mockReflector.getAllAndOverride.mockReturnValue(true);
 
     const result = guard.canActivate(mockContext);
@@ -40,7 +40,7 @@ describe('JwtAuthGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('@Public() olmayan korumalı endpoint için super.canActivate çağrılmalı', () => {
+  it('should call super.canActivate for protected endpoint without @Public()', () => {
     mockReflector.getAllAndOverride.mockReturnValue(false);
 
     const superCanActivateSpy = jest

@@ -54,7 +54,7 @@ describe('GoogleAuthService', () => {
   });
 
   describe('validateOrCreateGoogleUser', () => {
-    it('mevcut google kullanıcısı googleId ile bulunduğunda token üretmeli', async () => {
+    it('should generate tokens when existing google user is found by googleId', async () => {
       const existingGoogleUser = createMockUser({
         googleId: 'google-123456',
         authProvider: AuthProvider.google,
@@ -79,7 +79,7 @@ describe('GoogleAuthService', () => {
       });
     });
 
-    it('aynı e-posta ile local hesap varsa ConflictException fırlatmalı', async () => {
+    it('should throw ConflictException if local account with same email exists', async () => {
       prisma.user.findUnique.mockImplementation(
         ({ where }: { where: { googleId?: string; email?: string } }) => {
           if (where.googleId) {
@@ -101,7 +101,7 @@ describe('GoogleAuthService', () => {
       expect(tokenService.generateTokens).not.toHaveBeenCalled();
     });
 
-    it('hiç kullanıcı yoksa yeni google kullanıcısı oluşturup token üretmeli', async () => {
+    it('should create new google user and generate tokens when user does not exist', async () => {
       prisma.user.findUnique
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(null);

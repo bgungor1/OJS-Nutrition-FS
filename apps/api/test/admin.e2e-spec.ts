@@ -119,8 +119,8 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
       request(server).delete(url).set('Authorization', `Bearer ${adminToken}`),
   });
 
-  describe('1. RBAC & Yetkilendirme Testleri', () => {
-    it('Token olmadan admin endpointlerine erişimde 401 dönmelidir', async () => {
+  describe('1. RBAC & Authorization Tests', () => {
+    it('should return 401 when accessing admin endpoints without token', async () => {
       await request(server).get('/api/v1/admin/dashboard/stats').expect(401);
       await request(server).get('/api/v1/admin/users').expect(401);
       await request(server).get('/api/v1/admin/orders').expect(401);
@@ -130,7 +130,7 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
         .expect(401);
     });
 
-    it('Müşteri rolündeki token ile erişimde 403 Forbidden dönmelidir', async () => {
+    it('should return 403 Forbidden when accessing with customer role token', async () => {
       await request(server)
         .get('/api/v1/admin/dashboard/stats')
         .set('Authorization', `Bearer ${customerToken}`)
@@ -154,8 +154,8 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
     });
   });
 
-  describe('2. Dashboard Analitik & İstatistikleri', () => {
-    it('GET /api/v1/admin/dashboard/stats başarıyla istatistik ve metrikleri dönmelidir', async () => {
+  describe('2. Dashboard Analytics & Statistics', () => {
+    it('GET /api/v1/admin/dashboard/stats should successfully return statistics and metrics', async () => {
       mockPrisma.order.count.mockResolvedValue(10);
       mockPrisma.order.aggregate.mockResolvedValue({
         _sum: { totalPrice: new Decimal(5490) },
@@ -210,8 +210,8 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
     });
   });
 
-  describe('3. Admin Kullanıcı Yönetimi', () => {
-    it('GET /api/v1/admin/users sayfalı kullanıcı listesini dönmelidir', async () => {
+  describe('3. Admin User Management', () => {
+    it('GET /api/v1/admin/users should return paginated user list', async () => {
       mockPrisma.user.findMany.mockResolvedValue([mockTargetUser]);
       mockPrisma.user.count.mockResolvedValue(1);
 
@@ -228,7 +228,7 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
       expect(body.data.results[0].email).toBe(mockTargetUser.email);
     });
 
-    it('GET /api/v1/admin/users/:id kullanıcı detayını dönmelidir', async () => {
+    it('GET /api/v1/admin/users/:id should return user details', async () => {
       const res: SupertestResponse = await authAdmin()
         .get(`/api/v1/admin/users/${mockTargetUser.id}`)
         .expect(200);
@@ -241,7 +241,7 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
       expect(body.data.id).toBe(mockTargetUser.id);
     });
 
-    it('PATCH /api/v1/admin/users/:id/role rolü güncellemeli', async () => {
+    it('PATCH /api/v1/admin/users/:id/role should update user role', async () => {
       mockPrisma.user.update.mockResolvedValue({
         ...mockTargetUser,
         role: Role.admin,
@@ -257,7 +257,7 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
       expect(body.data.role).toBe(Role.admin);
     });
 
-    it('Self-Lockout Koruması: Admin kendi rolünü değiştirememelidir', async () => {
+    it('Self-Lockout Protection: Admin must not change own role', async () => {
       const res: SupertestResponse = await authAdmin()
         .patch(`/api/v1/admin/users/${mockAdmin.id}/role`)
         .send({ role: Role.customer })
@@ -268,8 +268,8 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
     });
   });
 
-  describe('4. Ürün & Varyant CRUD Yaşam Döngüsü', () => {
-    it('POST /api/v1/products yeni ürün oluşturmalıdır', async () => {
+  describe('4. Product & Variant CRUD Lifecycle', () => {
+    it('POST /api/v1/products should create a new product', async () => {
       mockPrisma.product.findUnique.mockResolvedValue(null);
       mockPrisma.category.findUnique.mockResolvedValue(mockCategory);
       mockPrisma.subCategory.findUnique.mockResolvedValue(mockSubCategory);
@@ -303,7 +303,7 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
       expect(body.data.name).toBe('WHEY PROTEIN');
     });
 
-    it('PUT /api/v1/products/:id ürün alanlarını güncellemelidir', async () => {
+    it('PUT /api/v1/products/:id should update product fields', async () => {
       mockPrisma.product.findUnique.mockResolvedValue(mockProduct);
       mockPrisma.product.update.mockResolvedValue({
         ...mockProduct,
@@ -320,7 +320,7 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
       expect(body.data.name).toBe('GÜNCELLENMİŞ PROTEİN');
     });
 
-    it('POST /api/v1/products/:id/variants varyant eklemelidir', async () => {
+    it('POST /api/v1/products/:id/variants should add a variant', async () => {
       mockPrisma.product.findUnique.mockResolvedValue(mockProduct);
       mockPrisma.productVariant.create.mockResolvedValue(mockVariant);
       mockPrisma.product.findUniqueOrThrow.mockResolvedValue(mockProduct);
@@ -343,7 +343,7 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
       expect(body.status).toBe('success');
     });
 
-    it('DELETE /api/v1/products/:id/variants/:varId sipariş geçmişi olan varyant için 400 dönmelidir', async () => {
+    it('DELETE /api/v1/products/:id/variants/:varId should return 400 for variant with order history', async () => {
       mockPrisma.productVariant.findUnique.mockResolvedValue(mockVariant);
       mockPrisma.orderItem.count.mockResolvedValue(5);
 
@@ -356,8 +356,8 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
     });
   });
 
-  describe('5. Admin Sipariş Yönetimi', () => {
-    it('GET /api/v1/admin/orders filtrelenmiş sipariş listesini dönmelidir', async () => {
+  describe('5. Admin Order Management', () => {
+    it('GET /api/v1/admin/orders should return filtered order list', async () => {
       mockPrisma.order.findMany.mockResolvedValue([mockOrder]);
       mockPrisma.order.count.mockResolvedValue(1);
 
@@ -374,7 +374,7 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
       expect(body.data.results[0].orderNo).toBe(mockOrder.orderNo);
     });
 
-    it('GET /api/v1/admin/orders/:id sipariş detayını dönmelidir', async () => {
+    it('GET /api/v1/admin/orders/:id should return order details', async () => {
       mockPrisma.order.findUnique.mockResolvedValue(mockOrder);
 
       const res: SupertestResponse = await authAdmin()
@@ -389,7 +389,7 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
       expect(body.data.id).toBe(mockOrder.id);
     });
 
-    it('PATCH /api/v1/admin/orders/:id/status sipariş durumunu güncellemeli ve iptalde stok iade etmelidir', async () => {
+    it('PATCH /api/v1/admin/orders/:id/status should update order status and restock on cancellation', async () => {
       let currentStatus: OrderStatus = OrderStatus.processing;
 
       mockPrisma.order.findUnique.mockImplementation(
@@ -427,8 +427,8 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
     });
   });
 
-  describe('6. Yorum Moderasyonu', () => {
-    it('DELETE /api/v1/reviews/:id yorumu silmeli ve ürün puan ortalamasını güncellemelidir', async () => {
+  describe('6. Review Moderation', () => {
+    it('DELETE /api/v1/reviews/:id should delete review and update product average rating', async () => {
       mockPrisma.review.findUnique.mockResolvedValue({
         id: 'rev-uuid-1',
         productId: mockProduct.id,

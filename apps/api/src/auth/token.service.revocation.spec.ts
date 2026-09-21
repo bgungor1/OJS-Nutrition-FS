@@ -83,7 +83,7 @@ describe('TokenService (Revocation & Purge Lifecycle)', () => {
   });
 
   describe('revokeRefreshToken', () => {
-    it('geçerli refresh token sunulduğunda revokedAt tarihini güncellemeli ve AUTH_LOGOUT loglamalı', async () => {
+    it('should update revokedAt timestamp and log AUTH_LOGOUT when valid refresh token is provided', async () => {
       const mockDbToken = createMockRefreshToken({
         id: 'token-123',
         userId: 'user-abc',
@@ -115,7 +115,7 @@ describe('TokenService (Revocation & Purge Lifecycle)', () => {
       );
     });
 
-    it('zaten iptal edilmiş token sunulduğunda idempotent davranmalı (tekrar update yapmamalı)', async () => {
+    it('should act idempotently and not update again when already-revoked token is provided', async () => {
       const mockDbToken = createMockRefreshToken({
         id: 'token-123',
         userId: 'user-abc',
@@ -136,7 +136,7 @@ describe('TokenService (Revocation & Purge Lifecycle)', () => {
       );
     });
 
-    it('veritabanında bulunmayan token için UnauthorizedException fırlatmalı', async () => {
+    it('should throw UnauthorizedException when token is not found in database', async () => {
       prisma.refreshToken.findUnique.mockResolvedValue(null);
 
       await expect(
@@ -147,7 +147,7 @@ describe('TokenService (Revocation & Purge Lifecycle)', () => {
       ).rejects.toThrow('Geçersiz yenileme anahtarı.');
     });
 
-    it('boş token sunulduğunda UnauthorizedException fırlatmalı', async () => {
+    it('should throw UnauthorizedException when empty token is provided', async () => {
       await expect(service.revokeRefreshToken('')).rejects.toThrow(
         UnauthorizedException,
       );
@@ -155,7 +155,7 @@ describe('TokenService (Revocation & Purge Lifecycle)', () => {
   });
 
   describe('revokeAllUserTokens', () => {
-    it('kullanıcının tüm aktif oturumlarını iptal etmeli ve AUTH_REVOKE_ALL loglamalı', async () => {
+    it('should revoke all active user sessions and log AUTH_REVOKE_ALL', async () => {
       prisma.refreshToken.updateMany.mockResolvedValue({ count: 3 });
 
       const count = await service.revokeAllUserTokens(
@@ -189,7 +189,7 @@ describe('TokenService (Revocation & Purge Lifecycle)', () => {
   });
 
   describe('purgeExpiredTokens', () => {
-    it('süresi dolmuş veya 30 günden eski iptal edilmiş token kayıtlarını silmeli', async () => {
+    it('should delete expired tokens or revoked tokens older than 30 days', async () => {
       prisma.refreshToken.deleteMany.mockResolvedValue({ count: 12 });
 
       const deletedCount = await service.purgeExpiredTokens();

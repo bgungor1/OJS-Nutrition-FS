@@ -64,7 +64,7 @@ describe('AddressesController', () => {
   });
 
   describe('list', () => {
-    it('kullanıcının adres listesini addressesService.list metodundan alıp dönmeli', async () => {
+    it('should fetch user address list from addressesService.list and return it', async () => {
       const query: AddressesQueryDto = { limit: 20, offset: 0 };
       const paginatedResult: PaginatedAddressesResponseDto = {
         count: 1,
@@ -80,7 +80,7 @@ describe('AddressesController', () => {
   });
 
   describe('getById', () => {
-    it('belirtilen adresi addressesService.getById metodundan alıp dönmeli', async () => {
+    it('should fetch address by id from addressesService.getById and return it', async () => {
       addressesService.getById.mockResolvedValue(mockAddressResponse);
 
       const result = await controller.getById(mockUser, 'addr-uuid-1');
@@ -94,7 +94,7 @@ describe('AddressesController', () => {
   });
 
   describe('create', () => {
-    it('yeni adres oluşturma isteğini addressesService.create metoduna iletmeli', async () => {
+    it('should forward create address request to addressesService.create', async () => {
       const dto: CreateAddressDto = {
         title: 'Ev Adresim',
         first_name: 'Berkant',
@@ -115,7 +115,7 @@ describe('AddressesController', () => {
   });
 
   describe('update', () => {
-    it('adres güncelleme isteğini addressesService.update metoduna iletmeli', async () => {
+    it('should forward update address request to addressesService.update', async () => {
       const dto: UpdateAddressDto = {
         title: 'İş Adresim',
       };
@@ -137,7 +137,7 @@ describe('AddressesController', () => {
   });
 
   describe('delete', () => {
-    it('adres silme isteğini addressesService.delete metoduna iletmeli', async () => {
+    it('should forward delete address request to addressesService.delete', async () => {
       addressesService.delete.mockResolvedValue({ id: 'addr-uuid-1' });
 
       const result = await controller.delete(mockUser, 'addr-uuid-1');

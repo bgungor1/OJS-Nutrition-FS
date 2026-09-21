@@ -5,7 +5,7 @@ import { UsersMapper } from './users.mapper';
 
 describe('UsersMapper & DTO Validation Suite', () => {
   describe('UsersMapper.toAccountProfile', () => {
-    it('veritabanı kullanıcısını snake_case AccountProfile formatına eksiksiz dönüştürmeli', () => {
+    it('should completely map database user to snake_case AccountProfile format', () => {
       const mockDbUser = {
         id: 'user-uuid-1',
         email: 'user@example.com',
@@ -29,7 +29,7 @@ describe('UsersMapper & DTO Validation Suite', () => {
       expect('role' in result).toBe(false);
     });
 
-    it('telefon numarası null olduğunda phone_number alanını null olarak döndürmeli', () => {
+    it('should return phone_number field as null when phone number is null', () => {
       const mockDbUser = {
         id: 'user-uuid-2',
         email: 'user2@example.com',
@@ -45,7 +45,7 @@ describe('UsersMapper & DTO Validation Suite', () => {
   });
 
   describe('UsersMapper.toPrismaUpdateInput', () => {
-    it('tüm alanlar tanımlı olduğunda Prisma formatına doğru eşleme yapmalı', () => {
+    it('should correctly map to Prisma format when all fields are defined', () => {
       const dto: UpdateProfileDto = {
         first_name: 'Mehmet',
         last_name: 'Öztürk',
@@ -61,7 +61,7 @@ describe('UsersMapper & DTO Validation Suite', () => {
       });
     });
 
-    it('yalnızca kısmi alanlar gönderildiğinde sadece o alanları eşlemeli', () => {
+    it('should only map provided fields when partial fields are passed', () => {
       const dto: UpdateProfileDto = {
         first_name: 'Can',
       };
@@ -75,7 +75,7 @@ describe('UsersMapper & DTO Validation Suite', () => {
       expect(updateInput.phoneNumber).toBeUndefined();
     });
 
-    it('boş bir DTO verildiğinde boş nesne üretmeli', () => {
+    it('should return empty object when an empty DTO is passed', () => {
       const dto: UpdateProfileDto = {};
 
       const updateInput = UsersMapper.toPrismaUpdateInput(dto);
@@ -85,7 +85,7 @@ describe('UsersMapper & DTO Validation Suite', () => {
   });
 
   describe('UpdateProfileDto Validation & Transform', () => {
-    it('geçerli bir güncelleme verisi başarıyla doğrulanmalı ve trim edilmeli', async () => {
+    it('should successfully validate and trim valid update data', async () => {
       const raw = {
         first_name: '  Emre  ',
         last_name: '  Aydın  ',
@@ -101,7 +101,7 @@ describe('UsersMapper & DTO Validation Suite', () => {
       expect(dto.phone_number).toBe('+90 555 123 4567');
     });
 
-    it('ad 2 karakterden kısa olduğunda hata vermeli', async () => {
+    it('should fail validation when first_name is shorter than 2 characters', async () => {
       const raw = { first_name: 'A' };
       const dto = plainToInstance(UpdateProfileDto, raw);
       const errors = await validate(dto);
@@ -110,7 +110,7 @@ describe('UsersMapper & DTO Validation Suite', () => {
       expect(errors[0].property).toBe('first_name');
     });
 
-    it('soyad 100 karakteri aştığında hata vermeli', async () => {
+    it('should fail validation when last_name exceeds 100 characters', async () => {
       const raw = { last_name: 'a'.repeat(101) };
       const dto = plainToInstance(UpdateProfileDto, raw);
       const errors = await validate(dto);
@@ -119,7 +119,7 @@ describe('UsersMapper & DTO Validation Suite', () => {
       expect(errors[0].property).toBe('last_name');
     });
 
-    it('telefon numarasında geçersiz karakterler varsa hata vermeli', async () => {
+    it('should fail validation when phone_number has invalid characters', async () => {
       const raw = { phone_number: 'abc123invalid' };
       const dto = plainToInstance(UpdateProfileDto, raw);
       const errors = await validate(dto);
