@@ -1,6 +1,7 @@
 export * from './orders.module';
 export * from './orders.service';
 export * from './orders.controller';
+export * from './orders-admin.controller';
 export * from './orders.mapper';
 export * from './order.constants';
 export * from './dto';
