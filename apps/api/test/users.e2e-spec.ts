@@ -95,8 +95,8 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
     jest.clearAllMocks();
   });
 
-  describe('GET /api/v1/users/my-account (Profil Görüntüleme)', () => {
-    it('Bearer token olmadan yapılan isteklerde 401 Unauthorized dönmeli', async () => {
+  describe('GET /api/v1/users/my-account (Profile Retrieval)', () => {
+    it('should return 401 Unauthorized for requests without Bearer token', async () => {
       const response: SupertestResponse = await request(server)
         .get('/api/v1/users/my-account')
         .expect(401);
@@ -105,7 +105,7 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
       expect(body.status).toBe('error');
     });
 
-    it('geçersiz Bearer token ile yapılan isteklerde 401 Unauthorized dönmeli', async () => {
+    it('should return 401 Unauthorized for requests with invalid Bearer token', async () => {
       const response: SupertestResponse = await request(server)
         .get('/api/v1/users/my-account')
         .set('Authorization', 'Bearer invalid.token.value')
@@ -115,7 +115,7 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
       expect(body.status).toBe('error');
     });
 
-    it('geçerli Bearer token ile 200 ve güvenli AccountProfile dönmeli (passwordHash sızdırılmamalı)', async () => {
+    it('should return 200 and safe AccountProfile with valid Bearer token (passwordHash must not leak)', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
 
       const response: SupertestResponse = await request(server)
@@ -139,7 +139,7 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
       expect('authProvider' in body.data).toBe(false);
     });
 
-    it('kullanıcı veritabanından silinmişse 401 veya 404 dönmeli', async () => {
+    it('should return 401 when user is deleted from database', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
       await request(server)
@@ -149,8 +149,8 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
     });
   });
 
-  describe('PUT /api/v1/users/my-account (Profil Güncelleme)', () => {
-    it('Bearer token olmadan yapılan güncelleme isteğinde 401 dönmeli', async () => {
+  describe('PUT /api/v1/users/my-account (Profile Update)', () => {
+    it('should return 401 for update request without Bearer token', async () => {
       const response: SupertestResponse = await request(server)
         .put('/api/v1/users/my-account')
         .send({ first_name: 'YeniAd' })
@@ -160,7 +160,7 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
       expect(body.status).toBe('error');
     });
 
-    it('geçerli verilerle profil başarıyla güncellenmeli ve 200 dönmeli', async () => {
+    it('should successfully update profile with valid data and return 200', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
       mockPrisma.user.update.mockResolvedValue({
         ...mockUser,
@@ -209,7 +209,7 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
       });
     });
 
-    it('kısmi güncellemede sadece verilen alan güncellenmeli', async () => {
+    it('should only update provided fields on partial update', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
       mockPrisma.user.update.mockResolvedValue({
         ...mockUser,
@@ -230,7 +230,7 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
       expect(body.data.last_name).toBe(mockUser.lastName);
     });
 
-    it('ad 2 karakterden kısa olduğunda 400 Bad Request dönmeli', async () => {
+    it('should return 400 Bad Request when first name is shorter than 2 characters', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
 
       const response: SupertestResponse = await request(server)
@@ -244,7 +244,7 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
       expect(body.reason).toBeDefined();
     });
 
-    it('geçersiz telefon numarası formatında 400 Bad Request dönmeli', async () => {
+    it('should return 400 Bad Request on invalid phone number format', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
 
       const response: SupertestResponse = await request(server)
@@ -258,7 +258,7 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
       expect(body.reason).toBeDefined();
     });
 
-    it('yasaklı alanlar (email, role) gönderildiğinde forbidNonWhitelisted gereği 400 dönmeli', async () => {
+    it('should return 400 due to forbidNonWhitelisted when forbidden fields (email, role) are sent', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
 
       const response: SupertestResponse = await request(server)

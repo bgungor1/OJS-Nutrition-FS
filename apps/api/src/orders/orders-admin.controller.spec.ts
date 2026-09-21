@@ -29,12 +29,12 @@ describe('OrdersAdminController', () => {
     controller = module.get<OrdersAdminController>(OrdersAdminController);
   });
 
-  it('controller tanımlanmış olmalıdır', () => {
+  it('should be defined', () => {
     expect(controller).toBeDefined();
   });
 
   describe('updateStatus', () => {
-    it('sipariş kimliği ve yeni durum dto su ile durum güncelleme metodunu çağırmalıdır', async () => {
+    it('should call updateOrderStatus with order id and update status dto', async () => {
       ordersService.updateOrderStatus.mockResolvedValue(mockOrderDetail);
       const dto: UpdateOrderStatusDto = { status: OrderStatus.processing };
 

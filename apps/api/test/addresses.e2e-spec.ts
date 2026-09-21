@@ -159,15 +159,15 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
     );
   });
 
-  describe('Yetkilendirme Koruması', () => {
-    it('Bearer token olmadan yapılan isteklerde 401 dönmeli', async () => {
+  describe('Authorization Protection', () => {
+    it('should return 401 for requests without Bearer token', async () => {
       const res = await request(server)
         .get('/api/v1/users/addresses')
         .expect(401);
       expect((res.body as ApiError).status).toBe('error');
     });
 
-    it('Geçersiz Bearer token ile yapılan isteklerde 401 dönmeli', async () => {
+    it('should return 401 for requests with invalid Bearer token', async () => {
       const res = await request(server)
         .get('/api/v1/users/addresses')
         .set('Authorization', 'Bearer invalid')
@@ -176,8 +176,8 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
     });
   });
 
-  describe('POST /api/v1/users/addresses (Adres Oluşturma)', () => {
-    it('geçerli veriler ve doğru hiyerarşi ile 201 Created dönmeli', async () => {
+  describe('POST /api/v1/users/addresses (Create Address)', () => {
+    it('should return 201 Created with valid data and correct hierarchy', async () => {
       mockPrisma.subregion.findFirst.mockResolvedValue(mockAddress.subregion);
       mockPrisma.address.create.mockResolvedValue(mockAddress);
 
@@ -193,7 +193,7 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
       expect(mockPrisma.address.create).toHaveBeenCalledTimes(1);
     });
 
-    it('coğrafi hiyerarşi eşleşmediğinde 400 Bad Request dönmeli', async () => {
+    it('should return 400 Bad Request when geographic hierarchy does not match', async () => {
       mockPrisma.subregion.findFirst.mockResolvedValue(null);
 
       const res = await auth()
@@ -206,7 +206,7 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
       expect(mockPrisma.address.create).not.toHaveBeenCalled();
     });
 
-    it('zorunlu alanlar eksik olduğunda 400 Bad Request dönmeli', async () => {
+    it('should return 400 Bad Request when required fields are missing', async () => {
       const res = await auth()
         .post('/api/v1/users/addresses')
         .send({ first_name: 'Berkant' })
@@ -214,7 +214,7 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
       expect((res.body as ApiError).status).toBe('error');
     });
 
-    it('geçersiz telefon formatında 400 Bad Request dönmeli', async () => {
+    it('should return 400 Bad Request on invalid phone format', async () => {
       const res = await auth()
         .post('/api/v1/users/addresses')
         .send({ ...createPayload, phone_number: '123' })
@@ -222,7 +222,7 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
       expect((res.body as ApiError).status).toBe('error');
     });
 
-    it('yasaklı alan gönderildiğinde (forbidNonWhitelisted) 400 dönmeli', async () => {
+    it('should return 400 when forbidden fields are sent (forbidNonWhitelisted)', async () => {
       const res = await auth()
         .post('/api/v1/users/addresses')
         .send({ ...createPayload, userId: 'evil' })
@@ -231,8 +231,8 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
     });
   });
 
-  describe('GET /api/v1/users/addresses (Adres Listeleme & Sayfalama)', () => {
-    it('kullanıcı adreslerini sayfalı ve toplam count ile 200 dönmeli', async () => {
+  describe('GET /api/v1/users/addresses (Address List & Pagination)', () => {
+    it('should return 200 with paginated user addresses and total count', async () => {
       mockPrisma.address.findMany.mockResolvedValue([mockAddress]);
       mockPrisma.address.count.mockResolvedValue(1);
 
@@ -246,7 +246,7 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
       expect(body.data.results[0].id).toBe(mockAddress.id);
     });
 
-    it('limit 100 üstü olduğunda 400 Bad Request dönmeli', async () => {
+    it('should return 400 Bad Request when limit is over 100', async () => {
       const res = await auth()
         .get('/api/v1/users/addresses?limit=150')
         .expect(400);
@@ -254,8 +254,8 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
     });
   });
 
-  describe('GET /api/v1/users/addresses/:id (Adres Detay & IDOR)', () => {
-    it('kullanıcı kendi adres detayını başarıyla 200 ile alabilmeli', async () => {
+  describe('GET /api/v1/users/addresses/:id (Address Detail & IDOR)', () => {
+    it('should successfully retrieve own address detail with 200', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(mockAddress);
 
       const res = await auth()
@@ -266,7 +266,7 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
       );
     });
 
-    it('IDOR: farklı kullanıcı adresi istediğinde 404 dönmeli (403 değil)', async () => {
+    it('IDOR: should return 404 (not 403) when requesting another user address', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(null);
 
       const res = await auth(tokenB)
@@ -275,7 +275,7 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
       expect((res.body as ApiError).message).toBe('Adres bulunamadı.');
     });
 
-    it('geçersiz UUID formatı için 400 dönmeli (ParseUUIDPipe)', async () => {
+    it('should return 400 for invalid UUID format (ParseUUIDPipe)', async () => {
       const res = await auth()
         .get('/api/v1/users/addresses/invalid-uuid')
         .expect(400);
@@ -283,8 +283,8 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
     });
   });
 
-  describe('PUT /api/v1/users/addresses/:id (Adres Güncelleme & IDOR)', () => {
-    it('kullanıcı kendi adresini başarıyla güncelleyebilmeli ve 200 dönmeli', async () => {
+  describe('PUT /api/v1/users/addresses/:id (Update Address & IDOR)', () => {
+    it('should successfully update own address and return 200', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(mockAddress);
       mockPrisma.address.update.mockResolvedValue({
         ...mockAddress,
@@ -300,7 +300,7 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
       );
     });
 
-    it('IDOR: başkasının adresi güncellenmek istendiğinde 404 dönmeli', async () => {
+    it('IDOR: should return 404 when attempting to update another user address', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(null);
 
       await auth(tokenB)
@@ -310,7 +310,7 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
       expect(mockPrisma.address.update).not.toHaveBeenCalled();
     });
 
-    it('lokasyon güncellemesinde geçersiz hiyerarşi için 400 dönmeli', async () => {
+    it('should return 400 for invalid hierarchy in location update', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(mockAddress);
       mockPrisma.subregion.findFirst.mockResolvedValue(null);
 
@@ -324,8 +324,8 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
     });
   });
 
-  describe('DELETE /api/v1/users/addresses/:id (Adres Silme & IDOR)', () => {
-    it('IDOR: başkasının adresi silinmek istendiğinde 404 dönmeli', async () => {
+  describe('DELETE /api/v1/users/addresses/:id (Delete Address & IDOR)', () => {
+    it('IDOR: should return 404 when attempting to delete another user address', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(null);
 
       await auth(tokenB)
@@ -334,7 +334,7 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
       expect(mockPrisma.address.delete).not.toHaveBeenCalled();
     });
 
-    it('kullanıcı kendi adresini sildiğinde 200 ve { id } dönmeli', async () => {
+    it('should return 200 and { id } when user deletes own address', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(mockAddress);
       mockPrisma.address.delete.mockResolvedValue(mockAddress);
 
@@ -346,7 +346,7 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
       });
     });
 
-    it('silinmiş adrese sonraki istekte 404 Not Found dönmeli', async () => {
+    it('should return 404 Not Found on subsequent request to deleted address', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(null);
 
       const res = await auth()
@@ -355,7 +355,7 @@ describe('Addresses E2E Test Suite (/api/v1/users/addresses)', () => {
       expect((res.body as ApiError).message).toBe('Adres bulunamadı.');
     });
 
-    it('geçersiz UUID formatı için 400 dönmeli (ParseUUIDPipe)', async () => {
+    it('should return 400 for invalid UUID format (ParseUUIDPipe)', async () => {
       const res = await auth()
         .delete('/api/v1/users/addresses/invalid-uuid-123')
         .expect(400);

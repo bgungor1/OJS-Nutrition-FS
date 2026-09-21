@@ -291,7 +291,7 @@ describe('Orders E2E Test Suite (/api/v1/orders)', () => {
   });
 
   describe('GET /api/v1/orders/payment-settings', () => {
-    it('giriş yapmış kullanıcıya ödeme ayarlarını 200 ve ResponseEnvelope ile dönmelidir', async () => {
+    it('should return payment settings with 200 and ResponseEnvelope for authenticated user', async () => {
       const res: SupertestResponse = await authA().get(
         '/api/v1/orders/payment-settings',
       );
@@ -306,7 +306,7 @@ describe('Orders E2E Test Suite (/api/v1/orders)', () => {
   });
 
   describe('GET /api/v1/orders/calculate-shipment-fee', () => {
-    it('sepet 500 TL altındayken standart kargo ücreti hesaplamalıdır', async () => {
+    it('should calculate standard shipment fee when cart is under 500 TL', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(mockAddressA);
       mockPrisma.cartItem.findMany.mockResolvedValue([mockCartItemA]); // 2 * 200 = 400 < 500
 
@@ -322,7 +322,7 @@ describe('Orders E2E Test Suite (/api/v1/orders)', () => {
       expect(body.data.free_shipping_threshold).toBe(500);
     });
 
-    it('adres bulunamazsa 404 Not Found dönmelidir', async () => {
+    it('should return 404 Not Found when address is not found', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(null);
 
       const res: SupertestResponse = await authA().get(
@@ -336,7 +336,7 @@ describe('Orders E2E Test Suite (/api/v1/orders)', () => {
   });
 
   describe('GET /api/v1/orders', () => {
-    it('kullanıcının sipariş geçmişini sayfalı ve 200 ile dönmelidir', async () => {
+    it('should return paginated order history with 200 for user', async () => {
       mockPrisma.order.findMany.mockResolvedValue([mockOrderA]);
       mockPrisma.order.count.mockResolvedValue(1);
 
@@ -354,7 +354,7 @@ describe('Orders E2E Test Suite (/api/v1/orders)', () => {
   });
 
   describe('GET /api/v1/orders/:orderId', () => {
-    it('kullanıcı kendi siparişini sorguladığında 200 ile detayını alabilmelidir', async () => {
+    it('should return order details with 200 when user queries own order', async () => {
       mockPrisma.order.findFirst.mockResolvedValue(mockOrderA);
 
       const res: SupertestResponse = await authA().get(
@@ -369,7 +369,7 @@ describe('Orders E2E Test Suite (/api/v1/orders)', () => {
       expect(body.data.cart_detail).toHaveLength(1);
     });
 
-    it('IDOR Koruması: Başka kullanıcının sipariş ID si sorgulandığında 404 dönmelidir', async () => {
+    it('IDOR Protection: should return 404 when querying another user order ID', async () => {
       // User B, User A'nın siparişini sorguluyor
       mockPrisma.order.findFirst.mockResolvedValue(null);
 
@@ -390,7 +390,7 @@ describe('Orders E2E Test Suite (/api/v1/orders)', () => {
       payment_token: 'tok_sandbox_test',
     };
 
-    it('başarılı checkout akışında 201 Created dönmelidir', async () => {
+    it('should return 201 Created on successful checkout flow', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(mockAddressA);
       mockPrisma.cartItem.findMany.mockResolvedValue([mockCartItemA]);
       mockTx.productVariant.updateMany.mockResolvedValue({ count: 1 });
@@ -408,7 +408,7 @@ describe('Orders E2E Test Suite (/api/v1/orders)', () => {
       expect(body.data.order_no).toBe(mockOrderA.orderNo);
     });
 
-    it('yetersiz stok durumunda 409 Conflict dönmeli ve sipariş açmamalıdır', async () => {
+    it('should return 409 Conflict on insufficient stock and not create order', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(mockAddressA);
       mockPrisma.cartItem.findMany.mockResolvedValue([mockCartItemA]);
       mockTx.productVariant.updateMany.mockResolvedValue({ count: 0 }); // Stok yetersiz
@@ -422,7 +422,7 @@ describe('Orders E2E Test Suite (/api/v1/orders)', () => {
       expect(body.status).toBe('error');
     });
 
-    it('ödeme reddedildiğinde 400 Bad Request dönmelidir (Rollback)', async () => {
+    it('should return 400 Bad Request when payment is declined (Rollback)', async () => {
       mockPrisma.address.findFirst.mockResolvedValue(mockAddressA);
       mockPrisma.cartItem.findMany.mockResolvedValue([mockCartItemA]);
       mockTx.productVariant.updateMany.mockResolvedValue({ count: 1 });
@@ -441,7 +441,7 @@ describe('Orders E2E Test Suite (/api/v1/orders)', () => {
   });
 
   describe('PUT /api/v1/orders/:id/status', () => {
-    it('müşteri rolündeki kullanıcı statü güncellemeye çalıştığında 403 Forbidden almalıdır', async () => {
+    it('should return 403 Forbidden when customer role attempts to update status', async () => {
       const res: SupertestResponse = await request(server)
         .put(`/api/v1/orders/${mockOrderA.id}/status`)
         .set('Authorization', `Bearer ${tokenA}`)
@@ -452,7 +452,7 @@ describe('Orders E2E Test Suite (/api/v1/orders)', () => {
       expect(body.status).toBe('error');
     });
 
-    it('admin rolü iptal yaptığında 200 OK dönmeli ve stokları iade etmelidir', async () => {
+    it('should return 200 OK and restock items when admin role cancels order', async () => {
       mockPrisma.order.findUnique.mockResolvedValue({
         ...mockOrderA,
         status: OrderStatus.pending,
@@ -479,7 +479,7 @@ describe('Orders E2E Test Suite (/api/v1/orders)', () => {
       });
     });
 
-    it('admin geçersiz geçiş denediğinde (pending -> delivered) 400 Bad Request dönmelidir', async () => {
+    it('should return 400 Bad Request when admin attempts invalid status transition (pending -> delivered)', async () => {
       mockPrisma.order.findUnique.mockResolvedValue({
         ...mockOrderA,
         status: OrderStatus.pending,

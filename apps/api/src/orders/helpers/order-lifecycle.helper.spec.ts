@@ -11,14 +11,11 @@ describe('OrderLifecycleHelper', () => {
       [OrderStatus.processing, OrderStatus.cancelled],
       [OrderStatus.shipped, OrderStatus.delivered],
       [OrderStatus.delivered, OrderStatus.returned],
-    ])(
-      'geçerli durum geçişine (%s -> %s) izin vermelidir',
-      (current, target) => {
-        expect(() =>
-          OrderLifecycleHelper.validateTransition(current, target),
-        ).not.toThrow();
-      },
-    );
+    ])('should allow valid status transition (%s -> %s)', (current, target) => {
+      expect(() =>
+        OrderLifecycleHelper.validateTransition(current, target),
+      ).not.toThrow();
+    });
 
     it.each([
       [OrderStatus.pending, OrderStatus.delivered],
@@ -29,7 +26,7 @@ describe('OrderLifecycleHelper', () => {
       [OrderStatus.delivered, OrderStatus.cancelled],
       [OrderStatus.delivered, OrderStatus.processing],
     ])(
-      'geçersiz durum geçişinde (%s -> %s) BadRequestException fırlatmalıdır',
+      'should throw BadRequestException on invalid status transition (%s -> %s)',
       (current, target) => {
         expect(() =>
           OrderLifecycleHelper.validateTransition(current, target),
@@ -37,7 +34,7 @@ describe('OrderLifecycleHelper', () => {
       },
     );
 
-    it('iptal edilmiş siparişin durumu değiştirilmek istendiğinde hata fırlatmalıdır', () => {
+    it('should throw error when attempting to change status of cancelled order', () => {
       expect(() =>
         OrderLifecycleHelper.validateTransition(
           OrderStatus.cancelled,
@@ -48,7 +45,7 @@ describe('OrderLifecycleHelper', () => {
       );
     });
 
-    it('iade edilmiş siparişin durumu değiştirilmek istendiğinde hata fırlatmalıdır', () => {
+    it('should throw error when attempting to change status of returned order', () => {
       expect(() =>
         OrderLifecycleHelper.validateTransition(
           OrderStatus.returned,
@@ -61,7 +58,7 @@ describe('OrderLifecycleHelper', () => {
   });
 
   describe('restockOrderItems', () => {
-    it('her bir sipariş kaleminin stoğunu atomik olarak artırmalıdır', async () => {
+    it('should atomically increment stock for each order item', async () => {
       const updateMock = jest.fn().mockResolvedValue({});
       const mockTx = {
         productVariant: {
@@ -87,7 +84,7 @@ describe('OrderLifecycleHelper', () => {
       });
     });
 
-    it('kalem listesi boş olduğunda güncelleme yapmamalıdır', async () => {
+    it('should not perform any update when items list is empty', async () => {
       const updateMock = jest.fn();
       const mockTx = {
         productVariant: {

@@ -50,12 +50,12 @@ describe('OrdersController', () => {
     controller = module.get<OrdersController>(OrdersController);
   });
 
-  it('controller tanımlanmış olmalıdır', () => {
+  it('should be defined', () => {
     expect(controller).toBeDefined();
   });
 
   describe('getPaymentSettings', () => {
-    it('ödeme ayarlarını servisten alıp dönmelidir', () => {
+    it('should return payment settings from service', () => {
       const mockSettings = {
         card_types: ['visa', 'mastercard'],
         payment_types: ['credit_card'],
@@ -71,7 +71,7 @@ describe('OrdersController', () => {
   });
 
   describe('calculateShipmentFee', () => {
-    it('kullanıcı kimliği ve adres parametresiyle kargo hesaplama metodunu çağırmalıdır', async () => {
+    it('should call shipment fee calculation with user id and address parameter', async () => {
       const mockFee = {
         fee: 0,
         currency: 'TRY',
@@ -93,7 +93,7 @@ describe('OrdersController', () => {
   });
 
   describe('listOrders', () => {
-    it('kullanıcı kimliği ve sayfalama parametreleriyle sipariş listesini çağırmalıdır', async () => {
+    it('should call order list with user id and pagination parameters', async () => {
       const mockPaginated = { count: 1, results: [] };
       ordersService.findUserOrders.mockResolvedValue(mockPaginated);
 
@@ -111,7 +111,7 @@ describe('OrdersController', () => {
   });
 
   describe('getOrderDetail', () => {
-    it('kullanıcı kimliği ve sipariş kimliği ile detay sorgusunu çağırmalıdır', async () => {
+    it('should call order detail query with user id and order id', async () => {
       ordersService.findUserOrderById.mockResolvedValue(mockOrderDetail);
 
       const result = await controller.getOrderDetail(mockUser, MOCK_ORDER_ID);
@@ -125,7 +125,7 @@ describe('OrdersController', () => {
   });
 
   describe('completeShopping', () => {
-    it('kullanıcı, dto ve ip bilgisiyle sipariş tamamlama metodunu çağırmalıdır', async () => {
+    it('should call completeShopping with user, dto, and IP info', async () => {
       ordersService.completeShopping.mockResolvedValue(mockOrderDetail);
       const dto: CompleteShoppingDto = mockCompleteShoppingDto;
 

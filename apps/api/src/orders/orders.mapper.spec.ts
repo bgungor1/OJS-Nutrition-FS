@@ -55,12 +55,12 @@ describe('OrdersMapper', () => {
   };
 
   describe('toAddressSnapshot', () => {
-    it('geçerli adres snapshot objesini eksiksiz dönüştürmelidir', () => {
+    it('should completely transform valid address snapshot object', () => {
       const result = OrdersMapper.toAddressSnapshot(mockAddressSnapshot);
       expect(result).toEqual(mockAddressSnapshot);
     });
 
-    it('boş veya geçersiz girdi verildiğinde güvenli varsayılan değerler dönmelidir', () => {
+    it('should return safe default values when input is empty or invalid', () => {
       const emptyResult = OrdersMapper.toAddressSnapshot(null);
       expect(emptyResult).toEqual({
         title: '',
@@ -79,7 +79,7 @@ describe('OrdersMapper', () => {
   });
 
   describe('toPaymentSummary', () => {
-    it('ödeme kaydını başarıyla dönüştürmelidir', () => {
+    it('should successfully transform payment record', () => {
       const result = OrdersMapper.toPaymentSummary(mockPayment);
       expect(result).toEqual({
         provider: 'iyzico',
@@ -91,14 +91,14 @@ describe('OrdersMapper', () => {
       });
     });
 
-    it('ödeme bulunmadığında null dönmelidir', () => {
+    it('should return null when payment is not present', () => {
       expect(OrdersMapper.toPaymentSummary(null)).toBeNull();
       expect(OrdersMapper.toPaymentSummary(undefined)).toBeNull();
     });
   });
 
   describe('toOrderItemResponse', () => {
-    it('sipariş kalemini Decimal alanları number yaparak dönüştürmeli ve çift istemci photo alanlarını sağlamalıdır', () => {
+    it('should transform order item converting Decimals to numbers and providing dual client photo fields', () => {
       const result = OrdersMapper.toOrderItemResponse(mockOrderItem);
       expect(result).toEqual({
         id: 'item-1',
@@ -116,7 +116,7 @@ describe('OrdersMapper', () => {
   });
 
   describe('toOrderDetailResponse', () => {
-    it('detaylı sipariş yanıtını, subtotal ve cart_detail alias dahil oluşturmalıdır', () => {
+    it('should create detailed order response including subtotal and cart_detail alias', () => {
       const result = OrdersMapper.toOrderDetailResponse(mockOrder);
 
       expect(result.id).toBe('ord-1');
@@ -134,7 +134,7 @@ describe('OrdersMapper', () => {
   });
 
   describe('toOrderSummaryResponse & toOrderSummaryList', () => {
-    it('sipariş özetini ve toplam ürün adedini (item_count) doğru hesaplamalıdır', () => {
+    it('should calculate order summary and total item_count correctly', () => {
       const result = OrdersMapper.toOrderSummaryResponse(mockOrder);
 
       expect(result.id).toBe('ord-1');
@@ -146,13 +146,13 @@ describe('OrdersMapper', () => {
       expect(result.payment?.card_type).toBe('VISA');
     });
 
-    it('sipariş listesini özet dizisine dönüştürmelidir', () => {
+    it('should transform order list into summary array', () => {
       const list = OrdersMapper.toOrderSummaryList([mockOrder]);
       expect(list).toHaveLength(1);
       expect(list[0].order_no).toBe('ORD-20260910-A1B2C3');
     });
 
-    it('sayfalanmış yanıtı (PaginatedOrdersResponse) doğru paketlemelidir', () => {
+    it('should package paginated response (PaginatedOrdersResponse) correctly', () => {
       const paginated = OrdersMapper.toPaginatedOrdersResponse([mockOrder], 1);
       expect(paginated.count).toBe(1);
       expect(paginated.results).toHaveLength(1);

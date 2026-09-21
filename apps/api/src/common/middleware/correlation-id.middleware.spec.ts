@@ -15,7 +15,7 @@ describe('CorrelationIdMiddleware', () => {
     mockNext = jest.fn();
   });
 
-  it('X-Correlation-ID başlığı varsa onu kullanır', () => {
+  it('should use X-Correlation-ID header if present', () => {
     const existingId = 'test-correlation-id-123';
     const req = {
       headers: { [CORRELATION_ID_HEADER]: existingId },
@@ -33,7 +33,7 @@ describe('CorrelationIdMiddleware', () => {
     expect(mockNext).toHaveBeenCalledTimes(1);
   });
 
-  it('X-Correlation-ID yoksa X-Request-ID kullanır', () => {
+  it('should use X-Request-ID when X-Correlation-ID is missing', () => {
     const requestId = 'req-id-abc';
     const req = {
       headers: { 'x-request-id': requestId },
@@ -50,7 +50,7 @@ describe('CorrelationIdMiddleware', () => {
     );
   });
 
-  it('her iki başlık da yoksa UUID üretir ve yanıta ekler', () => {
+  it('should generate UUID and add to response when neither header is present', () => {
     const req = { headers: {} } as unknown as Request;
 
     middleware.use(req, mockRes as unknown as Response, mockNext);
@@ -67,7 +67,7 @@ describe('CorrelationIdMiddleware', () => {
     );
   });
 
-  it('başlık bir dizi gelirse yalnızca ilk değeri alır', () => {
+  it('should take only the first value if header is an array', () => {
     const firstId = 'first-id';
     const req = {
       headers: { [CORRELATION_ID_HEADER]: [firstId, 'second-id'] },
@@ -80,7 +80,7 @@ describe('CorrelationIdMiddleware', () => {
     );
   });
 
-  it('boş string başlık UUID üretilmesini tetikler', () => {
+  it('should trigger UUID generation on blank string header', () => {
     const req = {
       headers: { [CORRELATION_ID_HEADER]: '   ' },
     } as unknown as Request;
@@ -94,7 +94,7 @@ describe('CorrelationIdMiddleware', () => {
     );
   });
 
-  it('next() her durumda çağrılır', () => {
+  it('should call next() in all cases', () => {
     const req = { headers: {} } as unknown as Request;
     middleware.use(req, mockRes as unknown as Response, mockNext);
     expect(mockNext).toHaveBeenCalledTimes(1);

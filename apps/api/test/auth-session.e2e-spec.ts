@@ -90,7 +90,7 @@ describe('Auth Session Lifecycle E2E Test Suite (/api/v1/auth)', () => {
   });
 
   describe('POST /api/v1/auth/logout', () => {
-    it('geçerli refresh token ile 200 dönmeli ve veritabanında revokedAt güncellenmeli', async () => {
+    it('should return 200 with valid refresh token and update revokedAt in database', async () => {
       mockPrisma.refreshToken.findUnique.mockResolvedValue({
         id: 'token-logout-id',
         tokenHash: 'some-hash',
@@ -116,7 +116,7 @@ describe('Auth Session Lifecycle E2E Test Suite (/api/v1/auth)', () => {
       expect(updateCall?.[0].data.revokedAt).toBeInstanceOf(Date);
     });
 
-    it('refresh_token alan adıyla da geriye dönük uyumlu çalışmalı', async () => {
+    it('should maintain backward compatibility with refresh_token field name', async () => {
       mockPrisma.refreshToken.findUnique.mockResolvedValue({
         id: 'token-legacy-id',
         tokenHash: 'legacy-hash',
@@ -137,7 +137,7 @@ describe('Auth Session Lifecycle E2E Test Suite (/api/v1/auth)', () => {
       expect(body.data.message).toBe('Oturum başarıyla sonlandırıldı.');
     });
 
-    it('zaten iptal edilmiş refresh token ile çağrıldığında idempotent olarak 200 dönmeli', async () => {
+    it('should return 200 idempotently when called with an already revoked refresh token', async () => {
       mockPrisma.refreshToken.findUnique.mockResolvedValue({
         id: 'token-already-revoked',
         tokenHash: 'revoked-hash',
@@ -158,7 +158,7 @@ describe('Auth Session Lifecycle E2E Test Suite (/api/v1/auth)', () => {
       expect(mockPrisma.refreshToken.update).not.toHaveBeenCalled();
     });
 
-    it('veritabanında bulunmayan token için 401 dönmeli', async () => {
+    it('should return 401 when token is not found in database', async () => {
       mockPrisma.refreshToken.findUnique.mockResolvedValue(null);
 
       const response: SupertestResponse = await request(server)
@@ -171,7 +171,7 @@ describe('Auth Session Lifecycle E2E Test Suite (/api/v1/auth)', () => {
       expect(body.message).toBe('Geçersiz yenileme anahtarı.');
     });
 
-    it('gövdede refresh veya refresh_token sağlanmadığında 400 dönmeli', async () => {
+    it('should return 400 when neither refresh nor refresh_token is provided in body', async () => {
       const response: SupertestResponse = await request(server)
         .post('/api/v1/auth/logout')
         .send({})
@@ -184,7 +184,7 @@ describe('Auth Session Lifecycle E2E Test Suite (/api/v1/auth)', () => {
   });
 
   describe('POST /api/v1/auth/revoke-all', () => {
-    it('kimlik doğrulaması olmadan çağrıldığında 401 dönmeli', async () => {
+    it('should return 401 when called without authentication', async () => {
       const response: SupertestResponse = await request(server)
         .post('/api/v1/auth/revoke-all')
         .expect(401);
@@ -193,7 +193,7 @@ describe('Auth Session Lifecycle E2E Test Suite (/api/v1/auth)', () => {
       expect(body.status).toBe('error');
     });
 
-    it('geçerli Bearer token ile kullanıcının tüm oturumlarını sonlandırmalı ve 200 dönmeli', async () => {
+    it('should revoke all active sessions for the user and return 200 with valid Bearer token', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
       const tokens = await tokenService.generateTokens(
         mockUser.id,

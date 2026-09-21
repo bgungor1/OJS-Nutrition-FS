@@ -45,7 +45,7 @@ describe('UsersController', () => {
   });
 
   describe('getMyAccount', () => {
-    it('kullanıcı profilini usersService.getMyAccount metodundan alıp dönmeli', async () => {
+    it('should fetch user profile from usersService.getMyAccount and return it', async () => {
       usersService.getMyAccount.mockResolvedValue(mockProfile);
 
       const result = await controller.getMyAccount(mockUser);
@@ -56,7 +56,7 @@ describe('UsersController', () => {
   });
 
   describe('updateMyAccount', () => {
-    it('profil güncelleme isteğini usersService.updateMyAccount metoduna iletmeli', async () => {
+    it('should forward profile update request to usersService.updateMyAccount', async () => {
       const dto: UpdateProfileDto = {
         first_name: 'Ahmet',
         last_name: 'Yılmaz',

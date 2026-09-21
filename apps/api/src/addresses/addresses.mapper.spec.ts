@@ -26,7 +26,7 @@ describe('AddressesMapper', () => {
   };
 
   describe('toAddressResponse', () => {
-    it('ilişkili Prisma entity modelini doğru AddressResponseDto şekline dönüştürmeli', () => {
+    it('should correctly transform Prisma entity with relations to AddressResponseDto', () => {
       const result = toAddressResponse(mockAddressWithRelations);
 
       expect(result).toEqual({
@@ -46,7 +46,7 @@ describe('AddressesMapper', () => {
       });
     });
 
-    it('ilişki alanları eksik olduğunda ID ve boş string fallback değerlerini kullanmalı', () => {
+    it('should fallback to ID and empty string when relation fields are missing', () => {
       const bareAddress: AddressWithRelations = {
         ...mockAddressWithRelations,
         country: null,
@@ -63,7 +63,7 @@ describe('AddressesMapper', () => {
   });
 
   describe('toPaginatedAddressesResponse', () => {
-    it('adres listesi ve toplam sayıyı doğru zarflamalı', () => {
+    it('should correctly wrap address list and total count', () => {
       const result = toPaginatedAddressesResponse(
         [mockAddressWithRelations],
         1,
@@ -74,7 +74,7 @@ describe('AddressesMapper', () => {
       expect(result.results[0].id).toBe('addr-uuid-1');
     });
 
-    it('boş listeyi doğru yönetmeli', () => {
+    it('should handle empty list correctly', () => {
       const result = toPaginatedAddressesResponse([], 0);
 
       expect(result.count).toBe(0);

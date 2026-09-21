@@ -56,7 +56,7 @@ describe('CategoriesController', () => {
   });
 
   describe('categories', () => {
-    it('servisi çağırmalı ve hiyerarşik kategori ağacını dönmeli', async () => {
+    it('should call service and return hierarchical category tree', async () => {
       mockProductsService.categories.mockResolvedValue(mockCategoriesTree);
 
       const result = await controller.categories();
@@ -68,7 +68,7 @@ describe('CategoriesController', () => {
       expect(result[0].subCategories[0].name).toBe('WHEY PROTEİN');
     });
 
-    it('alt kategorisi olmayan kategoriyi boş liste ile dönmeli', async () => {
+    it('should return empty list for category without subcategories', async () => {
       mockProductsService.categories.mockResolvedValue([mockCategoriesTree[1]]);
 
       const result = await controller.categories();

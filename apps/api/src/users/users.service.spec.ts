@@ -63,7 +63,7 @@ describe('UsersService', () => {
   });
 
   describe('getMyAccount', () => {
-    it('kullanıcı mevcut olduğunda güvenli AccountProfile nesnesi dönmeli', async () => {
+    it('should return safe AccountProfile object when user exists', async () => {
       prisma.user.findUnique.mockResolvedValue(mockDbUser);
 
       const result = await service.getMyAccount('user-uuid-1');
@@ -87,7 +87,7 @@ describe('UsersService', () => {
       });
     });
 
-    it('kullanıcı veritabanında bulunamadığında NotFoundException fırlatmalı', async () => {
+    it('should throw NotFoundException when user is not found in database', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
       await expect(service.getMyAccount('non-existing-id')).rejects.toThrow(
@@ -100,7 +100,7 @@ describe('UsersService', () => {
   });
 
   describe('updateMyAccount', () => {
-    it('profil bilgilerini başarıyla güncellemeli ve güncel profili dönmeli', async () => {
+    it('should update profile information successfully and return updated profile', async () => {
       prisma.user.findUnique.mockResolvedValue({ id: 'user-uuid-1' });
       prisma.user.update.mockResolvedValue({
         ...mockDbUser,
@@ -152,7 +152,7 @@ describe('UsersService', () => {
       );
     });
 
-    it('kısmi güncellemede sadece verilen alanları güncellemeli', async () => {
+    it('should update only provided fields on partial update', async () => {
       prisma.user.findUnique.mockResolvedValue({ id: 'user-uuid-1' });
       prisma.user.update.mockResolvedValue({
         ...mockDbUser,
@@ -181,7 +181,7 @@ describe('UsersService', () => {
       expect(result.last_name).toBe('YeniSoyad');
     });
 
-    it('güncellenecek kullanıcı veritabanında yoksa NotFoundException fırlatmalı', async () => {
+    it('should throw NotFoundException when user to update does not exist in database', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
       await expect(
@@ -190,7 +190,7 @@ describe('UsersService', () => {
       expect(prisma.user.update).not.toHaveBeenCalled();
     });
 
-    it('profil güncellemesi yapıldığında denetim günlüğü (audit log) kaydetmeli', async () => {
+    it('should record audit log when profile is updated', async () => {
       const loggerSpy = jest
         .spyOn(Logger.prototype, 'log')
         .mockImplementation();

@@ -77,7 +77,7 @@ describe('OrdersService - Checkout Flow', () => {
     const userId = MOCK_USER_ID;
     const dto = mockCompleteShoppingDto;
 
-    it('adres bulunamazsa NotFoundException fırlatmalıdır (IDOR koruması)', async () => {
+    it('should throw NotFoundException if address not found (IDOR protection)', async () => {
       prismaService.address.findFirst.mockResolvedValue(null);
 
       await expect(service.completeShopping(userId, dto)).rejects.toThrow(
@@ -85,7 +85,7 @@ describe('OrdersService - Checkout Flow', () => {
       );
     });
 
-    it('kullanıcı bulunamazsa NotFoundException fırlatmalıdır', async () => {
+    it('should throw NotFoundException if user not found', async () => {
       prismaService.address.findFirst.mockResolvedValue(mockAddress);
       prismaService.user.findUnique.mockResolvedValue(null);
 
@@ -94,7 +94,7 @@ describe('OrdersService - Checkout Flow', () => {
       );
     });
 
-    it('kullanıcının sepeti boşsa BadRequestException fırlatmalıdır', async () => {
+    it('should throw BadRequestException if user cart is empty', async () => {
       prismaService.address.findFirst.mockResolvedValue(mockAddress);
       prismaService.user.findUnique.mockResolvedValue(mockUser);
       prismaService.cartItem.findMany.mockResolvedValue([]);
@@ -104,12 +104,12 @@ describe('OrdersService - Checkout Flow', () => {
       );
     });
 
-    it('yetersiz stok durumunda ConflictException fırlatmalı ve ödeme çekimi yapmamalıdır', async () => {
+    it('should throw ConflictException and not charge payment when stock is insufficient', async () => {
       prismaService.address.findFirst.mockResolvedValue(mockAddress);
       prismaService.user.findUnique.mockResolvedValue(mockUser);
       prismaService.cartItem.findMany.mockResolvedValue([mockCartItem]);
 
-      // Atomik stok düşümünde count: 0 dönerse (stok yetersiz)
+      // Count: 0 on atomic stock reduction means insufficient stock
       txMock.productVariant.updateMany.mockResolvedValue({ count: 0 });
 
       await expect(service.completeShopping(userId, dto)).rejects.toThrow(
@@ -129,7 +129,7 @@ describe('OrdersService - Checkout Flow', () => {
       expect(txMock.order.create).not.toHaveBeenCalled();
     });
 
-    it('ödeme başarısız olduğunda BadRequestException fırlatmalı ve sipariş kaydetmemelidir', async () => {
+    it('should throw BadRequestException and not create order when payment fails', async () => {
       prismaService.address.findFirst.mockResolvedValue(mockAddress);
       prismaService.user.findUnique.mockResolvedValue(mockUser);
       prismaService.cartItem.findMany.mockResolvedValue([mockCartItem]);
@@ -151,7 +151,7 @@ describe('OrdersService - Checkout Flow', () => {
       expect(txMock.cartItem.deleteMany).not.toHaveBeenCalled();
     });
 
-    it('tüm adımlar başarılı olduğunda sipariş, kalemler ve ödeme kaydı oluşturulup sepet silinmelidir', async () => {
+    it('should create order, items, and payment record and clear cart when all steps succeed', async () => {
       prismaService.address.findFirst.mockResolvedValue(mockAddress);
       prismaService.user.findUnique.mockResolvedValue(mockUser);
       prismaService.cartItem.findMany.mockResolvedValue([mockCartItem]);

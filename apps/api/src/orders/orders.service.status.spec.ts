@@ -69,7 +69,7 @@ describe('OrdersService - Order Status Flow', () => {
   describe('updateOrderStatus', () => {
     const orderId = MOCK_ORDER_ID;
 
-    it('sipariş bulunamazsa NotFoundException fırlatmalıdır', async () => {
+    it('should throw NotFoundException if order not found', async () => {
       prismaService.order.findUnique.mockResolvedValue(null);
 
       await expect(
@@ -82,7 +82,7 @@ describe('OrdersService - Order Status Flow', () => {
       });
     });
 
-    it('iptal edilmiş veya iade edilmiş sipariş güncellenmek istendiğinde BadRequestException fırlatmalıdır', async () => {
+    it('should throw BadRequestException when attempting to update cancelled or returned order', async () => {
       prismaService.order.findUnique.mockResolvedValue({
         ...mockOrderDetailWithItems,
         status: OrderStatus.cancelled,
@@ -93,7 +93,7 @@ describe('OrdersService - Order Status Flow', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('geçersiz durum geçişi denendiğinde BadRequestException fırlatmalıdır', async () => {
+    it('should throw BadRequestException on invalid status transition', async () => {
       prismaService.order.findUnique.mockResolvedValue({
         ...mockOrderDetailWithItems,
         status: OrderStatus.pending,
@@ -104,7 +104,7 @@ describe('OrdersService - Order Status Flow', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('normal durum geçişinde (pending -> processing) stok iadesi yapmadan sipariş durumunu güncellemelidir', async () => {
+    it('should update order status without restocking on normal status transition (pending -> processing)', async () => {
       prismaService.order.findUnique.mockResolvedValue({
         ...mockOrderDetailWithItems,
         status: OrderStatus.pending,
@@ -140,7 +140,7 @@ describe('OrdersService - Order Status Flow', () => {
       );
     });
 
-    it('iptal durumuna geçişte (processing -> cancelled) kalemlerin stoğunu atomik artırmalı ve durumu güncellemelidir', async () => {
+    it('should atomically restock items and update status on transition to cancelled (processing -> cancelled)', async () => {
       prismaService.order.findUnique.mockResolvedValue({
         ...mockOrderDetailWithItems,
         status: OrderStatus.processing,
@@ -181,7 +181,7 @@ describe('OrdersService - Order Status Flow', () => {
       );
     });
 
-    it('iade durumuna geçişte (delivered -> returned) kalemlerin stoğunu atomik artırmalı ve durumu güncellemelidir', async () => {
+    it('should atomically restock items and update status on transition to returned (delivered -> returned)', async () => {
       prismaService.order.findUnique.mockResolvedValue({
         ...mockOrderDetailWithItems,
         status: OrderStatus.delivered,

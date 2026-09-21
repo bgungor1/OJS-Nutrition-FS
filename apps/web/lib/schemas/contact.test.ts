@@ -8,7 +8,7 @@ describe('contactSchema', () => {
     message: 'Siparişimle ilgili teslimat durumunu öğrenmek istiyorum.',
   };
 
-  it('geçerli iletişim form girdilerini başarıyla doğrular', () => {
+  it('should validate valid contact form inputs successfully', () => {
     const result = contactSchema.safeParse(validPayload);
     expect(result.success).toBe(true);
     if (result.success) {
@@ -20,7 +20,7 @@ describe('contactSchema', () => {
     }
   });
 
-  it('boşluklu girdileri trim eder', () => {
+  it('should trim inputs with whitespace', () => {
     const result = contactSchema.safeParse({
       name: '   Mehmet Demir   ',
       email: '  mehmet@example.com  ',
@@ -34,8 +34,8 @@ describe('contactSchema', () => {
     }
   });
 
-  describe('isim (name) doğrulamaları', () => {
-    it('isim 2 karakterden kısa olduğunda hata verir', () => {
+  describe('name validations', () => {
+    it('should fail when name is shorter than 2 characters', () => {
       const result = contactSchema.safeParse({
         ...validPayload,
         name: 'A',
@@ -48,7 +48,7 @@ describe('contactSchema', () => {
       }
     });
 
-    it('isim 100 karakterden uzun olduğunda hata verir', () => {
+    it('should fail when name exceeds 100 characters', () => {
       const result = contactSchema.safeParse({
         ...validPayload,
         name: 'a'.repeat(101),
@@ -61,7 +61,7 @@ describe('contactSchema', () => {
       }
     });
 
-    it('isim eksik olduğunda hata verir', () => {
+    it('should fail when name is missing', () => {
       const result = contactSchema.safeParse({
         ...validPayload,
         name: undefined,
@@ -75,8 +75,8 @@ describe('contactSchema', () => {
     });
   });
 
-  describe('e-posta (email) doğrulamaları', () => {
-    it('geçersiz e-posta formatında hata verir', () => {
+  describe('email validations', () => {
+    it('should fail when email format is invalid', () => {
       const result = contactSchema.safeParse({
         ...validPayload,
         email: 'gecersiz-eposta',
@@ -89,7 +89,7 @@ describe('contactSchema', () => {
       }
     });
 
-    it('e-posta eksik olduğunda hata verir', () => {
+    it('should fail when email is missing', () => {
       const result = contactSchema.safeParse({
         ...validPayload,
         email: undefined,
@@ -103,8 +103,8 @@ describe('contactSchema', () => {
     });
   });
 
-  describe('mesaj (message) doğrulamaları', () => {
-    it('mesaj 10 karakterden kısa olduğunda hata verir', () => {
+  describe('message validations', () => {
+    it('should fail when message is shorter than 10 characters', () => {
       const result = contactSchema.safeParse({
         ...validPayload,
         message: 'Kısa',
@@ -117,7 +117,7 @@ describe('contactSchema', () => {
       }
     });
 
-    it('mesaj 3000 karakterden uzun olduğunda hata verir', () => {
+    it('should fail when message exceeds 3000 characters', () => {
       const result = contactSchema.safeParse({
         ...validPayload,
         message: 'a'.repeat(3001),
@@ -130,7 +130,7 @@ describe('contactSchema', () => {
       }
     });
 
-    it('mesaj eksik olduğunda hata verir', () => {
+    it('should fail when message is missing', () => {
       const result = contactSchema.safeParse({
         ...validPayload,
         message: undefined,

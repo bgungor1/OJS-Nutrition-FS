@@ -6,7 +6,7 @@ import {
 } from '../order.constants';
 
 describe('OrderPricingHelper', () => {
-  it('normal fiyatlı ürünlerin alt toplamını doğru hesaplamalıdır', () => {
+  it('should correctly calculate subtotal for regular priced products', () => {
     const items = [
       {
         pieces: 2,
@@ -28,7 +28,7 @@ describe('OrderPricingHelper', () => {
     expect(subtotal).toBe(450);
   });
 
-  it('indirimli fiyatı (discountedPrice) olan ürünlerde indirimli fiyatı esas almalıdır', () => {
+  it('should use discounted price when available on product variants', () => {
     const items = [
       {
         pieces: 2,
@@ -43,7 +43,7 @@ describe('OrderPricingHelper', () => {
     expect(subtotal).toBe(300);
   });
 
-  it('ücretsiz kargo eşiğinin (500 TL) altındaki tutarlarda standart kargo ücreti dönmelidir', () => {
+  it('should return default shipping fee for amounts below free shipping threshold', () => {
     expect(OrderPricingHelper.calculateShippingFee(499.99)).toBe(
       DEFAULT_SHIPPING_FEE,
     );
@@ -52,14 +52,14 @@ describe('OrderPricingHelper', () => {
     );
   });
 
-  it('ücretsiz kargo eşiğine eşit veya üstündeki tutarlarda 0 TL dönmelidir', () => {
+  it('should return 0 for amounts equal to or above free shipping threshold', () => {
     expect(
       OrderPricingHelper.calculateShippingFee(FREE_SHIPPING_THRESHOLD),
     ).toBe(0);
     expect(OrderPricingHelper.calculateShippingFee(1000)).toBe(0);
   });
 
-  it('calculateOrderTotals ile subtotal, shippingFee ve totalPrice değerlerini eksiksiz üretmelidir', () => {
+  it('should produce complete subtotal, shippingFee, and totalPrice with calculateOrderTotals', () => {
     const items = [
       {
         pieces: 1,

@@ -110,7 +110,7 @@ describe('Auth E2E Test Suite (/api/v1/auth)', () => {
       last_name: 'Yilmaz',
     };
 
-    it('başarılı kayıt akışında 201 ve güvenli kullanıcı nesnesi dönmeli (passwordHash sızdırılmamalı)', async () => {
+    it('should return 201 and safe user object on successful registration (passwordHash must not leak)', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
       mockPrisma.user.create.mockResolvedValue({
         id: 'new-user-id',
@@ -146,7 +146,7 @@ describe('Auth E2E Test Suite (/api/v1/auth)', () => {
       expect(body.data.user.passwordHash).toBeUndefined();
     });
 
-    it('şifreler uyuşmadığında 400 Bad Request dönmeli', async () => {
+    it('should return 400 Bad Request when passwords do not match', async () => {
       const invalidPayload = {
         ...validRegisterPayload,
         password2: 'DifferentPassword2',
@@ -162,7 +162,7 @@ describe('Auth E2E Test Suite (/api/v1/auth)', () => {
       expect(body.message).toBe('Şifreler eşleşmiyor.');
     });
 
-    it('DTO kurallarına uymayan gövdede 400 ve alan hataları dönmeli', async () => {
+    it('should return 400 and field errors on invalid DTO payload', async () => {
       const invalidDtoPayload = {
         email: 'not-an-email',
         password: 'short',
@@ -180,7 +180,7 @@ describe('Auth E2E Test Suite (/api/v1/auth)', () => {
       expect(Object.keys(body.reason ?? {}).length).toBeGreaterThan(0);
     });
 
-    it('e-posta zaten kayıtlıysa 409 Conflict dönmeli', async () => {
+    it('should return 409 Conflict when email is already registered', async () => {
       mockPrisma.user.findUnique.mockResolvedValue({ id: 'existing-id' });
 
       const response: SupertestResponse = await request(server)
@@ -195,7 +195,7 @@ describe('Auth E2E Test Suite (/api/v1/auth)', () => {
   });
 
   describe('POST /api/v1/auth/login', () => {
-    it('doğru bilgilerle 200 ve JWT access & refresh token çifti dönmeli', async () => {
+    it('should return 200 and JWT access & refresh token pair with valid credentials', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
       mockPrisma.refreshToken.create.mockResolvedValue({
         id: 'token-id-1',
@@ -219,7 +219,7 @@ describe('Auth E2E Test Suite (/api/v1/auth)', () => {
       expect(body.data.refresh.length).toBeGreaterThan(10);
     });
 
-    it('hatalı şifre veya olmayan kullanıcı için tekil 401 dönmeli (User Enumeration engeli)', async () => {
+    it('should return single 401 for wrong password or non-existent user (User Enumeration prevention)', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
       const response: SupertestResponse = await request(server)
@@ -237,7 +237,7 @@ describe('Auth E2E Test Suite (/api/v1/auth)', () => {
   });
 
   describe('POST /api/v1/auth/token/refresh', () => {
-    it('geçerli refresh token ile yeni token çifti dönmeli (Rotation)', async () => {
+    it('should return new token pair with valid refresh token (Rotation)', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
       mockPrisma.refreshToken.create.mockResolvedValue({
         id: 'token-id-1',
@@ -279,7 +279,7 @@ describe('Auth E2E Test Suite (/api/v1/auth)', () => {
       expect(refreshBody.data.refresh.length).toBeGreaterThan(10);
     });
 
-    it('iptal edilmiş token tekrar kullanıldığında 401 dönmeli ve oturumları sonlandırmalı', async () => {
+    it('should return 401 and revoke all sessions when revoked token is reused', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
       mockPrisma.refreshToken.create.mockResolvedValue({
         id: 'token-id-1',
@@ -323,7 +323,7 @@ describe('Auth E2E Test Suite (/api/v1/auth)', () => {
   });
 
   describe('GET /api/v1/auth/google', () => {
-    it('Google kimlik bilgileri ortamda tanımlı değilse 503 ServiceUnavailable dönmeli (Graceful Degradation)', async () => {
+    it('should return 503 ServiceUnavailable when Google credentials are not configured in environment (Graceful Degradation)', async () => {
       const response: SupertestResponse = await request(server)
         .get('/api/v1/auth/google')
         .expect(503);

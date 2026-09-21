@@ -31,7 +31,7 @@ describe('LocationsController', () => {
   });
 
   describe('getCountries', () => {
-    it('LocationsService.findCountries metodunu çağırmalı', async () => {
+    it('should call LocationsService.findCountries method', async () => {
       const mockResult = [{ id: 1, name: 'Türkiye' }];
       mockLocationsService.findCountries.mockResolvedValue(mockResult);
 
@@ -43,7 +43,7 @@ describe('LocationsController', () => {
   });
 
   describe('getRegionsByCountry', () => {
-    it('LocationsService.findRegionsByCountryId metodunu doğru parametreyle çağırmalı', async () => {
+    it('should call LocationsService.findRegionsByCountryId with correct parameter', async () => {
       const mockResult = [{ id: 1, name: 'İstanbul', country_id: 1 }];
       mockLocationsService.findRegionsByCountryId.mockResolvedValue(mockResult);
 
@@ -57,7 +57,7 @@ describe('LocationsController', () => {
   });
 
   describe('getSubregionsByRegion', () => {
-    it('LocationsService.findSubregionsByRegionId metodunu doğru parametreyle çağırmalı', async () => {
+    it('should call LocationsService.findSubregionsByRegionId with correct parameter', async () => {
       const mockResult = [{ id: 1, name: 'Kadıköy', region_id: 1 }];
       mockLocationsService.findSubregionsByRegionId.mockResolvedValue(
         mockResult,

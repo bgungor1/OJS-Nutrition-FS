@@ -61,7 +61,7 @@ describe('RolesGuard', () => {
     jest.clearAllMocks();
   });
 
-  it('rol kısıtı bulunmayan (@Roles tanımlanmamış) endpoint için true dönmeli', () => {
+  it('should return true for endpoint without role restrictions (@Roles not defined)', () => {
     mockReflector.getAllAndOverride.mockReturnValue(undefined);
 
     const result = guard.canActivate(mockContext);
@@ -73,7 +73,7 @@ describe('RolesGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('boş rol dizisi verildiğinde true dönmeli', () => {
+  it('should return true when empty roles array is provided', () => {
     mockReflector.getAllAndOverride.mockReturnValue([]);
 
     const result = guard.canActivate(mockContext);
@@ -81,7 +81,7 @@ describe('RolesGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('kullanıcı oturumu yoksa (request.user undefined) ForbiddenException fırlatmalı', () => {
+  it('should throw ForbiddenException when user session does not exist (request.user undefined)', () => {
     mockReflector.getAllAndOverride.mockReturnValue([Role.admin]);
     mockRequest.user = undefined;
 
@@ -91,7 +91,7 @@ describe('RolesGuard', () => {
     );
   });
 
-  it('kullanıcı rolü yetersizse (customer iken admin isteniyorsa) ForbiddenException fırlatmalı', () => {
+  it('should throw ForbiddenException when user role is insufficient (customer when admin is required)', () => {
     mockReflector.getAllAndOverride.mockReturnValue([Role.admin]);
     mockRequest.user = {
       id: 'user-1',
@@ -114,7 +114,7 @@ describe('RolesGuard', () => {
     );
   });
 
-  it('kullanıcı gerekli role sahipse (admin) true dönmeli', () => {
+  it('should return true when user has the required role (admin)', () => {
     mockReflector.getAllAndOverride.mockReturnValue([Role.admin]);
     mockRequest.user = {
       id: 'admin-1',
