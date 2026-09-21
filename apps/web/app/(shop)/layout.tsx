@@ -23,7 +23,8 @@ export default async function ShopLayout({
     if (token) {
       user = await getMyAccount(token);
     }
-  } catch {
+  } catch (error) {
+    console.warn('[ShopLayout] Kullanıcı profili alınamadı, misafir olarak devam ediliyor:', error);
   }
 
   return (

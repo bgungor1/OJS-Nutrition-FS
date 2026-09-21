@@ -40,6 +40,7 @@ export async function serverFetch<T>(
         reason = errorJson.reason;
       }
     } catch {
+      // Hata yanıt gövdesi standart JSON değilse (502/504 HTML veya boş) parse hatası yutulup HTTP durum kodlu ApiError fırlatılır
     }
 
     throw new ApiError(errorMessage, response.status, reason);
@@ -80,6 +81,7 @@ export async function clientFetch<T>(
         reason = errorJson.reason;
       }
     } catch {
+      // Hata yanıt gövdesi standart JSON değilse (502/504 HTML veya boş) parse hatası yutulup HTTP durum kodlu ApiError fırlatılır
     }
 
     throw new ApiError(errorMessage, response.status, reason);
