@@ -2,10 +2,12 @@ export interface FaqItem {
   id: string;
   question: string;
   answer: string;
-  category?: string | null;
-  order: number;
-  createdAt: string;
-  updatedAt: string;
+  category: string;
+  sort_order?: number;
+  sortOrder?: number;
+  order?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface FaqQuery {
@@ -15,13 +17,13 @@ export interface FaqQuery {
 export interface CreateFaqDto {
   question: string;
   answer: string;
-  category?: string;
-  order?: number;
+  category: string;
+  sortOrder?: number;
 }
 
 export interface UpdateFaqDto {
   question?: string;
   answer?: string;
   category?: string;
-  order?: number;
+  sortOrder?: number;
 }

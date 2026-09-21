@@ -2,11 +2,12 @@ export interface ContactMessage {
   id: string;
   name: string;
   email: string;
-  subject: string;
+  subject?: string;
   message: string;
   handled: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  created_at?: string;
+  updatedAt?: string;
 }
 
 export interface ContactQuery {
