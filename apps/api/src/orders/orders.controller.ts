@@ -7,7 +7,6 @@ import {
   Ip,
   Param,
   Post,
-  Put,
   Query,
 } from '@nestjs/common';
 import {
@@ -16,9 +15,8 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { Throttle } from '@nestjs/throttler';
-import { CurrentUser, Roles, AuthenticatedUser } from '../common';
+import { CurrentUser, AuthenticatedUser } from '../common';
 import { ErrorResponseDto } from '../common/dto';
 import { ORDER_CHECKOUT_RATE_LIMIT } from './order.constants';
 import { OrdersService } from './orders.service';
@@ -26,7 +24,6 @@ import {
   CalculateShipmentFeeQueryDto,
   CompleteShoppingDto,
   OrderQueryDto,
-  UpdateOrderStatusDto,
   OrderDetailResponseDto,
   PaginatedOrdersResponseDto,
   PaymentSettingsResponseDto,
@@ -195,46 +192,5 @@ export class OrdersController {
     @Ip() ip?: string,
   ): Promise<OrderDetailResponse> {
     return this.ordersService.completeShopping(user.id, dto, ip);
-  }
-
-  @Put(':id/status')
-  @Roles(Role.admin)
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary:
-      'Sipariş durumunu günceller ve gerekirse stok iadesi yapar (Admin)',
-    description:
-      'Terminal durumlara (DELIVERED, CANCELLED) yapılan geçişler geri alınamaz. İptal durumunda stok otomatik iade edilir.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Sipariş durumu başarıyla güncellendi.',
-    type: OrderDetailResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Geçersiz durum geçişi veya terminal durum kural ihlali.',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Yetkisiz erişim — Bearer token eksik veya geçersiz.',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Yetkisiz erişim — Admin rolü gereklidir.',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Sipariş bulunamadı.',
-    type: ErrorResponseDto,
-  })
-  async updateStatus(
-    @Param('id') id: string,
-    @Body() dto: UpdateOrderStatusDto,
-  ): Promise<OrderDetailResponse> {
-    return this.ordersService.updateOrderStatus(id, dto);
   }
 }

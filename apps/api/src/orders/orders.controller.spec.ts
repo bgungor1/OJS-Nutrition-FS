@@ -1,10 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { Role, OrderStatus } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 import { AuthenticatedUser } from '../common/types/authenticated-user';
 import { CompleteShoppingDto } from './dto/complete-shopping.dto';
-import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import {
   MOCK_ADDRESS_ID,
   MOCK_ORDER_ID,
@@ -21,7 +20,6 @@ describe('OrdersController', () => {
     findUserOrders: jest.Mock;
     findUserOrderById: jest.Mock;
     completeShopping: jest.Mock;
-    updateOrderStatus: jest.Mock;
   };
 
   const mockUser: AuthenticatedUser = {
@@ -37,7 +35,6 @@ describe('OrdersController', () => {
       findUserOrders: jest.fn(),
       findUserOrderById: jest.fn(),
       completeShopping: jest.fn(),
-      updateOrderStatus: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -142,21 +139,6 @@ describe('OrdersController', () => {
         mockUser.id,
         dto,
         '192.168.1.1',
-      );
-      expect(result).toBe(mockOrderDetail);
-    });
-  });
-
-  describe('updateStatus', () => {
-    it('sipariş kimliği ve yeni durum dto su ile durum güncelleme metodunu çağırmalıdır', async () => {
-      ordersService.updateOrderStatus.mockResolvedValue(mockOrderDetail);
-      const dto: UpdateOrderStatusDto = { status: OrderStatus.processing };
-
-      const result = await controller.updateStatus(MOCK_ORDER_ID, dto);
-
-      expect(ordersService.updateOrderStatus).toHaveBeenCalledWith(
-        MOCK_ORDER_ID,
-        dto,
       );
       expect(result).toBe(mockOrderDetail);
     });
