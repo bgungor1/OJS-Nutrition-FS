@@ -47,7 +47,8 @@ export async function generateStaticParams() {
     if (categories.length > 0) {
       return categories.map((c) => ({ category: c.slug }));
     }
-  } catch {
+  } catch (err: unknown) {
+    console.warn('[generateStaticParams] Kategoriler API üzerinden alınamadı, statik kategoriler kullanılacak:', err);
   }
 
   return [

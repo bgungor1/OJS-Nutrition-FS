@@ -63,7 +63,8 @@ export async function middleware(request: NextRequest) {
             return response;
           }
         }
-      } catch {
+      } catch (err: unknown) {
+        console.warn('[middleware] Token yenileme sırasında ağ veya sunucu hatası oluştu:', err);
       }
 
       const loginUrl = new URL('/login', request.url);
