@@ -53,7 +53,7 @@ describe('AuthController', () => {
   });
 
   describe('register', () => {
-    it('kayıt isteğini authService.register metoduna iletmeli', async () => {
+    it('should forward register request to authService.register', async () => {
       const dto = createMockRegisterDto();
       const expectedResponse = {
         user: createMockSafeUser(),
@@ -69,7 +69,7 @@ describe('AuthController', () => {
   });
 
   describe('login', () => {
-    it('giriş isteğini dto ve istemci IP adresiyle authService.login metoduna iletmeli', async () => {
+    it('should forward login request with dto and client IP to authService.login', async () => {
       const dto = createMockLoginDto();
       const req = { ip: '192.168.1.1' } as Request;
       authService.login.mockResolvedValue(mockTokens);
@@ -82,7 +82,7 @@ describe('AuthController', () => {
   });
 
   describe('refreshToken', () => {
-    it('yenileme isteğini dto ve IP ile authService.refreshToken metoduna iletmeli', async () => {
+    it('should forward refresh request with dto and IP to authService.refreshToken', async () => {
       const dto = createMockRefreshTokenDto();
       const req = { ip: '127.0.0.1' } as Request;
       authService.refreshToken.mockResolvedValue(mockTokens);
@@ -95,7 +95,7 @@ describe('AuthController', () => {
   });
 
   describe('logout', () => {
-    it('logout isteğini dto ve IP ile authService.logout metoduna iletmeli', async () => {
+    it('should forward logout request with dto and IP to authService.logout', async () => {
       const dto = {
         refresh: 'refresh-token-xyz',
         refreshToken: 'refresh-token-xyz',
@@ -112,7 +112,7 @@ describe('AuthController', () => {
   });
 
   describe('revokeAll', () => {
-    it('revoke-all isteğini authenticated user id ve IP ile authService.revokeAllSessions metoduna iletmeli', async () => {
+    it('should forward revoke-all request with authenticated user ID and IP to authService.revokeAllSessions', async () => {
       const user = {
         id: 'user-uuid-1',
         email: 'user@example.com',
@@ -135,7 +135,7 @@ describe('AuthController', () => {
   });
 
   describe('googleAuth', () => {
-    it('googleAuth metodunu hatasız çağırmalı', async () => {
+    it('should invoke googleAuth method without errors', async () => {
       await expect(controller.googleAuth()).resolves.toBeUndefined();
     });
   });
@@ -148,7 +148,7 @@ describe('AuthController', () => {
       lastName: 'User',
     };
 
-    it('istemci json kabul ettiğinde res.json ile token dönmeli', async () => {
+    it('should return tokens via res.json when client accepts JSON', async () => {
       googleAuthService.validateOrCreateGoogleUser.mockResolvedValue(
         mockTokens,
       );
@@ -176,7 +176,7 @@ describe('AuthController', () => {
       expect(redirectMock).not.toHaveBeenCalled();
     });
 
-    it('varsayılan durumda frontend callback adresine redirect yapmalı', async () => {
+    it('should redirect to frontend callback address by default', async () => {
       googleAuthService.validateOrCreateGoogleUser.mockResolvedValue(
         mockTokens,
       );

@@ -65,7 +65,7 @@ describe('CartMapper', () => {
   };
 
   describe('toVariantSummary', () => {
-    it('indirimli varyantta kâr, indirim yüzdesi ve fiyatları doğru hesaplamalı', () => {
+    it('should correctly calculate profit, discount percentage, and prices for discounted variant', () => {
       const variant = createMockVariant({
         totalPrice: new Prisma.Decimal(1000),
         discountedPrice: new Prisma.Decimal(800),
@@ -97,7 +97,7 @@ describe('CartMapper', () => {
       });
     });
 
-    it('indirimsiz varyantta indirim alanlarını null dönmeli', () => {
+    it('should return null discount fields for non-discounted variant', () => {
       const variant = createMockVariant({
         totalPrice: new Prisma.Decimal(600),
         discountedPrice: null,
@@ -115,7 +115,7 @@ describe('CartMapper', () => {
       });
     });
 
-    it('stok 0 olduğunda is_available false dönmeli', () => {
+    it('should return is_available as false when stock is 0', () => {
       const variant = createMockVariant({
         isAvailable: true,
         stockQuantity: 0,
@@ -125,7 +125,7 @@ describe('CartMapper', () => {
       expect(result.is_available).toBe(false);
     });
 
-    it('admin satışa kapattığında (isAvailable=false) is_available false dönmeli', () => {
+    it('should return is_available as false when isAvailable is set to false', () => {
       const variant = createMockVariant({
         isAvailable: false,
         stockQuantity: 100,
@@ -137,7 +137,7 @@ describe('CartMapper', () => {
   });
 
   describe('toProductSummary', () => {
-    it('ürün bilgilerini ve varyant görselini doğru eşlemeli, geriye dönük photo alanını doldurmalı', () => {
+    it('should map product info and variant image correctly, populating backward-compatible photo field', () => {
       const product = createMockProduct({
         id: 'p-10',
         name: 'Kreatin Monohidrat',
@@ -160,7 +160,7 @@ describe('CartMapper', () => {
   });
 
   describe('toCartItemResponse', () => {
-    it('sepet kalemini zenginleştirilmiş formatta dönmeli', () => {
+    it('should return cart item in enriched response format', () => {
       const item = createMockCartItem({
         id: 'cart-item-99',
         pieces: 3,
@@ -183,11 +183,11 @@ describe('CartMapper', () => {
   });
 
   describe('toCartResponseList', () => {
-    it('boş dizi için boş dizi dönmeli', () => {
+    it('should return empty array for empty input', () => {
       expect(CartMapper.toCartResponseList([])).toEqual([]);
     });
 
-    it('birden fazla kalemi başarıyla haritalamalı', () => {
+    it('should successfully map multiple items', () => {
       const item1 = createMockCartItem({ id: 'item-1' });
       const item2 = createMockCartItem({ id: 'item-2', pieces: 5 });
 

@@ -1,7 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CartService } from './cart.service';
+import {
+  createMockGuestItem,
+  createMockUserItem,
+  mockProduct,
+  mockVariant1,
+  mockVariant2,
+} from './test/cart.fixtures';
 
 describe('CartService - mergeGuestCart', () => {
   let service: CartService;
@@ -17,42 +23,6 @@ describe('CartService - mergeGuestCart', () => {
       update: jest.Mock;
       delete: jest.Mock;
     };
-  };
-
-  const mockProduct = {
-    id: 'prod-1',
-    name: 'Whey Protein',
-    slug: 'whey-protein',
-  };
-
-  const mockVariant1 = {
-    id: 'var-1',
-    productId: 'prod-1',
-    gram: 1000,
-    pieces: 1,
-    totalServings: 33,
-    aroma: 'Çikolata',
-    totalPrice: new Prisma.Decimal(549),
-    discountedPrice: null,
-    pricePerServing: new Prisma.Decimal(15.12),
-    photoSrc: 'media/test.jpg',
-    isAvailable: true,
-    stockQuantity: 10,
-  };
-
-  const mockVariant2 = {
-    id: 'var-2',
-    productId: 'prod-1',
-    gram: 1000,
-    pieces: 1,
-    totalServings: 33,
-    aroma: 'Çilek',
-    totalPrice: new Prisma.Decimal(549),
-    discountedPrice: null,
-    pricePerServing: new Prisma.Decimal(15.12),
-    photoSrc: 'media/test2.jpg',
-    isAvailable: true,
-    stockQuantity: 10,
   };
 
   beforeEach(async () => {
@@ -83,7 +53,7 @@ describe('CartService - mergeGuestCart', () => {
     service = module.get<CartService>(CartService);
   });
 
-  it('guestSessionId tanımlı değilse veya boşsa transaction çalıştırmadan kullanıcının mevcut sepetini dönmeli', async () => {
+  it('should return user cart directly without transaction when guestSessionId is undefined or whitespace', async () => {
     mockPrisma.cartItem.findMany.mockResolvedValue([]);
 
     const result1 = await service.mergeGuestCart('user-1', undefined);
@@ -94,8 +64,8 @@ describe('CartService - mergeGuestCart', () => {
     expect(result2).toEqual([]);
   });
 
-  it('misafir sepeti boşsa transaction içinde işlem yapmadan sepeti dönmeli', async () => {
-    mockTx.cartItem.findMany.mockResolvedValueOnce([]); // guest items boş
+  it('should return empty array without running transaction when guest cart is empty', async () => {
+    mockTx.cartItem.findMany.mockResolvedValueOnce([]);
     mockPrisma.cartItem.findMany.mockResolvedValue([]);
 
     const result = await service.mergeGuestCart('user-1', 'guest-123');
@@ -106,19 +76,12 @@ describe('CartService - mergeGuestCart', () => {
     expect(result).toEqual([]);
   });
 
-  it('çakışmayan varyantları doğrudan kullanıcıya devretmeli (userId atanmalı, guestSessionId null olmalı)', async () => {
-    const guestItem = {
-      id: 'guest-item-1',
-      userId: null,
-      guestSessionId: 'guest-123',
-      productId: 'prod-1',
-      productVariantId: 'var-1',
-      pieces: 2,
-    };
+  it('should transfer non-conflicting variants directly to user (assign userId and set guestSessionId to null)', async () => {
+    const guestItem = createMockGuestItem();
 
     mockTx.cartItem.findMany
-      .mockResolvedValueOnce([guestItem]) // guest items
-      .mockResolvedValueOnce([]); // user items (boş)
+      .mockResolvedValueOnce([guestItem])
+      .mockResolvedValueOnce([]);
 
     mockPrisma.cartItem.findMany.mockResolvedValue([
       {
@@ -146,28 +109,13 @@ describe('CartService - mergeGuestCart', () => {
     expect(result[0].pieces).toBe(2);
   });
 
-  it('çakışan varyantlarda kullanıcının adedini artırmalı ve misafir kaydını silmeli', async () => {
-    const guestItem = {
-      id: 'guest-item-1',
-      userId: null,
-      guestSessionId: 'guest-123',
-      productId: 'prod-1',
-      productVariantId: 'var-1',
-      pieces: 3,
-    };
-
-    const userItem = {
-      id: 'user-item-1',
-      userId: 'user-1',
-      guestSessionId: null,
-      productId: 'prod-1',
-      productVariantId: 'var-1',
-      pieces: 2,
-    };
+  it('should increment user quantity and delete guest record for conflicting variants', async () => {
+    const guestItem = createMockGuestItem({ pieces: 3 });
+    const userItem = createMockUserItem({ pieces: 2 });
 
     mockTx.cartItem.findMany
-      .mockResolvedValueOnce([guestItem]) // guest items
-      .mockResolvedValueOnce([userItem]); // user items (aynı varyant var)
+      .mockResolvedValueOnce([guestItem])
+      .mockResolvedValueOnce([userItem]);
 
     mockPrisma.cartItem.findMany.mockResolvedValue([
       {
@@ -195,7 +143,7 @@ describe('CartService - mergeGuestCart', () => {
     expect(result[0].pieces).toBe(5);
   });
 
-  it('hem çakışan hem çakışmayan varyantları karma senaryoda doğru yönetmeli', async () => {
+  it('should correctly handle both conflicting and non-conflicting variants in mixed scenario', async () => {
     const guestItem1 = {
       id: 'guest-1',
       productVariantId: 'var-1',
@@ -206,7 +154,6 @@ describe('CartService - mergeGuestCart', () => {
       productVariantId: 'var-2',
       pieces: 4,
     };
-
     const userItem1 = {
       id: 'user-1',
       productVariantId: 'var-1',
@@ -242,7 +189,6 @@ describe('CartService - mergeGuestCart', () => {
 
     const result = await service.mergeGuestCart('user-1', 'guest-123');
 
-    // Çakışan var-1 için update & delete
     expect(mockTx.cartItem.update).toHaveBeenCalledWith({
       where: { id: 'user-1' },
       data: { pieces: { increment: 2 } },
@@ -251,7 +197,6 @@ describe('CartService - mergeGuestCart', () => {
       where: { id: 'guest-1' },
     });
 
-    // Çakışmayan var-2 için devretme
     expect(mockTx.cartItem.update).toHaveBeenCalledWith({
       where: { id: 'guest-2' },
       data: { userId: 'user-1', guestSessionId: null },
@@ -260,7 +205,7 @@ describe('CartService - mergeGuestCart', () => {
     expect(result).toHaveLength(2);
   });
 
-  it('transaction sırasında hata fırlatılırsa hatayı yukarı iletmeli', async () => {
+  it('should propagate error upwards if error occurs during transaction', async () => {
     mockTx.cartItem.findMany.mockRejectedValue(
       new Error('DB Connection Timeout'),
     );

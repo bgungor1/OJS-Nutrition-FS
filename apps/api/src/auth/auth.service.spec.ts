@@ -1,55 +1,34 @@
-import {
-  BadRequestException,
-  ConflictException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthProvider } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AuditEvent, SecurityAuditService } from '../common/audit';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
+import { createMockLoginDto, createMockUser } from './test/auth.fixture';
 import { TokenService } from './token.service';
-import {
-  createMockLoginDto,
-  createMockRefreshTokenDto,
-  createMockRegisterDto,
-  createMockSafeUser,
-  createMockUser,
-} from './test/auth.fixture';
 
-describe('AuthService', () => {
+describe('AuthService - Login', () => {
   let service: AuthService;
   let prisma: {
     user: {
       findUnique: jest.Mock;
-      create: jest.Mock;
-      update: jest.Mock;
     };
   };
   let tokenService: {
     generateTokens: jest.Mock;
-    rotateRefreshToken: jest.Mock;
-    revokeRefreshToken: jest.Mock;
-    revokeAllUserTokens: jest.Mock;
   };
   let auditService: {
-    record: jest.Mock;
     info: jest.Mock;
     warn: jest.Mock;
-    alarm: jest.Mock;
   };
 
-  const mockRegisterDto = createMockRegisterDto();
   const mockLoginDto = createMockLoginDto();
-  const mockRefreshTokenDto = createMockRefreshTokenDto();
 
   beforeEach(async () => {
     prisma = {
       user: {
         findUnique: jest.fn(),
-        create: jest.fn(),
-        update: jest.fn(),
       },
     };
 
@@ -58,19 +37,11 @@ describe('AuthService', () => {
         access: 'mock-access-token',
         refresh: 'mock-refresh-token',
       }),
-      rotateRefreshToken: jest.fn().mockResolvedValue({
-        access: 'mock-rotated-access-token',
-        refresh: 'mock-rotated-refresh-token',
-      }),
-      revokeRefreshToken: jest.fn().mockResolvedValue(undefined),
-      revokeAllUserTokens: jest.fn().mockResolvedValue(2),
     };
 
     auditService = {
-      record: jest.fn(),
       info: jest.fn(),
       warn: jest.fn(),
-      alarm: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -85,109 +56,12 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
   });
 
-  describe('Faz 1.3.1 (Register)', () => {
-    it('şifreler eşleşmediğinde BadRequestException fırlatmalı', async () => {
-      const invalidDto = {
-        ...mockRegisterDto,
-        password2: 'FarkliSifre2',
-      };
-
-      await expect(service.register(invalidDto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.register(invalidDto)).rejects.toThrow(
-        'Şifreler eşleşmiyor.',
-      );
-      expect(prisma.user.findUnique).not.toHaveBeenCalled();
-      expect(prisma.user.create).not.toHaveBeenCalled();
-    });
-
-    it('e-posta zaten kayıtlıysa ConflictException fırlatmalı', async () => {
-      prisma.user.findUnique.mockResolvedValue({ id: 'existing-id' });
-
-      await expect(service.register(mockRegisterDto)).rejects.toThrow(
-        ConflictException,
-      );
-      await expect(service.register(mockRegisterDto)).rejects.toThrow(
-        'Bu e-posta adresi zaten kullanımda.',
-      );
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: 'test@example.com' },
-        select: { id: true },
-      });
-      expect(prisma.user.create).not.toHaveBeenCalled();
-    });
-
-    it('geçerli verilerle kullanıcıyı başarıyla kaydetmeli ve şifreyi hashlemeli', async () => {
-      prisma.user.findUnique.mockResolvedValue(null);
-
-      const createdUser = createMockSafeUser();
-      prisma.user.create.mockResolvedValue(createdUser);
-
-      const result = await service.register(mockRegisterDto);
-
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: 'test@example.com' },
-        select: { id: true },
-      });
-
-      expect(prisma.user.create).toHaveBeenCalledWith({
-        data: {
-          email: 'test@example.com',
-          passwordHash: expect.stringMatching(
-            /^\$2[abxy]?\$\d+\$/,
-          ) as unknown as string,
-          firstName: 'Test',
-          lastName: 'User',
-          authProvider: 'local',
-        },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          createdAt: true,
-        },
-      });
-
-      const createCalls = prisma.user.create.mock.calls as Array<
-        [
-          {
-            data: {
-              email: string;
-              passwordHash: string;
-              firstName: string;
-              lastName: string;
-              authProvider: string;
-            };
-          },
-        ]
-      >;
-      const passedData = createCalls[0]?.[0]?.data;
-      expect(passedData).toBeDefined();
-      const isPasswordValid = await bcrypt.compare(
-        mockRegisterDto.password,
-        passedData?.passwordHash ?? '',
-      );
-      expect(isPasswordValid).toBe(true);
-
-      expect(result).toEqual({
-        user: createdUser,
-        message: 'Kayıt başarıyla tamamlandı.',
-      });
-      expect(
-        (result.user as unknown as Record<string, unknown>).passwordHash,
-      ).toBeUndefined();
-      expect(auditService.info).toHaveBeenCalledWith(
-        AuditEvent.AUTH_REGISTER,
-        expect.objectContaining({ userId: createdUser.id }),
-      );
-    });
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
-  describe('Faz 1.3.2 (Login)', () => {
-    it('doğru bilgilerle giriş yapıldığında tokenService.generateTokens çağrılmalı', async () => {
+  describe('Login', () => {
+    it('should call tokenService.generateTokens and return token pair on valid credentials', async () => {
       const rawPassword = 'Password1';
       const passwordHash = await bcrypt.hash(rawPassword, 10);
       const mockUser = createMockUser({ passwordHash });
@@ -219,7 +93,7 @@ describe('AuthService', () => {
       );
     });
 
-    it('kullanıcı bulunamadığında genel UnauthorizedException fırlatmalı (user enumeration engeli)', async () => {
+    it('should throw generic UnauthorizedException when user is not found to prevent user enumeration', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
       await expect(service.login(mockLoginDto, '127.0.0.1')).rejects.toThrow(
@@ -236,7 +110,7 @@ describe('AuthService', () => {
       );
     });
 
-    it('kullanıcı sağlayıcısı local değilse genel UnauthorizedException fırlatmalı', async () => {
+    it('should throw generic UnauthorizedException when user provider is not local', async () => {
       const googleUser = createMockUser({
         authProvider: AuthProvider.google,
         passwordHash: null,
@@ -253,7 +127,7 @@ describe('AuthService', () => {
       expect(tokenService.generateTokens).not.toHaveBeenCalled();
     });
 
-    it('hatalı şifre girildiğinde genel UnauthorizedException fırlatmalı', async () => {
+    it('should throw generic UnauthorizedException on incorrect password', async () => {
       const correctHash = await bcrypt.hash('FarkliSifre999', 10);
       const mockUser = createMockUser({ passwordHash: correctHash });
       prisma.user.findUnique.mockResolvedValue(mockUser);
@@ -266,60 +140,6 @@ describe('AuthService', () => {
       );
 
       expect(tokenService.generateTokens).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Faz 1.3.3 (RefreshToken)', () => {
-    it('refreshToken isteğini tokenService.rotateRefreshToken metoduna delege etmeli', async () => {
-      const result = await service.refreshToken(
-        mockRefreshTokenDto,
-        '127.0.0.1',
-      );
-
-      expect(tokenService.rotateRefreshToken).toHaveBeenCalledWith(
-        mockRefreshTokenDto.refresh,
-        '127.0.0.1',
-      );
-
-      expect(result).toEqual({
-        access: 'mock-rotated-access-token',
-        refresh: 'mock-rotated-refresh-token',
-      });
-    });
-  });
-
-  describe('Faz 4.2 (Logout and RevokeAll)', () => {
-    it('logout çağrıldığında tokenService.revokeRefreshToken çağrılmalı ve başarı mesajı dönmeli', async () => {
-      const logoutDto = {
-        refresh: 'test-refresh-token',
-        refreshToken: 'test-refresh-token',
-      };
-
-      const result = await service.logout(logoutDto, '127.0.0.1');
-
-      expect(tokenService.revokeRefreshToken).toHaveBeenCalledWith(
-        'test-refresh-token',
-        '127.0.0.1',
-      );
-      expect(result).toEqual({
-        message: 'Oturum başarıyla sonlandırıldı.',
-      });
-    });
-
-    it('revokeAllSessions çağrıldığında tokenService.revokeAllUserTokens çağrılmalı ve başarı mesajı dönmeli', async () => {
-      const result = await service.revokeAllSessions(
-        'user-uuid-1',
-        '127.0.0.1',
-      );
-
-      expect(tokenService.revokeAllUserTokens).toHaveBeenCalledWith(
-        'user-uuid-1',
-        '127.0.0.1',
-        'USER_REVOKE_ALL',
-      );
-      expect(result).toEqual({
-        message: 'Tüm aktif oturumlar başarıyla sonlandırıldı.',
-      });
     });
   });
 });

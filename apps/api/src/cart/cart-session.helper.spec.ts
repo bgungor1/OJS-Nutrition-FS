@@ -24,7 +24,7 @@ describe('CartSessionHelper', () => {
   });
 
   describe('getGuestCartCookieOptions', () => {
-    it('üretim ortamında secure=true ve güvenlik parametreleri dönmeli', () => {
+    it('should return secure=true and security options in production', () => {
       const options = getGuestCartCookieOptions(true);
 
       expect(options).toEqual({
@@ -36,7 +36,7 @@ describe('CartSessionHelper', () => {
       });
     });
 
-    it('geliştirme ortamında secure=false dönmeli', () => {
+    it('should return secure=false in development environment', () => {
       const options = getGuestCartCookieOptions(false);
 
       expect(options.secure).toBe(false);
@@ -47,7 +47,7 @@ describe('CartSessionHelper', () => {
   });
 
   describe('resolveCartSession', () => {
-    it('giriş yapmış kullanıcı varsa doğrudan userId dönmeli ve çerez yazmamalı', () => {
+    it('should return userId directly and not write cookie when user is authenticated', () => {
       const user: AuthenticatedUser = {
         id: 'usr-123',
         email: 'test@example.com',
@@ -64,7 +64,7 @@ describe('CartSessionHelper', () => {
       expect(mockRes.cookie).not.toHaveBeenCalled();
     });
 
-    it('kullanıcı yoksa ve istekte geçerli guest_cart_id çerezi varsa mevcut ID dönmeli', () => {
+    it('should return existing guestSessionId when user is not present and valid cookie exists', () => {
       mockReq.cookies = {
         [GUEST_CART_COOKIE]: 'existing-guest-uuid-123',
       };
@@ -78,7 +78,7 @@ describe('CartSessionHelper', () => {
       expect(mockRes.cookie).not.toHaveBeenCalled();
     });
 
-    it('kullanıcı yoksa ve çerez yoksa yeni UUID üretip çereze yazmalı ve dönmeli', () => {
+    it('should generate new UUID, set cookie, and return guestSessionId when no user and no cookie', () => {
       mockReq.cookies = {};
 
       const result = resolveCartSession(
@@ -100,7 +100,7 @@ describe('CartSessionHelper', () => {
       );
     });
 
-    it('çerez boşluk veya geçersiz string olduğunda yeni UUID üretmeli', () => {
+    it('should generate new UUID when cookie is whitespace or invalid string', () => {
       mockReq.cookies = {
         [GUEST_CART_COOKIE]: '   ',
       };
@@ -117,7 +117,7 @@ describe('CartSessionHelper', () => {
   });
 
   describe('clearGuestCartCookie', () => {
-    it('res.clearCookie fonksiyonunu doğru parametrelerle tetiklemeli', () => {
+    it('should call res.clearCookie with correct parameters', () => {
       clearGuestCartCookie(mockRes as Response);
 
       expect(mockRes.clearCookie).toHaveBeenCalledWith(

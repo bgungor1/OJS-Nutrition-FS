@@ -86,7 +86,7 @@ describe('CartController', () => {
   });
 
   describe('getCart', () => {
-    it('girişli kullanıcı için sepeti getirmeli', async () => {
+    it('should return cart for logged-in user', async () => {
       mockCartService.getCart.mockResolvedValue([mockCartItem]);
 
       const result = await controller.getCart(
@@ -101,7 +101,7 @@ describe('CartController', () => {
       expect(result).toEqual([mockCartItem]);
     });
 
-    it('misafir kullanıcı için sepeti getirmeli ve çerez çözümlemeli', async () => {
+    it('should return cart for guest user and resolve cookie', async () => {
       mockReq.cookies = { [GUEST_CART_COOKIE]: 'guest-123' };
       mockCartService.getCart.mockResolvedValue([mockCartItem]);
 
@@ -124,7 +124,7 @@ describe('CartController', () => {
       pieces: 1,
     };
 
-    it('servise doğru parametreleri iletip güncel sepeti dönmeli', async () => {
+    it('should pass correct parameters to service and return updated cart', async () => {
       mockCartService.addToCart.mockResolvedValue([mockCartItem]);
 
       const result = await controller.addToCart(
@@ -149,7 +149,7 @@ describe('CartController', () => {
       pieces: 1,
     };
 
-    it('servise doğru parametreleri iletip güncel sepeti dönmeli', async () => {
+    it('should pass correct parameters to service and return updated cart', async () => {
       mockCartService.removeFromCart.mockResolvedValue([]);
 
       const result = await controller.removeFromCart(
@@ -168,7 +168,7 @@ describe('CartController', () => {
   });
 
   describe('clearCart', () => {
-    it('servise temizleme isteği gönderip boş liste dönmeli', async () => {
+    it('should send clear request to service and return empty list', async () => {
       mockCartService.clearCart.mockResolvedValue([]);
 
       const result = await controller.clearCart(
@@ -185,7 +185,7 @@ describe('CartController', () => {
   });
 
   describe('mergeGuestCart', () => {
-    it('misafir sepetini kullanıcı sepetine aktarmalı ve misafir çerezini silmeli', async () => {
+    it('should merge guest cart into user cart and clear guest cookie', async () => {
       mockReq.cookies = { [GUEST_CART_COOKIE]: 'guest-999' };
       mockCartService.mergeGuestCart.mockResolvedValue([mockCartItem]);
 

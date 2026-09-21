@@ -60,3 +60,39 @@ export const createMockRefreshTokenDto = (overrides = {}) => ({
   refresh: 'valid.mock.refresh-token',
   ...overrides,
 });
+
+export const createMockTokenMocks = () => ({
+  prisma: {
+    refreshToken: {
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
+  },
+  jwtService: {
+    signAsync: jest.fn((payload: { role?: string }) =>
+      payload.role
+        ? Promise.resolve('mock-access-token')
+        : Promise.resolve('mock-refresh-token'),
+    ),
+    verifyAsync: jest.fn(),
+  },
+  configService: {
+    get: jest.fn((key: string) =>
+      key === 'jwt'
+        ? {
+            accessSecret: 'test-access-secret',
+            refreshSecret: 'test-refresh-secret',
+            accessExpires: '15m',
+            refreshExpires: '7d',
+          }
+        : undefined,
+    ),
+  },
+  auditService: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    alarm: jest.fn(),
+  },
+});
