@@ -1,5 +1,9 @@
+'use client';
+
 import * as React from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 interface ProductsToolbarProps {
   search?: string;
@@ -8,59 +12,87 @@ interface ProductsToolbarProps {
   categories: Array<{ id: string; name: string; slug: string }>;
 }
 
+const SORT_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'newest', label: 'En Yeniler' },
+  { value: 'price_asc', label: 'Fiyat: Düşükten Yükseğe' },
+  { value: 'price_desc', label: 'Fiyat: Yüksekten Düşüğe' },
+  { value: 'rating', label: 'En Yüksek Puan' },
+];
+
 export function ProductsToolbar({
-  search,
-  category,
-  sort,
+  search = '',
+  category = '',
+  sort = 'newest',
   categories,
 }: ProductsToolbarProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [searchValue, setSearchValue] = React.useState(search);
+
+  const updateParams = React.useCallback(
+    (updates: Record<string, string | null>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('offset');
+
+      Object.entries(updates).forEach(([key, val]) => {
+        if (val) {
+          params.set(key, val);
+        } else {
+          params.delete(key);
+        }
+      });
+
+      router.push(`?${params.toString()}`);
+    },
+    [router, searchParams],
+  );
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateParams({ search: searchValue.trim() || null });
+  };
+
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-3">
-      <form method="GET" className="relative flex-1 w-full">
-        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-        <input
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-sm">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
           type="search"
-          name="search"
-          defaultValue={search || ''}
           placeholder="Ürün adı veya slug ile ara..."
-          className="w-full pl-9 pr-4 py-2 text-xs rounded-md border border-input bg-card shadow-xs focus:outline-none focus:ring-1 focus:ring-ring"
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          className="pl-8 h-9 text-sm"
+          aria-label="Ürün ara"
         />
-        {category && <input type="hidden" name="category" value={category} />}
-        {sort && <input type="hidden" name="sort" value={sort} />}
       </form>
 
-      <div className="flex items-center gap-2 w-full sm:w-auto">
-        <form method="GET" className="w-full sm:w-auto">
-          {search && <input type="hidden" name="search" value={search} />}
-          {sort && <input type="hidden" name="sort" value={sort} />}
-          <select
-            name="category"
-            defaultValue={category || ''}
-            className="w-full sm:w-44 py-2 px-3 text-xs rounded-md border border-input bg-card shadow-xs focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
-          >
-            <option value="">Tüm Kategoriler</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.slug}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </form>
+      <div className="flex items-center gap-2">
+        <select
+          value={category || ''}
+          onChange={(e) => updateParams({ category: e.target.value || null })}
+          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:w-44"
+          aria-label="Kategoriye göre filtrele"
+        >
+          <option value="">Tüm Kategoriler</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.slug}>
+              {c.name}
+            </option>
+          ))}
+        </select>
 
-        <form method="GET" className="w-full sm:w-auto">
-          {search && <input type="hidden" name="search" value={search} />}
-          {category && <input type="hidden" name="category" value={category} />}
-          <select
-            name="sort"
-            defaultValue={sort || 'newest'}
-            className="w-full sm:w-40 py-2 px-3 text-xs rounded-md border border-input bg-card shadow-xs focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
-          >
-            <option value="newest">En Yeniler</option>
-            <option value="price_asc">Fiyat: Düşükten Yükseğe</option>
-            <option value="price_desc">Fiyat: Yüksekten Düşüğe</option>
-            <option value="rating">En Yüksek Puan</option>
-          </select>
-        </form>
+        <select
+          value={sort || 'newest'}
+          onChange={(e) => updateParams({ sort: e.target.value })}
+          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:w-40"
+          aria-label="Sıralama ölçütü"
+        >
+          {SORT_OPTIONS.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );

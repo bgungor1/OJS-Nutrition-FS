@@ -8,6 +8,12 @@ vi.mock('@/lib/api/products', () => ({
   listCategories: vi.fn(),
 }));
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => '/products',
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 describe('app/(dashboard)/products/page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
