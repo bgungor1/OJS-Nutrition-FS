@@ -6,7 +6,7 @@ OJS Nutrition, modern web mühendisliği standartlarına, temiz kod prensiplerin
 
 > 💡 **Geliştirme & Mimari Dönüşüm Hikayesi (Evolution: Vite SPA → Full-Stack Monorepo):**  
 > Bu proje, yazarın modern yazılım mimarilerini ve web mühendisliği pratiklerini deneyimlemek amacıyla geliştirdiği bir **kendini geliştirme ve vitrin (showcase / portfolio)** projesidir.  
-> İlk etapta istemci taraflı **React 19 + Vite SPA** olarak hayata geçirilmiş; ardından kurumsal standartlarda **Server-Side Rendering (SSR)**, **Incremental Static Regeneration (ISR)**, **Server Components**, **HTTP-only cookie tabanlı güvenli kimlik doğrulama** ve **atomik işlem garantili sipariş/stok yönetimi** kabiliyetlerini sergilemek üzere **Next.js 15 (App Router)** ve **NestJS 11 + Prisma ORM** destekli modern bir **Full-Stack Monorepo** yapısına dönüştürülmüştür. (Projenin ilk Vite SPA kodları, mimari evrimi belgelemek adına kök dizindeki `src/` klasöründe referans olarak korunmaktadır).
+> İlk etapta istemci taraflı **React 19 + Vite SPA** olarak hayata geçirilmiş; ardından kurumsal standartlarda **Server-Side Rendering (SSR)**, **Incremental Static Regeneration (ISR)**, **Server Components**, **HTTP-only cookie tabanlı güvenli kimlik doğrulama** ve **atomik işlem garantili sipariş/stok yönetimi** kabiliyetlerini sergilemek üzere **Next.js 15 (App Router)** ve **NestJS 11 + Prisma ORM** destekli modern bir **Full-Stack Monorepo** yapısına dönüştürülmüştür.
 
 ---
 
@@ -27,7 +27,7 @@ OJS Nutrition, modern web mühendisliği standartlarına, temiz kod prensiplerin
 
 ## 🏛️ Mimari ve Özellikler
 
-- **Full-Stack Monorepo Mimarisi (`pnpm workspaces`):** Frontend (`apps/web`) ve Backend (`apps/api`) bağımsız olarak geliştirilebilir, test edilebilir ve ölçeklenebilir monorepo yapısında organize edilmiştir.
+- **Full-Stack Monorepo Mimarisi (`pnpm workspaces`):** Frontend (`apps/web`), Yönetici Paneli (`apps/admin`) ve Backend (`apps/api`) bağımsız olarak geliştirilebilir, test edilebilir ve ölçeklenebilir monorepo yapısında organize edilmiştir.
 - **Server & Client Components Dengesi:** Next.js 15 App Router üzerinde ürün listeleri ve statik sayfalar sunucuda hızlıca render edilirken (SSR/ISR), filtreleme, sepet ve ödeme gibi etkileşimli alanlar optimize Client Component'lar ile çalışır.
 - **Merkezi Response Zarfı (`ResponseInterceptor`):** Tüm başarılı API yanıtları standart `{ status: 'success', data: ... }` formatında normalize edilir. Controller katmanında elle zarf oluşturulmaz.
 - **Standart Hata Yönetimi (`AllExceptionsFilter`):** DTO validasyon ve sunucu hataları tek tip `{ status: 'error', reason: {...} }` veya `{ status: 'error', message: "..." }` formatında yüzeye çıkarılır.
@@ -76,7 +76,7 @@ OJS Nutrition, modern web mühendisliği standartlarına, temiz kod prensiplerin
 ```bash
 OJS-Nutrition-FS/
 ├── apps/
-│   ├── web/                     # Next.js 15 Frontend (App Router, Tailwind v4, Zustand)
+│   ├── web/                     # Next.js 15 Müşteri Frontend (App Router, Tailwind v4, Zustand)
 │   │   ├── app/                 # App Router sayfaları, layout'lar ve route grupları
 │   │   │   ├── (shop)/          # Vitrin rotaları (Ana Sayfa, Katalog, Ürün Detay, Hesap)
 │   │   │   ├── layout.tsx       # Root layout
@@ -85,6 +85,12 @@ OJS-Nutrition-FS/
 │   │   ├── lib/                 # API istemcisi, şemalar (zod), yardımcı araçlar
 │   │   ├── test/                # Vitest test dosyaları ve setup
 │   │   └── vitest.config.mts    # Test konfigürasyonu
+│   │
+│   ├── admin/                   # Next.js 15 Yönetici Paneli (App Router, Tailwind v4, RBAC)
+│   │   ├── app/                 # Dashboard, Sipariş, Ürün, Stok ve Kullanıcı yönetimi
+│   │   ├── components/          # Admin paneli tabloları, metrik kartları ve formları
+│   │   ├── lib/                 # Admin API istemcisi ve şemaları
+│   │   └── test/                # Vitest birim ve bileşen testleri
 │   │
 │   └── api/                     # NestJS 11 Backend API (Prisma, PostgreSQL)
 │       ├── prisma/
@@ -109,7 +115,6 @@ OJS-Nutrition-FS/
 │       │   └── admin/           # Yönetici paneli istatistik ve metrik uçları
 │       └── test/                # Jest E2E testleri
 │
-├── src/                         # [V1 Referans] İlk aşamadaki Vite SPA kaynak kodları
 ├── pnpm-workspace.yaml          # pnpm monorepo çalışma alanı tanımı
 ├── BACKEND_PLAN.md              # Backend mimari ve endpoint spesifikasyonu
 ├── FRONTEND_NEXTJS_PLAN.md      # Next.js geçiş ve rota mimari planı
