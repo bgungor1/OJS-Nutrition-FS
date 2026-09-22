@@ -2,7 +2,12 @@ import { render, screen } from '@/test/test-utils';
 import { AddressModal } from './address-modal';
 import * as addressActions from '@/app/(shop)/account/addresses/actions';
 import * as locationsApi from '@/lib/api/locations';
-import type { Address, Country, Region, Subregion } from '@/types';
+import {
+  mockCountries,
+  mockRegions,
+  mockSubregions,
+  mockExistingAddress,
+} from '@/test/fixtures';
 
 vi.mock('@/app/(shop)/account/addresses/actions', () => ({
   createAddressAction: vi.fn(),
@@ -13,22 +18,6 @@ vi.mock('@/lib/api/locations', () => ({
   getRegions: vi.fn(),
   getSubregions: vi.fn(),
 }));
-
-const mockCountries: Country[] = [{ id: 1, name: 'Türkiye' }];
-const mockRegions: Region[] = [{ id: 10, name: 'İstanbul', country_id: 1 }];
-const mockSubregions: Subregion[] = [{ id: 100, name: 'Kadıköy', region_id: 10 }];
-
-const mockExistingAddress: Address = {
-  id: 'addr-123',
-  title: 'Ev Adresi',
-  first_name: 'Berkant',
-  last_name: 'Güngör',
-  phone_number: '05551234567',
-  country_id: 1,
-  region_id: 10,
-  subregion_id: 100,
-  full_address: 'Moda Cad. No: 5 Daire: 4 Kadıköy',
-};
 
 describe('AddressModal', () => {
   beforeEach(() => {
