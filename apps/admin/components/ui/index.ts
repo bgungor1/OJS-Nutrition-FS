@@ -7,3 +7,4 @@ export * from './skeleton';
 export * from './table';
 export * from './dialog';
 export * from './dropdown-menu';
+export * from './data-pagination';
