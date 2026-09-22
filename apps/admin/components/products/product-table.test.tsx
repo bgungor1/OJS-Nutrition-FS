@@ -75,4 +75,17 @@ describe('components/products/product-table', () => {
 
     expect(mockDelete).toHaveBeenCalledWith('prod-1');
   });
+
+  it('displays error message inside dialog when onDelete fails', async () => {
+    const mockDelete = vi.fn().mockRejectedValue(new Error('Siparişe bağlı ürün silinemez'));
+    render(<ProductTable products={mockProducts} onDelete={mockDelete} />);
+
+    const deleteButtons = screen.getAllByRole('button', { name: /ürünü sil/i });
+    fireEvent.click(deleteButtons[0]);
+
+    const confirmBtn = screen.getByRole('button', { name: /evet, ürünü sil/i });
+    fireEvent.click(confirmBtn);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Siparişe bağlı ürün silinemez');
+  });
 });

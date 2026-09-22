@@ -36,6 +36,7 @@ export async function serverFetch<T>(
         headers.set('Authorization', `Bearer ${token}`);
       }
     } catch {
+      // Cookie retrieval is skipped outside request context (e.g. static generation)
     }
   }
 
@@ -55,6 +56,7 @@ export async function serverFetch<T>(
         reason = errorJson.reason;
       }
     } catch {
+      // Non-JSON error payload (e.g. HTML 502 Bad Gateway), keep status-based message
     }
 
     throw new ApiError(errorMessage, response.status, reason);
@@ -106,6 +108,7 @@ export async function clientFetch<T>(
         reason = errorJson.reason;
       }
     } catch {
+      // Non-JSON error payload (e.g. gateway error), keep status-based message
     }
 
     throw new ApiError(errorMessage, response.status, reason);

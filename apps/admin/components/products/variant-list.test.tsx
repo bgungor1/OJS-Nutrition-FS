@@ -74,4 +74,24 @@ describe('components/products/variant-list', () => {
 
     expect(mockDelete).toHaveBeenCalledWith('var-1');
   });
+
+  it('displays error message inside dialog when onDeleteVariant fails', async () => {
+    const mockDelete = vi.fn().mockRejectedValue(new Error('Sipariş geçmişinde yer alan varyant silinemez'));
+    render(
+      <VariantList
+        variants={mockVariants}
+        onAddVariant={vi.fn()}
+        onEditVariant={vi.fn()}
+        onDeleteVariant={mockDelete}
+      />,
+    );
+
+    const deleteBtn = screen.getByRole('button', { name: /sil/i });
+    fireEvent.click(deleteBtn);
+
+    const confirmBtn = screen.getByRole('button', { name: /evet, varyantı sil/i });
+    fireEvent.click(confirmBtn);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sipariş geçmişinde yer alan varyant silinemez');
+  });
 });

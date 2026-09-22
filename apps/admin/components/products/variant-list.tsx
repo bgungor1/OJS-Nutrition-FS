@@ -24,15 +24,19 @@ export function VariantList({
 }: VariantListProps) {
   const [variantToDelete, setVariantToDelete] = React.useState<ApiProductVariant | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
   const handleConfirmDelete = async () => {
     if (!variantToDelete) return;
     try {
       setIsDeleting(true);
+      setDeleteError(null);
       await onDeleteVariant(variantToDelete.id);
       setVariantToDelete(null);
-    } catch {
-      // Handled by parent or toast
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : 'Varyant silinirken bir hata meydana geldi.',
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -101,7 +105,11 @@ export function VariantList({
       <VariantDeleteDialog
         variant={variantToDelete}
         isDeleting={isDeleting}
-        onClose={() => setVariantToDelete(null)}
+        error={deleteError}
+        onClose={() => {
+          setVariantToDelete(null);
+          setDeleteError(null);
+        }}
         onConfirm={handleConfirmDelete}
       />
     </>
