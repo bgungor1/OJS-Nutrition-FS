@@ -21,15 +21,19 @@ export interface ProductTableProps {
 export function ProductTable({ products, onDelete }: ProductTableProps) {
   const [productToDelete, setProductToDelete] = React.useState<ApiProduct | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
   const handleConfirmDelete = async () => {
     if (!productToDelete || !onDelete) return;
     try {
       setIsDeleting(true);
+      setDeleteError(null);
       await onDelete(productToDelete.id);
       setProductToDelete(null);
-    } catch {
-      // Handled by caller or toast
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : 'Ürün silinirken bir hata meydana geldi.',
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -68,7 +72,11 @@ export function ProductTable({ products, onDelete }: ProductTableProps) {
       <ProductDeleteDialog
         product={productToDelete}
         isDeleting={isDeleting}
-        onClose={() => setProductToDelete(null)}
+        error={deleteError}
+        onClose={() => {
+          setProductToDelete(null);
+          setDeleteError(null);
+        }}
         onConfirm={handleConfirmDelete}
       />
     </>
