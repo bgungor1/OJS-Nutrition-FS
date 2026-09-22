@@ -8,6 +8,7 @@ import {
   OrderDetailPayment,
 } from '@/components/orders';
 import { getOrderById } from '@/lib/api/orders';
+import { ApiError } from '@/lib/api-client';
 import { updateOrderStatusAction } from '../actions';
 import type { AdminOrderDetail } from '@/types';
 
@@ -25,8 +26,11 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   let order: AdminOrderDetail | null = null;
   try {
     order = await getOrderById(id);
-  } catch {
-    notFound();
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) {
+      notFound();
+    }
+    throw err;
   }
 
   if (!order) {

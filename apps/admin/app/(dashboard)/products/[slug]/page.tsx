@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ProductForm, VariantManager } from '@/components/products';
 import { getProductBySlug, listCategories } from '@/lib/api/products';
+import { ApiError } from '@/lib/api-client';
 import { updateProductAction } from '../actions';
 import type { UpdateProductInput } from '@/types';
 import { ExternalLink } from 'lucide-react';
@@ -29,8 +30,11 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     ]);
     product = prod;
     categories = cats;
-  } catch {
-    notFound();
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) {
+      notFound();
+    }
+    throw err;
   }
 
   if (!product) {

@@ -7,6 +7,7 @@ import {
   UserDetailAddresses,
 } from '@/components/users';
 import { getUserById } from '@/lib/api/users';
+import { ApiError } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth-cookies';
 import { decodeJwtPayload } from '@/lib/jwt';
 import { updateUserRoleAction } from '../actions';
@@ -30,8 +31,11 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
   let user: AdminUserDetail | null = null;
   try {
     user = await getUserById(id);
-  } catch {
-    notFound();
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) {
+      notFound();
+    }
+    throw err;
   }
 
   if (!user) {
