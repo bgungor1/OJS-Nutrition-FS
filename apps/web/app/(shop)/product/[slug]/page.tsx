@@ -91,6 +91,14 @@ export default async function ProductDetailPage({
 
   const primaryVariant = product.variants?.[0];
 
+  const productAccordion = (
+    <ProductAccordion
+      features={product.explanation?.features}
+      usage={product.explanation?.usage}
+      nutritionalContent={product.explanation?.nutritional_content}
+    />
+  );
+
   return (
     <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <ProductJsonLd product={product} />
@@ -101,13 +109,7 @@ export default async function ProductDetailPage({
             name={product.name}
             discountPercentage={primaryVariant?.price?.discount_percentage}
           />
-          <div className="hidden lg:block">
-            <ProductAccordion
-              features={product.explanation?.features}
-              usage={product.explanation?.usage}
-              nutritionalContent={product.explanation?.nutritional_content}
-            />
-          </div>
+          <div className="hidden lg:block">{productAccordion}</div>
         </div>
 
         <div className="space-y-6">
@@ -125,13 +127,7 @@ export default async function ProductDetailPage({
             productName={product.name}
           />
 
-          <div className="lg:hidden">
-            <ProductAccordion
-              features={product.explanation?.features}
-              usage={product.explanation?.usage}
-              nutritionalContent={product.explanation?.nutritional_content}
-            />
-          </div>
+          <div className="lg:hidden">{productAccordion}</div>
         </div>
       </div>
 

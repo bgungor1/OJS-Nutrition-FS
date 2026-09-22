@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { serverFetch } from '@/lib/api-client';
+import { mergeGuestCartSession } from '@/lib/auth-session';
 
 const ACCESS_TOKEN_COOKIE = 'ojs_access_token';
 const REFRESH_TOKEN_COOKIE = 'ojs_refresh_token';
@@ -39,18 +39,12 @@ export async function GET(request: NextRequest) {
 
   const guestCartId = request.cookies.get('guest_cart_id')?.value;
   if (guestCartId) {
-    try {
-      await serverFetch('/cart/merge', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${access}`,
-          Cookie: `guest_cart_id=${guestCartId}`,
-        },
-        cache: 'no-store',
-      });
-      response.cookies.delete('guest_cart_id');
-    } catch {
-    }
+    await mergeGuestCartSession(access, {
+      guestCartId,
+      onSuccess: () => {
+        response.cookies.delete('guest_cart_id');
+      },
+    });
   }
 
   return response;
