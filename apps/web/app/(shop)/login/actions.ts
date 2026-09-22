@@ -1,11 +1,11 @@
 'use server';
 
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { loginSchema, registerSchema } from '@/lib/schemas/auth';
 import { loginApi, registerApi } from '@/lib/api/auth';
 import { setAuthCookies } from '@/lib/auth-cookies';
-import { ApiError, serverFetch } from '@/lib/api-client';
+import { ApiError } from '@/lib/api-client';
+import { mergeGuestCartSession } from '@/lib/auth-session';
 
 export interface AuthActionState {
   success: boolean;
@@ -21,26 +21,6 @@ function isNextRedirect(err: unknown): boolean {
     typeof (err as { digest: unknown }).digest === 'string' &&
     (err as { digest: string }).digest.startsWith('NEXT_REDIRECT')
   );
-}
-
-async function tryMergeGuestCartOnServer(accessToken: string): Promise<void> {
-  try {
-    const cookieStore = await cookies();
-    const guestCartId = cookieStore.get('guest_cart_id')?.value;
-    if (!guestCartId) return;
-
-    await serverFetch('/cart/merge', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Cookie: `guest_cart_id=${guestCartId}`,
-      },
-      cache: 'no-store',
-    });
-
-    cookieStore.delete('guest_cart_id');
-  } catch {
-  }
 }
 
 export async function loginAction(
@@ -71,7 +51,7 @@ export async function loginAction(
     });
 
     await setAuthCookies(tokens);
-    await tryMergeGuestCartOnServer(tokens.access);
+    await mergeGuestCartSession(tokens.access);
     redirect(redirectTo);
   } catch (err: unknown) {
     if (isNextRedirect(err)) throw err;
@@ -117,7 +97,7 @@ export async function registerAction(
     });
 
     await setAuthCookies(tokens);
-    await tryMergeGuestCartOnServer(tokens.access);
+    await mergeGuestCartSession(tokens.access);
     redirect(redirectTo);
   } catch (err: unknown) {
     if (isNextRedirect(err)) throw err;
