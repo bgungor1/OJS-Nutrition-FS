@@ -6,7 +6,7 @@ OJS Nutrition is a modern, supplement-oriented **Full-Stack (Next.js 15 + NestJS
 
 > 💡 **Project Evolution & Architectural Journey (Vite SPA → Full-Stack Monorepo):**  
 > This project was developed as a **self-improvement, showcase, and portfolio project** to demonstrate real-world software architecture, clean code practices, and modern full-stack workflows.  
-> Originally initiated as a client-side **React 19 + Vite SPA**, the platform was systematically re-architected into a robust **Full-Stack Monorepo** powered by **Next.js 15 (App Router)** and **NestJS 11 + Prisma ORM**. This evolution highlights critical enterprise capabilities including **Server-Side Rendering (SSR)**, **Incremental Static Regeneration (ISR)**, **Server Components**, **HTTP-only cookie-based authentication**, and **atomic transaction-guaranteed checkout and inventory management**. (The original v1 Vite SPA implementation remains available under the root `src/` folder for historical reference).
+> Originally initiated as a client-side **React 19 + Vite SPA**, the platform was systematically re-architected into a robust **Full-Stack Monorepo** powered by **Next.js 15 (App Router)** and **NestJS 11 + Prisma ORM**. This evolution highlights critical enterprise capabilities including **Server-Side Rendering (SSR)**, **Incremental Static Regeneration (ISR)**, **Server Components**, **HTTP-only cookie-based authentication**, and **atomic transaction-guaranteed checkout and inventory management**.
 
 ---
 
@@ -27,7 +27,7 @@ OJS Nutrition is a modern, supplement-oriented **Full-Stack (Next.js 15 + NestJS
 
 ## 🏛️ Architecture & Key Features
 
-- **Full-Stack Monorepo Architecture (`pnpm workspaces`):** Decoupled, independently deployable and scalable frontend (`apps/web`) and backend (`apps/api`) packages within a unified repository.
+- **Full-Stack Monorepo Architecture (`pnpm workspaces`):** Decoupled, independently deployable and scalable storefront (`apps/web`), administration dashboard (`apps/admin`), and backend (`apps/api`) packages within a unified repository.
 - **Server & Client Components Balance:** High-performance server-side rendering for catalog and product landing pages (SSR/ISR) paired with optimized Client Components for interactive filtering, cart drawers, and checkout steps.
 - **Centralized Response Envelope (`ResponseInterceptor`):** All successful API responses are strictly normalized to `{ status: 'success', data: ... }`. Controllers return raw domain models without manual wrapping.
 - **Standardized Error Handling (`AllExceptionsFilter`):** Validation errors and unhandled exceptions are cleanly surfaced as `{ status: 'error', reason: {...} }` or `{ status: 'error', message: "..." }`.
@@ -76,7 +76,7 @@ OJS Nutrition is a modern, supplement-oriented **Full-Stack (Next.js 15 + NestJS
 ```bash
 OJS-Nutrition-FS/
 ├── apps/
-│   ├── web/                     # Next.js 15 Frontend (App Router, Tailwind v4, Zustand)
+│   ├── web/                     # Next.js 15 Storefront Frontend (App Router, Tailwind v4, Zustand)
 │   │   ├── app/                 # App Router pages, layouts, and route groups
 │   │   │   ├── (shop)/          # Customer-facing storefront (Home, Catalog, Product, Account)
 │   │   │   ├── layout.tsx       # Root layout
@@ -85,6 +85,12 @@ OJS-Nutrition-FS/
 │   │   ├── lib/                 # API client, schemas (Zod), utility helpers
 │   │   ├── test/                # Vitest test files and setup
 │   │   └── vitest.config.mts    # Test runner configuration
+│   │
+│   ├── admin/                   # Next.js 15 Admin Dashboard (App Router, Tailwind v4, RBAC)
+│   │   ├── app/                 # Dashboard, Order, Product, Stock, and User management
+│   │   ├── components/          # Admin tables, metric cards, and forms
+│   │   ├── lib/                 # Admin API client and schemas
+│   │   └── test/                # Vitest unit and component tests
 │   │
 │   └── api/                     # NestJS 11 Backend API (Prisma, PostgreSQL)
 │       ├── prisma/
@@ -109,7 +115,6 @@ OJS-Nutrition-FS/
 │       │   └── admin/           # Administrative metrics and dashboard endpoints
 │       └── test/                # Jest E2E test suites
 │
-├── src/                         # [V1 Reference] Legacy Vite SPA source code preserved for reference
 ├── pnpm-workspace.yaml          # pnpm workspace configuration
 ├── BACKEND_PLAN.md              # Backend architecture and API specification
 ├── FRONTEND_NEXTJS_PLAN.md      # Next.js App Router migration blueprint
