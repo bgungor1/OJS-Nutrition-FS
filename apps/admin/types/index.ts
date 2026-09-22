@@ -1,9 +1,3 @@
-export * from './common';
-export * from './auth';
+export * from '@ojs/types';
 export * from './admin';
-export * from './products';
-export * from './variants';
-export * from './categories';
-export * from './orders';
-export * from './faq';
-export * from './contact';
+

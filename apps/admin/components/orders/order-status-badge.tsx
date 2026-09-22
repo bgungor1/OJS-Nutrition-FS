@@ -53,6 +53,11 @@ const STATUS_CONFIG: Record<
     variant: 'outline',
     icon: RotateCcw,
   },
+  returned: {
+    label: 'İade Edildi',
+    variant: 'outline',
+    icon: RotateCcw,
+  },
 };
 
 export function OrderStatusBadge({ status, className }: OrderStatusBadgeProps) {
