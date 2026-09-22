@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ContactManager } from './contact-manager';
 import type { ContactMessage } from '@/types';
 
@@ -106,6 +106,11 @@ describe('ContactManager component', () => {
     fireEvent.click(markBtn);
 
     expect(mockToggleStatus).toHaveBeenCalledWith('msg-1', true);
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /Bekliyor Olarak İşaretle/i }),
+      ).toBeInTheDocument();
+    });
   });
 
   it('navigates when selecting a filter tab', () => {
