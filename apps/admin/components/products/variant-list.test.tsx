@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@/test/test-utils';
+import { render, screen, fireEvent, waitFor } from '@/test/test-utils';
 import { VariantList } from './variant-list';
 import type { ApiProductVariant } from '@/types';
 
@@ -73,6 +73,11 @@ describe('components/products/variant-list', () => {
     fireEvent.click(confirmBtn);
 
     expect(mockDelete).toHaveBeenCalledWith('var-1');
+    await waitFor(() => {
+      expect(
+        screen.queryByText('Varyantı Silmek İstediğinize Emin Misiniz?'),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it('displays error message inside dialog when onDeleteVariant fails', async () => {

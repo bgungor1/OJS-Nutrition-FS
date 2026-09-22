@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@/test/test-utils';
+import { render, screen, fireEvent, waitFor } from '@/test/test-utils';
 import { ProductTable } from './product-table';
 import type { ApiProduct } from '@/types';
 
@@ -74,6 +74,11 @@ describe('components/products/product-table', () => {
     fireEvent.click(confirmBtn);
 
     expect(mockDelete).toHaveBeenCalledWith('prod-1');
+    await waitFor(() => {
+      expect(
+        screen.queryByText('Ürünü Silmek İstediğinize Emin Misiniz?'),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it('displays error message inside dialog when onDelete fails', async () => {
