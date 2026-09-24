@@ -54,4 +54,12 @@ export class ProductsQueryDto {
   @IsOptional()
   @IsIn(PRODUCT_SORT_VALUES)
   sort?: ProductSortOption;
+
+  @ApiPropertyOptional({
+    description: 'Ürün adı, açıklama veya etiket arama terimi',
+    example: 'protein',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

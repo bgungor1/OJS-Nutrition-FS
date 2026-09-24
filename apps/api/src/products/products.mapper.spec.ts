@@ -221,13 +221,23 @@ describe('ProductsMapper', () => {
         offset: 0,
         cat: undefined,
         sort: 'createdAt',
+        search: undefined,
         expected: '?limit=20&offset=0&sort=createdAt',
+      },
+      {
+        limit: 10,
+        offset: 20,
+        cat: 'protein',
+        sort: 'rating',
+        search: 'isolate',
+        expected:
+          '?limit=10&offset=20&category=protein&sort=rating&search=isolate',
       },
     ])(
       'should build query $expected for limit=$limit, offset=$offset, cat=$cat, sort=$sort',
-      ({ limit, offset, cat, sort, expected }) => {
+      ({ limit, offset, cat, sort, search, expected }) => {
         expect(
-          ProductsMapper.buildPaginationQuery(limit, offset, cat, sort),
+          ProductsMapper.buildPaginationQuery(limit, offset, cat, sort, search),
         ).toBe(expected);
       },
     );

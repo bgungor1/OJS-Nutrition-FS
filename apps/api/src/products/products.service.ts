@@ -27,15 +27,36 @@ export class ProductsService {
     const limit = query.limit ?? 20;
     const offset = query.offset ?? 0;
     const { category, sort } = query;
+    const search = query.search?.trim();
 
-    const where: Prisma.ProductWhereInput = category
-      ? {
-          OR: [
-            { mainCategory: { slug: category } },
-            { subCategory: { slug: category } },
-          ],
-        }
-      : {};
+    const conditions: Prisma.ProductWhereInput[] = [];
+
+    if (category) {
+      conditions.push({
+        OR: [
+          { mainCategory: { slug: category } },
+          { subCategory: { slug: category } },
+        ],
+      });
+    }
+
+    if (search) {
+      conditions.push({
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { shortExplanation: { contains: search, mode: 'insensitive' } },
+          { slug: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    const where: Prisma.ProductWhereInput =
+      conditions.length === 0
+        ? {}
+        : conditions.length === 1
+          ? conditions[0]
+          : { AND: conditions };
 
     const count = await this.prisma.product.count({ where });
 
@@ -88,6 +109,7 @@ export class ProductsService {
             offset + limit,
             category,
             sort,
+            search,
           )
         : null;
 
@@ -98,6 +120,7 @@ export class ProductsService {
             Math.max(0, offset - limit),
             category,
             sort,
+            search,
           )
         : null;
 
