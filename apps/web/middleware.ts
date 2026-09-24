@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { decodeJwtPayload } from './lib/jwt';
 
 const ACCESS_TOKEN_COOKIE = 'ojs_access_token';
 const REFRESH_TOKEN_COOKIE = 'ojs_refresh_token';
@@ -15,15 +16,24 @@ export async function middleware(request: NextRequest) {
   const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
 
+  const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3002';
   const isGuestRoute = GUEST_ONLY_ROUTES.includes(pathname);
   const isProtectedRoute = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
   if (isGuestRoute && (accessToken || refreshToken)) {
+    const payload = accessToken ? decodeJwtPayload(accessToken) : null;
+    if (payload?.role === 'admin') {
+      return NextResponse.redirect(new URL(adminUrl));
+    }
     return NextResponse.redirect(new URL('/account', request.url));
   }
 
   if (isProtectedRoute) {
     if (accessToken) {
+      const payload = decodeJwtPayload(accessToken);
+      if (payload?.role === 'admin' && pathname.startsWith('/account')) {
+        return NextResponse.redirect(new URL(adminUrl));
+      }
       return NextResponse.next();
     }
 
@@ -41,8 +51,29 @@ export async function middleware(request: NextRequest) {
           const json = await refreshResponse.json();
 
           if (json.status === 'success' && json.data?.access && json.data?.refresh) {
-            const response = NextResponse.next();
             const isProduction = process.env.NODE_ENV === 'production';
+            const payload = decodeJwtPayload(json.data.access);
+
+            if (payload?.role === 'admin' && pathname.startsWith('/account')) {
+              const response = NextResponse.redirect(new URL(adminUrl));
+              response.cookies.set(ACCESS_TOKEN_COOKIE, json.data.access, {
+                httpOnly: true,
+                secure: isProduction,
+                sameSite: 'lax',
+                path: '/',
+                maxAge: ACCESS_TOKEN_MAX_AGE,
+              });
+              response.cookies.set(REFRESH_TOKEN_COOKIE, json.data.refresh, {
+                httpOnly: true,
+                secure: isProduction,
+                sameSite: 'lax',
+                path: '/',
+                maxAge: REFRESH_TOKEN_MAX_AGE,
+              });
+              return response;
+            }
+
+            const response = NextResponse.next();
 
             response.cookies.set(ACCESS_TOKEN_COOKIE, json.data.access, {
               httpOnly: true,

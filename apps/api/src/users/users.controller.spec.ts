@@ -24,6 +24,7 @@ describe('UsersController', () => {
     first_name: 'Berk',
     last_name: 'Güngör',
     phone_number: '+905551112233',
+    role: 'customer',
   };
 
   beforeEach(async () => {

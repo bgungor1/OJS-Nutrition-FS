@@ -8,6 +8,7 @@ import {
   mergeGuestCart,
 } from '@/lib/api/cart';
 import { mockCartItem } from '@/test/fixtures';
+import type { CartItemResponse } from '@/types';
 
 vi.mock('@/lib/api/cart', () => ({
   getCart: vi.fn(),
@@ -31,6 +32,7 @@ describe('useCartStore', () => {
       isLoading: false,
       isDrawerOpen: false,
       error: null,
+      hasHydrated: false,
     });
   });
 
@@ -198,5 +200,77 @@ describe('useCartStore', () => {
 
     useCartStore.getState().resetError();
     expect(useCartStore.getState().error).toBeNull();
+  });
+
+  it('addItem: preserves existing items when a different product is added', async () => {
+    const mockSecondCartItem = {
+      ...mockCartItem,
+      id: 'cart_item_2',
+      product_id: 'prod_2',
+      product_variant_id: 'var_2',
+      product: {
+        ...mockCartItem.product,
+        id: 'prod_2',
+        name: 'Spor Paketi',
+        slug: 'spor-paketi',
+      },
+      variant: {
+        ...mockCartItem.variant,
+        id: 'var_2',
+      },
+    };
+
+    useCartStore.setState({ items: [mockCartItem] });
+    mockAddToCart.mockResolvedValueOnce([mockSecondCartItem]);
+
+    const success = await useCartStore
+      .getState()
+      .addItem('prod_2', 'var_2', 1);
+
+    expect(success).toBe(true);
+    const state = useCartStore.getState();
+    expect(state.items).toHaveLength(2);
+    expect(state.items[0]?.product_id).toBe('prod_1');
+    expect(state.items[1]?.product_id).toBe('prod_2');
+  });
+
+  it('fetchCart: preserves local items when server returns empty array', async () => {
+    useCartStore.setState({ items: [mockCartItem] });
+    mockGetCart.mockResolvedValueOnce([]);
+
+    await useCartStore.getState().fetchCart();
+
+    const state = useCartStore.getState();
+    expect(state.items).toEqual([mockCartItem]);
+    expect(state.isLoading).toBe(false);
+  });
+
+  it('setHasHydrated: updates hasHydrated state', () => {
+    useCartStore.setState({ hasHydrated: false });
+    expect(useCartStore.getState().hasHydrated).toBe(false);
+
+    useCartStore.getState().setHasHydrated(true);
+    expect(useCartStore.getState().hasHydrated).toBe(true);
+  });
+
+  it('addItem: optimistically increments item pieces immediately before API resolves', async () => {
+    useCartStore.setState({ items: [mockCartItem] });
+    let resolveApi: (value: CartItemResponse[]) => void = () => {};
+    const apiPromise = new Promise<CartItemResponse[]>((resolve) => {
+      resolveApi = resolve;
+    });
+    mockAddToCart.mockReturnValueOnce(apiPromise);
+
+    const actionPromise = useCartStore
+      .getState()
+      .addItem('prod_1', 'var_1', 1);
+
+    // Ekleme tetiklendiği anda daha API yanıtı dönmeden pieces hemen 3 olmalı (2 + 1)
+    expect(useCartStore.getState().items[0]?.pieces).toBe(3);
+
+    // API yanıtını tamamla
+    resolveApi([{ ...mockCartItem, pieces: 3 }]);
+    await actionPromise;
+    expect(useCartStore.getState().items[0]?.pieces).toBe(3);
   });
 });

@@ -2,6 +2,7 @@ import React from 'react';
 import Image from 'next/image';
 import { Star, Check } from 'lucide-react';
 import { formatDate } from '@/lib/utils/format';
+import { getImageUrl } from '@/lib/utils/image';
 import { ReviewHelpfulButton } from './review-helpful-button';
 import type { ApiReview } from '@/types';
 
@@ -89,7 +90,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({ review, slug }) => {
               className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border border-border bg-secondary/30 shrink-0"
             >
               <Image
-                src={imgUrl}
+                src={getImageUrl(imgUrl)}
                 alt={`${review.reviewer_name} değerlendirme görseli ${index + 1}`}
                 fill
                 sizes="80px"

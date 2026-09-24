@@ -118,6 +118,19 @@ describe('CartDrawer', () => {
     expect(spyRemoveItem).toHaveBeenCalledWith('prod_1', 'var_1', 1);
   });
 
+  it('triggers removeItem when item row decrement button is clicked on 1-piece item', async () => {
+    const spyRemoveItem = vi.spyOn(useCartStore.getState(), 'removeItem');
+    useCartStore.setState({ items: [mockItem] });
+    const { user } = render(<CartDrawer />);
+
+    const decrementButton = screen.getByRole('button', {
+      name: /adet azalt/i,
+    });
+    await user.click(decrementButton);
+
+    expect(spyRemoveItem).toHaveBeenCalledWith('prod_1', 'var_1', 1);
+  });
+
   it('closes drawer and links to payment when checkout button is clicked', async () => {
     useCartStore.setState({ items: [mockItem] });
     const { user } = render(<CartDrawer />);

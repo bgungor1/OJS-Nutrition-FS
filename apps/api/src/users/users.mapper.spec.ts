@@ -24,9 +24,9 @@ describe('UsersMapper & DTO Validation Suite', () => {
         first_name: 'Ali',
         last_name: 'Kaya',
         phone_number: '+905551112233',
+        role: 'customer',
       });
       expect('passwordHash' in result).toBe(false);
-      expect('role' in result).toBe(false);
     });
 
     it('should return phone_number field as null when phone number is null', () => {
@@ -36,11 +36,13 @@ describe('UsersMapper & DTO Validation Suite', () => {
         firstName: 'Zeynep',
         lastName: 'Demir',
         phoneNumber: null,
+        role: 'customer' as const,
       };
 
       const result = UsersMapper.toAccountProfile(mockDbUser);
 
       expect(result.phone_number).toBeNull();
+      expect(result.role).toBe('customer');
     });
   });
 

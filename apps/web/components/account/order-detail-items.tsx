@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/lib/utils/format';
+import { getImageUrl } from '@/lib/utils/image';
 import { Package } from 'lucide-react';
 import type { OrderItem } from '@/types';
 
@@ -26,7 +27,7 @@ export const OrderDetailItems: React.FC<OrderDetailItemsProps> = ({ items }) => 
               <div className="relative h-14 w-14 shrink-0 rounded-lg bg-muted border border-border overflow-hidden flex items-center justify-center">
                 {item.photo_src || item.photo ? (
                   <Image
-                    src={item.photo_src || item.photo || ''}
+                    src={getImageUrl(item.photo_src || item.photo)}
                     alt={item.product_name}
                     fill
                     sizes="56px"

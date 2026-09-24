@@ -6,6 +6,7 @@ export interface AccountProfile {
   first_name: string;
   last_name: string;
   phone_number: string | null;
+  role?: string;
 }
 
 export class AccountProfileDto implements AccountProfile {
@@ -39,4 +40,11 @@ export class AccountProfileDto implements AccountProfile {
     description: 'Kullanıcının telefon numarası',
   })
   phone_number!: string | null;
+
+  @ApiProperty({
+    example: 'customer',
+    description: 'Kullanıcının rolü',
+    required: false,
+  })
+  role?: string;
 }

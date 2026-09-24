@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { completeCheckoutAction } from './checkout';
 import { getAccessToken } from '@/lib/auth-cookies';
 import { completeShopping } from '@/lib/api/orders';
-import { ApiError } from '@/lib/api-client';
+import { ApiError, serverFetch } from '@/lib/api-client';
+import { mergeGuestCartSession } from '@/lib/auth-session';
 import type { CheckoutFormData } from '@/lib/schemas/checkout';
+import type { CartItemResponse } from '@/types';
 
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
@@ -12,6 +14,18 @@ vi.mock('next/cache', () => ({
 vi.mock('@/lib/auth-cookies', () => ({
   getAccessToken: vi.fn(),
 }));
+
+vi.mock('@/lib/auth-session', () => ({
+  mergeGuestCartSession: vi.fn().mockResolvedValue(true),
+}));
+
+vi.mock('@/lib/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/api-client')>();
+  return {
+    ...actual,
+    serverFetch: vi.fn(),
+  };
+});
 
 vi.mock('@/lib/api/orders', () => ({
   completeShopping: vi.fn(),
@@ -28,9 +42,44 @@ const validForm: CheckoutFormData = {
   terms_accepted: true,
 };
 
+const mockCartItem: CartItemResponse = {
+  id: 'cart_item_1',
+  product_id: 'prod_1',
+  product_variant_id: 'var_1',
+  pieces: 2,
+  created_at: '2026-09-14T12:00:00Z',
+  product: {
+    id: 'prod_1',
+    name: 'Whey Protein',
+    slug: 'whey-protein',
+    photo_src: 'media/products/whey.jpg',
+  },
+  variant: {
+    id: 'var_1',
+    aroma: 'Çikolata',
+    size: {
+      gram: 1000,
+      pieces: 1,
+      total_services: 30,
+    },
+    price: {
+      total_price: 549,
+      discounted_price: null,
+      price_per_servings: 18.3,
+      discount_percentage: null,
+      profit: null,
+    },
+    photo_src: 'media/products/whey.jpg',
+    is_available: true,
+    stock_quantity: 10,
+  },
+};
+
 describe('completeCheckoutAction', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(serverFetch).mockResolvedValue([] as never);
+    vi.mocked(mergeGuestCartSession).mockResolvedValue(true);
   });
 
   it('returns error when user is not authenticated', async () => {
@@ -56,6 +105,70 @@ describe('completeCheckoutAction', () => {
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/hataları düzeltiniz/i);
     expect(result.fieldErrors?.card_number).toBeDefined();
+    expect(completeShopping).not.toHaveBeenCalled();
+  });
+
+  it('returns error when clientCartItems is explicitly empty array', async () => {
+    vi.mocked(getAccessToken).mockResolvedValue('mock_token');
+
+    const result = await completeCheckoutAction(validForm, []);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/sepetinizde ürün bulunmamaktadır/i);
+    expect(completeShopping).not.toHaveBeenCalled();
+  });
+
+  it('synchronizes missing clientCartItems to /cart before completing order', async () => {
+    vi.mocked(getAccessToken).mockResolvedValue('mock_token');
+    vi.mocked(serverFetch)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([mockCartItem] as never);
+    vi.mocked(completeShopping).mockResolvedValue({
+      id: 'order_123',
+      order_no: 'ORD-2026-0001',
+      status: 'pending',
+      total_price: 549,
+      shipping_fee: 0,
+      subtotal: 549,
+      address_snapshot: {} as never,
+      items: [],
+      created_at: '2026-09-14T12:00:00Z',
+    });
+
+    const result = await completeCheckoutAction(validForm, [mockCartItem]);
+
+    expect(result.success).toBe(true);
+    expect(serverFetch).toHaveBeenCalledWith(
+      '/cart',
+      expect.objectContaining({
+        headers: { Authorization: 'Bearer mock_token' },
+      }),
+    );
+    expect(serverFetch).toHaveBeenCalledWith(
+      '/cart',
+      expect.objectContaining({
+        method: 'POST',
+        headers: { Authorization: 'Bearer mock_token' },
+        body: JSON.stringify({
+          product_id: 'prod_1',
+          product_variant_id: 'var_1',
+          pieces: 2,
+        }),
+      }),
+    );
+    expect(completeShopping).toHaveBeenCalled();
+  });
+
+  it('handles ApiError during cart synchronization gracefully', async () => {
+    vi.mocked(getAccessToken).mockResolvedValue('mock_token');
+    vi.mocked(serverFetch)
+      .mockResolvedValueOnce([] as never)
+      .mockRejectedValueOnce(new ApiError('Bu ürün stokta kalmadı.', 400));
+
+    const result = await completeCheckoutAction(validForm, [mockCartItem]);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Bu ürün stokta kalmadı.');
     expect(completeShopping).not.toHaveBeenCalled();
   });
 

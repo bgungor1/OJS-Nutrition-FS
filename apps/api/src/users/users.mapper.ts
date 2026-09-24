@@ -4,7 +4,10 @@ import { AccountProfile } from './interfaces/account-profile.interface';
 
 export class UsersMapper {
   static toAccountProfile(
-    user: Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'phoneNumber'>,
+    user: Pick<
+      User,
+      'id' | 'email' | 'firstName' | 'lastName' | 'phoneNumber' | 'role'
+    >,
   ): AccountProfile {
     return {
       id: user.id,
@@ -12,6 +15,7 @@ export class UsersMapper {
       first_name: user.firstName,
       last_name: user.lastName,
       phone_number: user.phoneNumber,
+      role: user.role,
     };
   }
 

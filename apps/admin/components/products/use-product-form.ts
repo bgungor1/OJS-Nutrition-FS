@@ -15,6 +15,7 @@ export interface ProductFormState {
   tagsInput: string;
   isBestSeller: boolean;
   bestSellerRank: number | '';
+  photoSrc: string;
 }
 
 export function getInitialFormState(data?: ApiProductDetail): ProductFormState {
@@ -31,6 +32,7 @@ export function getInitialFormState(data?: ApiProductDetail): ProductFormState {
     tagsInput: data?.tags?.join(', ') || '',
     isBestSeller: false,
     bestSellerRank: '',
+    photoSrc: data?.variants?.[0]?.photo_src || '',
   };
 }
 
@@ -74,6 +76,7 @@ export function useProductForm({ initialData, onSubmit }: UseProductFormOptions)
       subCategoryId: form.subCategoryId,
       isBestSeller: form.isBestSeller,
       bestSellerRank: form.bestSellerRank === '' ? null : Number(form.bestSellerRank),
+      photoSrc: form.photoSrc || undefined,
     };
 
     const parseResult = productSchema.safeParse(payload);
@@ -91,9 +94,23 @@ export function useProductForm({ initialData, onSubmit }: UseProductFormOptions)
       await onSubmit({
         ...parseResult.data,
         bestSellerRank: parseResult.data.bestSellerRank ?? undefined,
-        nutritionalContent: initialData?.explanation?.nutritional_content,
+        photoSrc: form.photoSrc || undefined,
+        nutritionalContent: initialData?.explanation?.nutritional_content || {
+          ingredients: [],
+          nutrition_facts: { ingredients: [], portion_sizes: [] },
+          amino_acid_facts: { ingredients: [], portion_sizes: [] },
+        },
       });
-    } catch (err) {
+    } catch (err: unknown) {
+      if (
+        typeof err === 'object' &&
+        err !== null &&
+        'digest' in err &&
+        typeof (err as { digest: unknown }).digest === 'string' &&
+        (err as { digest: string }).digest.startsWith('NEXT_REDIRECT')
+      ) {
+        throw err;
+      }
       setServerError(err instanceof Error ? err.message : 'Ürün kaydedilirken hata oluştu.');
     }
   };

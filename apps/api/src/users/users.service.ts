@@ -20,6 +20,7 @@ export class UsersService {
     firstName: true,
     lastName: true,
     phoneNumber: true,
+    role: true,
   } as const;
 
   constructor(

@@ -155,10 +155,53 @@ describe('PaymentForm', () => {
     );
 
     expect(screen.getByLabelText(/kart üzerindeki [iİ]sim/i)).toBeDisabled();
+    expect(screen.getByLabelText(/kart üzerindeki soyad/i)).toBeDisabled();
     expect(screen.getByLabelText(/kart numarası/i)).toBeDisabled();
     expect(screen.getByLabelText(/son kullanma ayı/i)).toBeDisabled();
     expect(screen.getByLabelText(/son kullanma yılı/i)).toBeDisabled();
     expect(screen.getByLabelText(/^cvv$/i)).toBeDisabled();
     expect(screen.getByRole('checkbox')).toBeDisabled();
+  });
+
+  it('triggers onChange for both last name and combined card_holder when surname is entered', async () => {
+    const handleChange = vi.fn();
+    const { user } = render(
+      <PaymentForm
+        values={{
+          ...defaultValues,
+          card_holder: 'Ahmet',
+          card_holder_first_name: 'Ahmet',
+        }}
+        onChange={handleChange}
+        errors={{}}
+      />,
+    );
+
+    const lastNameInput = screen.getByLabelText(/kart üzerindeki soyad/i);
+    await user.type(lastNameInput, 'Y');
+
+    expect(handleChange).toHaveBeenCalledWith('card_holder_last_name', 'Y');
+    expect(handleChange).toHaveBeenCalledWith('card_holder', 'Ahmet Y');
+  });
+
+  it('fills test card credentials when "Test Kartı Doldur" button is clicked', async () => {
+    const handleChange = vi.fn();
+    const { user } = render(
+      <PaymentForm
+        values={defaultValues}
+        onChange={handleChange}
+        errors={{}}
+      />,
+    );
+
+    const fillButton = screen.getByRole('button', { name: /test kartı doldur/i });
+    await user.click(fillButton);
+
+    expect(handleChange).toHaveBeenCalledWith('card_holder', 'Ahmet Yılmaz');
+    expect(handleChange).toHaveBeenCalledWith('card_number', '5890 0400 0000 0016');
+    expect(handleChange).toHaveBeenCalledWith('expire_month', '12');
+    expect(handleChange).toHaveBeenCalledWith('expire_year', '28');
+    expect(handleChange).toHaveBeenCalledWith('cvv', '123');
+    expect(handleChange).toHaveBeenCalledWith('terms_accepted', true);
   });
 });

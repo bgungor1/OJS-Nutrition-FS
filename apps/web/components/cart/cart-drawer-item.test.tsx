@@ -91,19 +91,23 @@ describe('CartDrawerItem', () => {
     expect(handleDecrement).toHaveBeenCalledWith(mockItem);
   });
 
-  it('disables decrement button when item pieces is 1', () => {
+  it('calls onDecrement when item pieces is 1 to allow removal', async () => {
+    const handleDecrement = vi.fn();
     const singlePieceItem = { ...mockItem, pieces: 1 };
-    render(
+    const { user } = render(
       <CartDrawerItem
         item={singlePieceItem}
         onIncrement={vi.fn()}
-        onDecrement={vi.fn()}
+        onDecrement={handleDecrement}
         onRemove={vi.fn()}
       />,
     );
 
     const decrementButton = screen.getByRole('button', { name: /adet azalt/i });
-    expect(decrementButton).toBeDisabled();
+    expect(decrementButton).not.toBeDisabled();
+    await user.click(decrementButton);
+    expect(handleDecrement).toHaveBeenCalledTimes(1);
+    expect(handleDecrement).toHaveBeenCalledWith(singlePieceItem);
   });
 
   it('calls onRemove when delete button is clicked', async () => {

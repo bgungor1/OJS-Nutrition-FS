@@ -49,6 +49,8 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     }
   };
 
+  const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL || 'http://localhost:3001';
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b pb-5">
@@ -66,7 +68,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
 
         <Button asChild variant="outline" size="sm" className="gap-1.5 shrink-0 self-start sm:self-auto">
           <Link
-            href={`http://localhost:3000/products/${product.slug}`}
+            href={`${storefrontUrl}/products/${product.slug}`}
             target="_blank"
             rel="noopener noreferrer"
           >

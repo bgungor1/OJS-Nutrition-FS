@@ -84,13 +84,14 @@ export class CreateProductDto {
   @IsNotEmpty()
   description!: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: NutritionalContentDto,
     description: 'Nutritional values, ingredient list, and amino acid table',
   })
+  @IsOptional()
   @ValidateNested()
   @Type(() => NutritionalContentDto)
-  nutritionalContent!: NutritionalContentDto;
+  nutritionalContent?: NutritionalContentDto;
 
   @ApiProperty({
     example: ['PROTEIN', 'WHEY', 'SPORTS'],

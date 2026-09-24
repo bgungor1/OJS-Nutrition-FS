@@ -35,8 +35,11 @@ export class ProductsAdminService {
     const product = await this.prisma.product.create({
       data: {
         ...dto,
-        nutritionalContent:
-          dto.nutritionalContent as unknown as Prisma.InputJsonValue,
+        nutritionalContent: (dto.nutritionalContent ?? {
+          ingredients: [],
+          nutrition_facts: { ingredients: [], portion_sizes: [] },
+          amino_acid_facts: { ingredients: [], portion_sizes: [] },
+        }) as unknown as Prisma.InputJsonValue,
         isBestSeller: dto.isBestSeller ?? false,
         bestSellerRank: dto.bestSellerRank ?? null,
       } as Prisma.ProductUncheckedCreateInput,

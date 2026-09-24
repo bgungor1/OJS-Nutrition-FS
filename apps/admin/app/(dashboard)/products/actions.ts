@@ -17,7 +17,34 @@ import type {
 } from '@/types';
 
 export async function createProductAction(data: CreateProductInput) {
-  const result = await createProduct(data);
+  const { photoSrc, ...productDto } = data;
+  const result = await createProduct({
+    ...productDto,
+    nutritionalContent: productDto.nutritionalContent ?? {
+      ingredients: [],
+      nutrition_facts: { ingredients: [], portion_sizes: [] },
+      amino_acid_facts: { ingredients: [], portion_sizes: [] },
+    },
+  });
+
+  if (photoSrc && photoSrc.trim().length > 0) {
+    try {
+      await createVariant(result.id, {
+        aroma: 'Standart',
+        gram: 1000,
+        pieces: 1,
+        totalServings: 30,
+        totalPrice: 499,
+        pricePerServing: 16.63,
+        photoSrc: photoSrc.trim(),
+        isAvailable: true,
+        stockQuantity: 100,
+      });
+    } catch (variantErr) {
+      console.warn('Otomatik temel varyant oluşturulamadı:', variantErr);
+    }
+  }
+
   revalidatePath('/products');
   return result;
 }

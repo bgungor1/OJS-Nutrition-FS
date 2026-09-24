@@ -106,6 +106,32 @@ describe('ProductsAdminService', () => {
         service.createProduct(dto as never, adminId, ip),
       ).rejects.toThrow(ConflictException);
     });
+
+    it('should create product with default nutritionalContent when not provided', async () => {
+      const dtoWithoutNutrition = { ...dto, nutritionalContent: undefined };
+      mockPrisma.product.findUnique.mockResolvedValue(null);
+      const mockCreated = createMockProduct({ ...dto, variants: [] });
+      mockPrisma.product.create.mockResolvedValue(mockCreated);
+
+      const result = await service.createProduct(
+        dtoWithoutNutrition as never,
+        adminId,
+        ip,
+      );
+
+      expect(mockPrisma.product.create).toHaveBeenCalledTimes(1);
+      const callArg = (
+        mockPrisma.product.create.mock.calls[0] as [
+          { data: { nutritionalContent: unknown } },
+        ]
+      )[0];
+      expect(callArg.data.nutritionalContent).toEqual({
+        ingredients: [],
+        nutrition_facts: { ingredients: [], portion_sizes: [] },
+        amino_acid_facts: { ingredients: [], portion_sizes: [] },
+      });
+      expect(result.name).toBe(dto.name);
+    });
   });
 
   describe('updateProduct', () => {

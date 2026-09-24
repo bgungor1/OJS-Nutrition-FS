@@ -25,6 +25,7 @@ describe('UsersService', () => {
     firstName: 'Berk',
     lastName: 'Güngör',
     phoneNumber: '+905551112233',
+    role: 'customer' as const,
   };
 
   beforeEach(async () => {
@@ -76,6 +77,7 @@ describe('UsersService', () => {
           firstName: true,
           lastName: true,
           phoneNumber: true,
+          role: true,
         },
       });
       expect(result).toEqual({
@@ -84,6 +86,7 @@ describe('UsersService', () => {
         first_name: 'Berk',
         last_name: 'Güngör',
         phone_number: '+905551112233',
+        role: 'customer',
       });
     });
 
@@ -134,6 +137,7 @@ describe('UsersService', () => {
           firstName: true,
           lastName: true,
           phoneNumber: true,
+          role: true,
         },
       });
       expect(result).toEqual({
@@ -142,6 +146,7 @@ describe('UsersService', () => {
         first_name: 'Ahmet',
         last_name: 'Yılmaz',
         phone_number: '+905559998877',
+        role: 'customer',
       });
       expect(auditService.info).toHaveBeenCalledWith(
         AuditEvent.USER_PROFILE_UPDATED,
@@ -176,6 +181,7 @@ describe('UsersService', () => {
           firstName: true,
           lastName: true,
           phoneNumber: true,
+          role: true,
         },
       });
       expect(result.last_name).toBe('YeniSoyad');

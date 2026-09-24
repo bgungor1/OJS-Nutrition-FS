@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default function AdminLoginPage() {
-  const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL || 'http://localhost:3000';
+  const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL || 'http://localhost:3001';
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center p-4 bg-background">
