@@ -96,7 +96,7 @@ export const CartDrawerItem: React.FC<CartDrawerItemProps> = ({
             <button
               type="button"
               onClick={() => onDecrement(item)}
-              disabled={disabled || item.pieces <= 1}
+              disabled={disabled}
               className="px-2 py-1 text-muted-foreground hover:text-foreground disabled:opacity-40 cursor-pointer"
               aria-label="Adet azalt"
             >

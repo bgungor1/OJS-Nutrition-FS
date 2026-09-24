@@ -22,7 +22,6 @@ import type { CartItemResponse } from '@/types';
 export const CartDrawer: React.FC = () => {
   const items = useCartStore((state) => state.items);
   const isDrawerOpen = useCartStore((state) => state.isDrawerOpen);
-  const isLoading = useCartStore((state) => state.isLoading);
   const closeDrawer = useCartStore((state) => state.closeDrawer);
   const addItem = useCartStore((state) => state.addItem);
   const removeItem = useCartStore((state) => state.removeItem);
@@ -78,7 +77,7 @@ export const CartDrawer: React.FC = () => {
                   onIncrement={handleIncrement}
                   onDecrement={handleDecrement}
                   onRemove={handleRemove}
-                  disabled={isLoading}
+                  disabled={false}
                 />
               ))}
             </div>
