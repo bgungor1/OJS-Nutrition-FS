@@ -2,6 +2,8 @@
 
 import * as React from 'react';
 import type { ApiProductDetail, CategoryTree, CreateProductInput } from '@/types';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { MediaUploader } from './media-uploader';
 import { ProductFormHeader } from './product-form-header';
 import { ProductFormBasic } from './product-form-basic';
 import { ProductFormContent } from './product-form-content';
@@ -66,23 +68,40 @@ export function ProductForm({
           />
         </div>
 
-        <ProductFormClassification
-          categories={categories}
-          mainCategoryId={form.mainCategoryId}
-          subCategoryId={form.subCategoryId}
-          tagsInput={form.tagsInput}
-          isBestSeller={form.isBestSeller}
-          bestSellerRank={form.bestSellerRank}
-          errors={errors}
-          onMainCategoryChange={(val) => {
-            updateField('mainCategoryId', val);
-            updateField('subCategoryId', '');
-          }}
-          onSubCategoryChange={(val) => updateField('subCategoryId', val)}
-          onTagsChange={(val) => updateField('tagsInput', val)}
-          onBestSellerChange={(val) => updateField('isBestSeller', val)}
-          onBestSellerRankChange={(val) => updateField('bestSellerRank', val)}
-        />
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Ürün Görseli</CardTitle>
+              <CardDescription className="text-xs">
+                Katalog ve listeleme sayfalarında gösterilecek ana ürün görseli
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MediaUploader
+                value={form.photoSrc}
+                onChange={(photoSrc) => updateField('photoSrc', photoSrc)}
+              />
+            </CardContent>
+          </Card>
+
+          <ProductFormClassification
+            categories={categories}
+            mainCategoryId={form.mainCategoryId}
+            subCategoryId={form.subCategoryId}
+            tagsInput={form.tagsInput}
+            isBestSeller={form.isBestSeller}
+            bestSellerRank={form.bestSellerRank}
+            errors={errors}
+            onMainCategoryChange={(val) => {
+              updateField('mainCategoryId', val);
+              updateField('subCategoryId', '');
+            }}
+            onSubCategoryChange={(val) => updateField('subCategoryId', val)}
+            onTagsChange={(val) => updateField('tagsInput', val)}
+            onBestSellerChange={(val) => updateField('isBestSeller', val)}
+            onBestSellerRankChange={(val) => updateField('bestSellerRank', val)}
+          />
+        </div>
       </div>
     </form>
   );

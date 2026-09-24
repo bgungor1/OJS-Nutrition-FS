@@ -35,6 +35,7 @@ describe('components/layout/admin-sidebar', () => {
 
     const storefrontLink = screen.getByRole('link', { name: /müşteri mağazası/i });
     expect(storefrontLink).toHaveAttribute('target', '_blank');
+    expect(storefrontLink).toHaveAttribute('href', 'http://localhost:3001');
   });
 
   it('renders logout button', () => {

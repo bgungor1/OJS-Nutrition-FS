@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import { UsersTableRow } from './users-table-row';
 import { UsersTableEmpty } from './users-table-empty';

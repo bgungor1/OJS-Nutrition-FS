@@ -20,6 +20,7 @@ export const productSchema = z.object({
   subCategoryId: z.string().uuid('Geçerli bir alt kategori seçilmelidir'),
   isBestSeller: z.boolean().default(false),
   bestSellerRank: z.number().int().positive().optional().nullable(),
+  photoSrc: z.string().optional(),
 });
 
 export type ProductFormValues = z.infer<typeof productSchema>;

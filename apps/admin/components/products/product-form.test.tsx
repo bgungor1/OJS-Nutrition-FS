@@ -3,6 +3,10 @@ import { render, screen, fireEvent } from '@/test/test-utils';
 import { ProductForm } from './product-form';
 import type { CategoryTree } from '@/types';
 
+vi.mock('@/app/(dashboard)/products/actions', () => ({
+  uploadMediaAction: vi.fn(),
+}));
+
 describe('components/products/product-form', () => {
   const mockCategories: CategoryTree[] = [
     {
@@ -49,4 +53,12 @@ describe('components/products/product-form', () => {
     const slugInput = screen.getByLabelText(/slug/i) as HTMLInputElement;
     expect(slugInput.value).toBe('izole-whey-cikolata');
   });
+
+  it('renders the product image uploader section', () => {
+    render(<ProductForm categories={mockCategories} onSubmit={vi.fn()} />);
+
+    expect(screen.getByText('Ürün Görseli')).toBeInTheDocument();
+    expect(screen.getByText('Görsel Seçin veya Sürükleyin')).toBeInTheDocument();
+  });
 });
+
