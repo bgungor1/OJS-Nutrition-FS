@@ -57,6 +57,24 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {user.role === 'admin' && (
+          <>
+            <DropdownMenuItem asChild>
+              <a
+                href={process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3002'}
+                className="w-full cursor-pointer font-semibold text-primary flex items-center justify-between py-1"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span>Yönetici Paneli</span>
+                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono font-bold">
+                  Admin ↗
+                </span>
+              </a>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
         <DropdownMenuItem asChild>
           <Link href="/account" className="w-full cursor-pointer">
             Hesabım
