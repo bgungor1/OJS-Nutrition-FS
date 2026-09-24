@@ -37,11 +37,12 @@ type ProductsPageProps = {
     page?: string;
     category?: string;
     sort?: ProductSortOption;
+    search?: string;
   }>;
 };
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-  const { page, category, sort } = await searchParams;
+  const { page, category, sort, search } = await searchParams;
   const currentPage = Math.max(1, parseInt(page || '1', 10));
   const limit = 12;
   const offset = (currentPage - 1) * limit;
@@ -51,15 +52,24 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     offset,
     category,
     sort,
+    search,
   });
 
   const totalPages = Math.ceil(data.count / limit);
 
+  const headerTitle = search
+    ? `"${search}" için Arama Sonuçları`
+    : 'Tüm Ürünler';
+
+  const headerDescription = search
+    ? `"${search}" aramasıyla eşleşen ${data.count} ürün bulundu.`
+    : 'Vücudunuzun ihtiyacı olan yüksek kaliteli protein, amino asit ve performans artırıcı sporcu besinleri.';
+
   return (
     <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <CatalogHeader
-        title="Tüm Ürünler"
-        description="Vücudunuzun ihtiyacı olan yüksek kaliteli protein, amino asit ve performans artırıcı sporcu besinleri."
+        title={headerTitle}
+        description={headerDescription}
         totalCount={data.count}
       />
 
@@ -73,8 +83,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         currentPage={currentPage}
         totalPages={totalPages}
         baseUrl="/products"
-        query={{ category, sort }}
+        query={{ category, sort, search }}
       />
     </div>
   );
 }
+

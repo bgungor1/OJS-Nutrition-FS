@@ -21,7 +21,10 @@ export const ProductJsonLd: React.FC<ProductJsonLdProps> = ({
     .filter(Boolean)
     .map((src) => getImageUrl(src));
 
-  const offerPrice = primaryVariant?.price?.total_price ?? 0;
+  const offerPrice =
+    primaryVariant?.price?.discounted_price ??
+    primaryVariant?.price?.total_price ??
+    0;
   const isAvailable = primaryVariant ? primaryVariant.is_available : true;
 
   const jsonLd: Record<string, unknown> = {

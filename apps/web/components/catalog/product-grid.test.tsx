@@ -13,8 +13,8 @@ const mockProducts: ApiProduct[] = Array.from({ length: 6 }, (_, i) => ({
   comment_count: 10 + i,
   average_star: 4.5,
   price_info: {
-    total_price: 100 * (i + 1),
-    discounted_price: 120 * (i + 1),
+    total_price: 120 * (i + 1),
+    discounted_price: 100 * (i + 1),
     discount_percentage: 15,
     profit: 20 * (i + 1),
     price_per_servings: 10,

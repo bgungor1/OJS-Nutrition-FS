@@ -30,6 +30,9 @@ export async function getProducts(
   if (params.sort) {
     searchParams.set('sort', params.sort);
   }
+  if (params.search && params.search.trim() !== '') {
+    searchParams.set('search', params.search.trim());
+  }
 
   const query = searchParams.toString();
   const endpoint = query ? `/products?${query}` : '/products';

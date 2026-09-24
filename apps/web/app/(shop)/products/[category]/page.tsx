@@ -38,6 +38,7 @@ type CategoryPageProps = {
   searchParams: Promise<{
     page?: string;
     sort?: ProductSortOption;
+    search?: string;
   }>;
 };
 
@@ -96,7 +97,7 @@ export default async function CategoryPage({
   searchParams,
 }: CategoryPageProps) {
   const { category } = await params;
-  const { page, sort } = await searchParams;
+  const { page, sort, search } = await searchParams;
   const currentPage = Math.max(1, parseInt(page || '1', 10));
   const limit = 12;
   const offset = (currentPage - 1) * limit;
@@ -106,11 +107,16 @@ export default async function CategoryPage({
     offset,
     category,
     sort,
+    search,
   });
 
   const info = CATEGORY_DESCRIPTIONS[category];
-  const title = info ? info.title : category.charAt(0).toUpperCase() + category.slice(1);
-  const description = info?.description;
+  const title = search
+    ? `"${search}" - ${info ? info.title : category.toUpperCase()}`
+    : (info ? info.title : category.charAt(0).toUpperCase() + category.slice(1));
+  const description = search
+    ? `"${search}" aramasıyla eşleşen ${data.count} ürün bulundu.`
+    : info?.description;
   const totalPages = Math.ceil(data.count / limit);
 
   return (
@@ -132,7 +138,7 @@ export default async function CategoryPage({
         currentPage={currentPage}
         totalPages={totalPages}
         baseUrl={`/products/${category}`}
-        query={{ sort }}
+        query={{ sort, search }}
       />
     </div>
   );

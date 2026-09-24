@@ -54,7 +54,10 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       </div>
 
       <div className="flex items-center gap-2 pt-1 border-b border-border/60 pb-3">
-        <div className="flex text-amber-500">
+        <div
+          className="flex text-amber-500"
+          aria-label={`Ürün puanı: ${commentCount > 0 ? averageStar.toFixed(1) : '0.0'} / 5`}
+        >
           {[...Array(5)].map((_, i) => (
             <Star
               key={i}
@@ -65,10 +68,12 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
           ))}
         </div>
         <span className="text-xs font-semibold text-foreground">
-          {averageStar > 0 ? averageStar.toFixed(1) : '5.0'}
+          {commentCount > 0 && averageStar > 0 ? averageStar.toFixed(1) : '0.0'}
         </span>
         <span className="text-xs text-muted-foreground">
-          ({commentCount.toLocaleString('tr-TR')} Değerlendirme)
+          {commentCount > 0
+            ? `(${commentCount.toLocaleString('tr-TR')} Değerlendirme)`
+            : '(Henüz değerlendirilmedi)'}
         </span>
       </div>
 

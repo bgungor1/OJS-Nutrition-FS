@@ -67,20 +67,69 @@ describe('ProductsService', () => {
       expect(result.previous).toBe('?limit=10&offset=0&category=protein');
     });
 
-    it('should filter by both main and sub category slug', async () => {
+    it('should filter by search query term with case-insensitive contains', async () => {
       mockPrisma.product.count.mockResolvedValue(0);
       mockPrisma.product.findMany.mockResolvedValue([]);
 
-      await service.list({ limit: 20, offset: 0, category: 'whey' });
+      await service.list({ limit: 20, offset: 0, search: 'protein' });
 
       expect(mockPrisma.product.count).toHaveBeenCalledWith({
         where: {
           OR: [
-            { mainCategory: { slug: 'whey' } },
-            { subCategory: { slug: 'whey' } },
+            { name: { contains: 'protein', mode: 'insensitive' } },
+            { shortExplanation: { contains: 'protein', mode: 'insensitive' } },
+            { slug: { contains: 'protein', mode: 'insensitive' } },
+            { description: { contains: 'protein', mode: 'insensitive' } },
           ],
         },
       });
+    });
+
+    it('should combine category and search filters with AND logic', async () => {
+      mockPrisma.product.count.mockResolvedValue(0);
+      mockPrisma.product.findMany.mockResolvedValue([]);
+
+      await service.list({
+        limit: 20,
+        offset: 0,
+        category: 'protein',
+        search: 'whey',
+      });
+
+      expect(mockPrisma.product.count).toHaveBeenCalledWith({
+        where: {
+          AND: [
+            {
+              OR: [
+                { mainCategory: { slug: 'protein' } },
+                { subCategory: { slug: 'protein' } },
+              ],
+            },
+            {
+              OR: [
+                { name: { contains: 'whey', mode: 'insensitive' } },
+                { shortExplanation: { contains: 'whey', mode: 'insensitive' } },
+                { slug: { contains: 'whey', mode: 'insensitive' } },
+                { description: { contains: 'whey', mode: 'insensitive' } },
+              ],
+            },
+          ],
+        },
+      });
+    });
+
+    it('should preserve search parameter in pagination links', async () => {
+      mockPrisma.product.count.mockResolvedValue(30);
+      mockPrisma.product.findMany.mockResolvedValue([createMockProduct()]);
+
+      const result = await service.list({
+        limit: 10,
+        offset: 10,
+        search: 'isolate',
+      });
+
+      expect(result.next).toBe('?limit=10&offset=20&search=isolate');
+      expect(result.previous).toBe('?limit=10&offset=0&search=isolate');
     });
 
     it('should sort in-memory correctly for price_asc and price_desc', async () => {

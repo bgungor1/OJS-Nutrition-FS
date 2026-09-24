@@ -47,6 +47,7 @@ describe('ProductsController', () => {
         offset: 0,
         category: 'protein',
         sort: 'price_asc' as const,
+        search: 'isolate',
       };
       const result = await controller.list(query);
 

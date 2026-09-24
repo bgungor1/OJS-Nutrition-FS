@@ -169,12 +169,14 @@ export class ProductsMapper {
     offset: number,
     category?: string,
     sort?: string,
+    search?: string,
   ): string {
     const params = new URLSearchParams();
     params.set('limit', limit.toString());
     params.set('offset', offset.toString());
     if (category) params.set('category', category);
     if (sort) params.set('sort', sort);
+    if (search) params.set('search', search);
     return `?${params.toString()}`;
   }
 }

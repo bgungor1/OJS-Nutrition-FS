@@ -105,4 +105,6 @@ export interface ProductsQuery {
   offset?: number;
   category?: string;
   sort?: 'price_asc' | 'price_desc' | 'newest' | 'rating';
+  search?: string;
 }
+

@@ -45,8 +45,8 @@ export const BestSellersSection: React.FC<BestSellersSectionProps> = ({
             shortExplanation={product.short_explanation}
             reviewCount={product.comment_count}
             averageStar={product.average_star}
-            price={product.price_info.total_price}
-            originalPrice={product.price_info.discounted_price}
+            price={product.price_info.discounted_price ?? product.price_info.total_price}
+            originalPrice={product.price_info.discounted_price ? product.price_info.total_price : null}
             discountPercentage={product.price_info.discount_percentage}
             priority={index < 2}
           />
