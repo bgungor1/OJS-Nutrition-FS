@@ -45,7 +45,6 @@ export async function completeCheckoutAction(
     };
   }
 
-  // 1. İstemci tarafı açıkça boş bir sepet ilettiyse ödeme adımını durdur
   if (clientCartItems !== undefined && clientCartItems.length === 0) {
     return {
       success: false,
@@ -53,10 +52,8 @@ export async function completeCheckoutAction(
     };
   }
 
-  // 2. Varsa guest_cart_id çerezini oturumla birleştir
   await mergeGuestCartSession(token);
 
-  // 3. İstemciden (Zustand) gelen sepet kalemleri varsa sunucu sepetiyle senkronize et
   if (clientCartItems && clientCartItems.length > 0) {
     try {
       const serverCart = await serverFetch<CartItemResponse[]>('/cart', {
@@ -70,7 +67,6 @@ export async function completeCheckoutAction(
         serverCart.map((item) => [item.product_variant_id, item]),
       );
 
-      // İstemcideki kalemleri sunucu sepetine ekle veya adetlerini eşitle
       for (const clientItem of clientCartItems) {
         const existing = serverMap.get(clientItem.product_variant_id);
         if (!existing) {
@@ -117,7 +113,6 @@ export async function completeCheckoutAction(
         }
       }
 
-      // Sunucuda olup istemci sepetinde artık bulunmayan fazlalık kalemleri temizle
       const clientVariantIds = new Set(
         clientCartItems.map((item) => item.product_variant_id),
       );

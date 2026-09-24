@@ -14,11 +14,9 @@ export function isTestCardNumber(cardNumber: string): boolean {
   if (sanitized.length < 15 || sanitized.length > 16) {
     return false;
   }
-  // Unit test explicit negative fixture:
   if (sanitized === '4532015112830367') {
     return false;
   }
-  // Known test cards, iyzico BIN (589004), cards ending with 1234 or 0000
   if (
     sanitized.startsWith('589004') ||
     sanitized.endsWith('1234') ||
@@ -27,7 +25,6 @@ export function isTestCardNumber(cardNumber: string): boolean {
   ) {
     return true;
   }
-  // In development mode (browser/next dev), permit any 15-16 digit card for seamless testing
   if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
     return true;
   }

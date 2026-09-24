@@ -77,8 +77,6 @@ export const useCartStore = create<CartState>()(
           (i) => i.product_variant_id === variantId,
         );
 
-        // İyimser Güncelleme (Optimistic Update):
-        // Ürün zaten sepetteyse (+ butonuna basıldığında) UI anında (0ms) güncellenir
         if (existingItem) {
           const optimisticItems = previousItems.map((item) =>
             item.product_variant_id === variantId
@@ -97,7 +95,6 @@ export const useCartStore = create<CartState>()(
             pieces,
           });
 
-          // Sunucu yanıtı ile mevcut yerel durumu uzlaştır
           const currentItems = get().items;
           const apiItemMap = new Map(
             apiItems.map((item) => [item.product_variant_id, item]),
@@ -111,7 +108,6 @@ export const useCartStore = create<CartState>()(
 
           const merged = [...preservedItems, ...apiItems];
 
-          // Sadece çekmece kapalıysa aç (zaten açıksa animasyon titremesini engelle)
           const shouldOpen = !get().isDrawerOpen;
           set({
             items: merged,
@@ -133,17 +129,15 @@ export const useCartStore = create<CartState>()(
           (i) => i.product_variant_id === variantId,
         );
 
-        // İyimser Güncelleme (Optimistic Update):
-        // - veya sil butonuna tıklandığında anında (0ms) yerel durumu güncelle
         if (targetItem) {
           const optimisticItems =
             targetItem.pieces <= pieces
               ? previousItems.filter((i) => i.product_variant_id !== variantId)
               : previousItems.map((i) =>
-                  i.product_variant_id === variantId
-                    ? { ...i, pieces: i.pieces - pieces }
-                    : i,
-                );
+                i.product_variant_id === variantId
+                  ? { ...i, pieces: i.pieces - pieces }
+                  : i,
+              );
           set({ items: optimisticItems, error: null });
         }
 

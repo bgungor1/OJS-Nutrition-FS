@@ -6,6 +6,7 @@ import { loginApi, registerApi } from '@/lib/api/auth';
 import { setAuthCookies } from '@/lib/auth-cookies';
 import { ApiError } from '@/lib/api-client';
 import { mergeGuestCartSession } from '@/lib/auth-session';
+import { decodeJwtPayload } from '@/lib/jwt';
 
 export interface AuthActionState {
   success: boolean;
@@ -52,6 +53,12 @@ export async function loginAction(
 
     await setAuthCookies(tokens);
     await mergeGuestCartSession(tokens.access);
+    const payload = decodeJwtPayload(tokens.access);
+    if (payload?.role === 'admin') {
+      const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3002';
+      redirect(adminUrl);
+    }
+
     redirect(redirectTo);
   } catch (err: unknown) {
     if (isNextRedirect(err)) throw err;

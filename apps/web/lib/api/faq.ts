@@ -7,6 +7,6 @@ export async function getFaqItems(category?: string): Promise<ApiFaqItem[]> {
     : '/faq';
 
   return serverFetch<ApiFaqItem[]>(endpoint, {
-    next: { revalidate: 3600, tags: ['faq'] },
+    cache: 'no-store',
   });
 }

@@ -121,8 +121,8 @@ describe('completeCheckoutAction', () => {
   it('synchronizes missing clientCartItems to /cart before completing order', async () => {
     vi.mocked(getAccessToken).mockResolvedValue('mock_token');
     vi.mocked(serverFetch)
-      .mockResolvedValueOnce([] as never) // GET /cart returns empty
-      .mockResolvedValueOnce([mockCartItem] as never); // POST /cart
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([mockCartItem] as never);
     vi.mocked(completeShopping).mockResolvedValue({
       id: 'order_123',
       order_no: 'ORD-2026-0001',
@@ -162,8 +162,8 @@ describe('completeCheckoutAction', () => {
   it('handles ApiError during cart synchronization gracefully', async () => {
     vi.mocked(getAccessToken).mockResolvedValue('mock_token');
     vi.mocked(serverFetch)
-      .mockResolvedValueOnce([] as never) // GET /cart returns empty
-      .mockRejectedValueOnce(new ApiError('Bu ürün stokta kalmadı.', 400)); // POST /cart throws
+      .mockResolvedValueOnce([] as never)
+      .mockRejectedValueOnce(new ApiError('Bu ürün stokta kalmadı.', 400));
 
     const result = await completeCheckoutAction(validForm, [mockCartItem]);
 
