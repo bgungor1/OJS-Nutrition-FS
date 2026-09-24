@@ -84,5 +84,6 @@ export interface GetProductsParams {
   offset?: number;
   category?: string;
   sort?: ProductSortOption;
+  search?: string;
 }
 

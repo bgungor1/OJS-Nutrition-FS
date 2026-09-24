@@ -11,14 +11,14 @@ export const ReviewStatsSummary: React.FC<ReviewStatsSummaryProps> = ({ stats })
   const verifiedPercentage =
     stats.total_reviews > 0
       ? Math.round((stats.verified_reviews / stats.total_reviews) * 100)
-      : 100;
+      : 0;
 
   const fourAndFiveStarCount =
     (stats.rating_distribution[5] || 0) + (stats.rating_distribution[4] || 0);
   const recommendPercentage =
     stats.total_reviews > 0
       ? Math.round((fourAndFiveStarCount / stats.total_reviews) * 100)
-      : 100;
+      : 0;
 
   return (
     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 rounded-2xl bg-secondary/30 border border-border/50 backdrop-blur-xs">
@@ -30,9 +30,9 @@ export const ReviewStatsSummary: React.FC<ReviewStatsSummaryProps> = ({ stats })
           <span className="text-lg font-medium text-muted-foreground">/ 5</span>
         </div>
 
-        <div className="flex items-center gap-1 mt-2" aria-label={`Ortalama puan: ${roundedRating} / 5`}>
+        <div className="flex items-center gap-1 mt-2" aria-label={`Ortalama puan: ${stats.total_reviews > 0 ? roundedRating : '0.0'} / 5`}>
           {[1, 2, 3, 4, 5].map((star) => {
-            const isFilled = star <= Math.round(stats.average_rating);
+            const isFilled = stats.total_reviews > 0 && star <= Math.round(stats.average_rating);
             return (
               <Star
                 key={star}
@@ -55,15 +55,21 @@ export const ReviewStatsSummary: React.FC<ReviewStatsSummaryProps> = ({ stats })
       <div className="w-px h-24 bg-border/60 hidden sm:block self-center mx-2" />
 
       <div className="flex flex-col justify-center gap-2.5 text-sm w-full sm:w-auto">
-        <div className="flex items-center gap-2 text-foreground font-medium">
-          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-          <span>%{verifiedPercentage} Doğrulanmış Müşteri</span>
-        </div>
+        {stats.total_reviews > 0 ? (
+          <>
+            <div className="flex items-center gap-2 text-foreground font-medium">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>%{verifiedPercentage} Doğrulanmış Müşteri</span>
+            </div>
 
-        {stats.total_reviews > 0 && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <span className="inline-block w-2 h-2 rounded-full bg-primary shrink-0" />
-            <span>Kullanıcıların %{recommendPercentage}&apos;i ürünü tavsiye ediyor</span>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span className="inline-block w-2 h-2 rounded-full bg-primary shrink-0" />
+              <span>Kullanıcıların %{recommendPercentage}&apos;i ürünü tavsiye ediyor</span>
+            </div>
+          </>
+        ) : (
+          <div className="text-xs sm:text-sm text-muted-foreground">
+            Bu ürün için ilk değerlendirmeyi yaparak diğer sporculara yardımcı olabilirsiniz.
           </div>
         )}
       </div>
