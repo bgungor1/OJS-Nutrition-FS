@@ -144,4 +144,33 @@ describe('checkoutPaymentSchema', () => {
       expect(result.error.issues[0]?.message).toMatch(/onaylamalısınız/i);
     }
   });
+
+  it('accepts official iyzico test card (5890 0400 0000 0016)', () => {
+    const payload = {
+      ...VALID_CHECKOUT_PAYLOAD,
+      card_number: '5890 0400 0000 0016',
+    };
+    const result = checkoutPaymentSchema.safeParse(payload);
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts optional card_holder_first_name and card_holder_last_name', () => {
+    const payload = {
+      ...VALID_CHECKOUT_PAYLOAD,
+      card_holder: 'Ahmet Yılmaz',
+      card_holder_first_name: 'Ahmet',
+      card_holder_last_name: 'Yılmaz',
+    };
+    const result = checkoutPaymentSchema.safeParse(payload);
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts custom test card ending with 1234 (4345 2901 0234 1234)', () => {
+    const payload = {
+      ...VALID_CHECKOUT_PAYLOAD,
+      card_number: '4345 2901 0234 1234',
+    };
+    const result = checkoutPaymentSchema.safeParse(payload);
+    expect(result.success).toBe(true);
+  });
 });

@@ -21,6 +21,46 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
   errors,
   disabled = false,
 }) => {
+  const nameParts = (values.card_holder || '').trim().split(/\s+/);
+  const firstName =
+    values.card_holder_first_name !== undefined && values.card_holder_first_name !== ''
+      ? values.card_holder_first_name
+      : nameParts.length > 1
+        ? nameParts.slice(0, -1).join(' ')
+        : nameParts[0] || '';
+
+  const lastName =
+    values.card_holder_last_name !== undefined && values.card_holder_last_name !== ''
+      ? values.card_holder_last_name
+      : nameParts.length > 1
+        ? nameParts[nameParts.length - 1]
+        : '';
+
+  const handleFirstName = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    onChange('card_holder_first_name', val);
+    const combined = [val.trim(), lastName.trim()].filter(Boolean).join(' ');
+    onChange('card_holder', combined);
+  };
+
+  const handleLastName = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    onChange('card_holder_last_name', val);
+    const combined = [firstName.trim(), val.trim()].filter(Boolean).join(' ');
+    onChange('card_holder', combined);
+  };
+
+  const handleFillTestCard = () => {
+    onChange('card_holder_first_name', 'Ahmet');
+    onChange('card_holder_last_name', 'Yılmaz');
+    onChange('card_holder', 'Ahmet Yılmaz');
+    onChange('card_number', '5890 0400 0000 0016');
+    onChange('expire_month', '12');
+    onChange('expire_year', '28');
+    onChange('cvv', '123');
+    onChange('terms_accepted', true);
+  };
+
   const handleCardNumber = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange('card_number', formatCardNumber(e.target.value));
   };
@@ -36,35 +76,68 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
           <CreditCard className="h-5 w-5 text-primary" />
           <h2 className="text-base font-bold text-foreground">Kart Bilgileri</h2>
         </div>
-        <span className="text-xs text-muted-foreground flex items-center gap-1">
-          <Lock className="h-3.5 w-3.5 text-primary" />
-          256-Bit SSL
-        </span>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleFillTestCard}
+            disabled={disabled}
+            className="text-xs text-primary hover:text-primary/80 font-semibold underline underline-offset-2 cursor-pointer disabled:opacity-50"
+          >
+            Test Kartı Doldur
+          </button>
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <Lock className="h-3.5 w-3.5 text-primary" />
+            256-Bit SSL
+          </span>
+        </div>
       </div>
 
       <div className="rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
-        <div className="space-y-1">
-          <label htmlFor="card_holder" className="text-xs font-semibold text-foreground">
-            Kart Üzerindeki İsim
-          </label>
-          <input
-            id="card_holder"
-            type="text"
-            disabled={disabled}
-            value={values.card_holder}
-            onChange={(e) => onChange('card_holder', e.target.value)}
-            placeholder="Ad Soyad"
-            className={`w-full h-10 px-3 rounded-lg border text-sm bg-background outline-none uppercase ${
-              errors.card_holder ? 'border-destructive' : 'border-border focus:border-primary'
-            }`}
-          />
-          {errors.card_holder && <p className="text-xs text-destructive">{errors.card_holder}</p>}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label htmlFor="card_holder_first_name" className="text-xs font-semibold text-foreground">
+              Kart Üzerindeki İsim (Ad)
+            </label>
+            <input
+              id="card_holder_first_name"
+              type="text"
+              disabled={disabled}
+              value={firstName}
+              onChange={handleFirstName}
+              placeholder="Ad"
+              className={`w-full h-10 px-3 rounded-lg border text-sm bg-background outline-none uppercase ${
+                errors.card_holder ? 'border-destructive' : 'border-border focus:border-primary'
+              }`}
+            />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="card_holder_last_name" className="text-xs font-semibold text-foreground">
+              Kart Üzerindeki Soyad
+            </label>
+            <input
+              id="card_holder_last_name"
+              type="text"
+              disabled={disabled}
+              value={lastName}
+              onChange={handleLastName}
+              placeholder="Soyad"
+              className={`w-full h-10 px-3 rounded-lg border text-sm bg-background outline-none uppercase ${
+                errors.card_holder ? 'border-destructive' : 'border-border focus:border-primary'
+              }`}
+            />
+          </div>
         </div>
+        {errors.card_holder && <p className="text-xs text-destructive">{errors.card_holder}</p>}
 
         <div className="space-y-1">
-          <label htmlFor="card_number" className="text-xs font-semibold text-foreground">
-            Kart Numarası
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="card_number" className="text-xs font-semibold text-foreground">
+              Kart Numarası
+            </label>
+            <span className="text-[11px] text-muted-foreground">
+              Test kartı veya 16 hane
+            </span>
+          </div>
           <input
             id="card_number"
             type="text"

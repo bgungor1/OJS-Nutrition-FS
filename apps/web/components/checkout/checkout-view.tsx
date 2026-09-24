@@ -17,12 +17,12 @@ import {
   DEFAULT_CHECKOUT_FORM,
   type CheckoutFormData,
 } from '@/lib/schemas/checkout';
-import type { Address, Country } from '@/types';
+import type { Address, Country, CartItemResponse } from '@/types';
 
 interface CheckoutViewProps {
   initialAddresses: Address[];
   countries: Country[];
-  onCompleteCheckout?: (data: CheckoutFormData) => Promise<void>;
+  onCompleteCheckout?: (data: CheckoutFormData, items?: CartItemResponse[]) => Promise<void>;
 }
 
 export const CheckoutView: React.FC<CheckoutViewProps> = ({
@@ -48,7 +48,14 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
 
   const handleFieldChange = <K extends keyof CheckoutFormData>(key: K, value: CheckoutFormData[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-    if (errors[key]) setErrors((prev) => { const next = { ...prev }; delete next[key]; return next; });
+    if (errors[key] || (key.startsWith('card_holder') && errors.card_holder)) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        if (key.startsWith('card_holder')) delete next.card_holder;
+        return next;
+      });
+    }
   };
 
   const handleSelectAddress = (id: string) => {
@@ -74,9 +81,9 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     setIsSubmitting(true);
     try {
       if (onCompleteCheckout) {
-        await onCompleteCheckout(form);
+        await onCompleteCheckout(form, items);
       } else {
-        const result = await completeCheckoutAction(form);
+        const result = await completeCheckoutAction(form, items);
         if (!result.success) {
           setGlobalError(result.error || 'Ödeme işlemi tamamlanamadı.');
           if (result.fieldErrors) setErrors(result.fieldErrors);

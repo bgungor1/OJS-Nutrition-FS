@@ -107,7 +107,8 @@ describe('CheckoutView', () => {
       />,
     );
 
-    await user.type(screen.getByPlaceholderText('Ad Soyad'), 'Ahmet Yilmaz');
+    await user.type(screen.getByPlaceholderText('Ad'), 'Ahmet');
+    await user.type(screen.getByPlaceholderText('Soyad'), 'Yilmaz');
     await user.type(screen.getByPlaceholderText('•••• •••• •••• ••••'), '4532015112830366');
     await user.selectOptions(screen.getByLabelText(/son kullanma ayı/i), '12');
     await user.selectOptions(screen.getByLabelText(/son kullanma yılı/i), '28');
@@ -125,6 +126,7 @@ describe('CheckoutView', () => {
         cvv: '123',
         terms_accepted: true,
       }),
+      [mockItem],
     );
   });
 });

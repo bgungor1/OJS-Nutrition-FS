@@ -19,6 +19,8 @@ export const checkoutPaymentSchema = z
       .min(3, 'Kart üzerindeki ad en az 3 karakter olmalıdır.')
       .max(60, 'Kart üzerindeki ad en fazla 60 karakter olabilir.')
       .regex(CARD_HOLDER_REGEX, 'Kart sahibi adı sadece harflerden oluşmalıdır.'),
+    card_holder_first_name: z.string().trim().optional(),
+    card_holder_last_name: z.string().trim().optional(),
     card_number: z
       .string({ required_error: 'Kart numarası zorunludur.' })
       .trim()
@@ -63,6 +65,8 @@ export interface CheckoutFormData {
   address_id: string;
   payment_type: 'credit_card' | 'debit_card';
   card_holder: string;
+  card_holder_first_name?: string;
+  card_holder_last_name?: string;
   card_number: string;
   expire_month: string;
   expire_year: string;
@@ -74,6 +78,8 @@ export const DEFAULT_CHECKOUT_FORM: CheckoutFormData = {
   address_id: '',
   payment_type: 'credit_card',
   card_holder: '',
+  card_holder_first_name: '',
+  card_holder_last_name: '',
   card_number: '',
   expire_month: '',
   expire_year: '',
