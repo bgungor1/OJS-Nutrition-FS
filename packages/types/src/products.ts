@@ -82,6 +82,7 @@ export interface CreateProductInput {
   isBestSeller?: boolean;
   bestSellerRank?: number;
   nutritionalContent?: ApiNutritionalContent;
+  photoSrc?: string;
 }
 
 export interface UpdateProductInput {
