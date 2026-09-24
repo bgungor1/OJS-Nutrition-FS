@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { ArrowUpDown } from 'lucide-react';
 
@@ -11,7 +11,15 @@ const SORT_OPTIONS = [
   { value: 'rating', label: 'Müşteri Puanına Göre' },
 ];
 
-export const CatalogSort: React.FC = () => {
+const CatalogSortFallback: React.FC = () => (
+  <div className="flex items-center gap-2 text-xs">
+    <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+    <span className="text-muted-foreground whitespace-nowrap">Sırala:</span>
+    <div className="h-8 w-32 rounded-lg border border-border bg-card/50" />
+  </div>
+);
+
+const CatalogSortInner: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -55,4 +63,13 @@ export const CatalogSort: React.FC = () => {
   );
 };
 
+export const CatalogSort: React.FC = () => {
+  return (
+    <Suspense fallback={<CatalogSortFallback />}>
+      <CatalogSortInner />
+    </Suspense>
+  );
+};
+
 export default CatalogSort;
+

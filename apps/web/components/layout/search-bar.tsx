@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,21 @@ interface SearchBarProps {
   debounceMs?: number;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({
+const SearchBarFallback: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <div role="search" aria-label="Ürün Arama" className={`relative w-full max-w-md ${className}`}>
+    <div className="relative flex items-center">
+      <Search className="absolute left-3 h-4 w-4 text-muted-foreground pointer-events-none" />
+      <Input
+        type="search"
+        placeholder="Aradığınız ürünü veya kategoriyi yazın..."
+        disabled
+        className="h-10 pl-9 pr-8 text-sm bg-muted/40 border-border rounded-full"
+      />
+    </div>
+  </div>
+);
+
+const SearchBarInner: React.FC<SearchBarProps> = ({
   className = '',
   onSearchComplete,
   debounceMs = 300,
@@ -146,5 +160,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   );
 };
 
+export const SearchBar: React.FC<SearchBarProps> = (props) => {
+  return (
+    <Suspense fallback={<SearchBarFallback className={props.className} />}>
+      <SearchBarInner {...props} />
+    </Suspense>
+  );
+};
+
 export default SearchBar;
+
 
