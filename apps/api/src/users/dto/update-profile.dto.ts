@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
+  IsEmail,
   IsOptional,
   IsString,
   Matches,
@@ -47,6 +48,17 @@ export class UpdateProfileDto {
     message: `Soyad en fazla ${MAX_NAME_LENGTH} karakter olabilir.`,
   })
   last_name?: string;
+
+  @ApiPropertyOptional({
+    example: 'user@example.com',
+    description: 'Kullanıcının e-posta adresi',
+  })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
+  @IsEmail({}, { message: 'Geçerli bir e-posta adresi giriniz.' })
+  email?: string;
 
   @ApiPropertyOptional({
     example: '+905551234567',

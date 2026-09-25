@@ -12,7 +12,7 @@ import {
   CardDescription,
 } from '@/components/ui';
 import { updateProfileAction, type ProfileActionState } from '@/app/(shop)/account/actions';
-import { Loader2, CheckCircle2, AlertCircle, Lock } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { AccountProfile } from '@/types';
 
 interface ProfileFormProps {
@@ -81,19 +81,18 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ initialData }) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="email">E-posta Adresi</Label>
-                <span className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium">
-                  <Lock className="h-3 w-3" /> Değiştirilemez
-                </span>
-              </div>
+              <Label htmlFor="email">E-posta Adresi</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 defaultValue={initialData.email}
-                disabled
-                className="bg-muted/50 text-muted-foreground cursor-not-allowed"
+                required
+                aria-invalid={Boolean(state.fieldErrors?.email)}
               />
+              {state.fieldErrors?.email && (
+                <p className="text-xs text-destructive">{state.fieldErrors.email}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
