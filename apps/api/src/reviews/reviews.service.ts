@@ -3,9 +3,12 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma';
+import { MediaService } from '../media/media.service';
+import { MediaUploadResponse } from '../media/interfaces/media-upload-response.interface';
 import { CreateReviewDto, ReviewQueryDto } from './dto';
 import { ReviewsLifecycleHelper } from './helpers';
 import { ApiReview, PaginatedReviewsResponse } from './interfaces';
@@ -16,7 +19,10 @@ import { ReviewsMapper } from './reviews.mapper';
 export class ReviewsService {
   private readonly logger = new Logger(ReviewsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly mediaService?: MediaService,
+  ) {}
 
   async list(
     slug: string,
@@ -179,5 +185,27 @@ export class ReviewsService {
     );
 
     return { id: reviewId };
+  }
+
+  async uploadImage(
+    slug: string,
+    file?: Express.Multer.File,
+    clientIp?: string,
+    userId?: string,
+  ): Promise<MediaUploadResponse> {
+    const product = await this.prisma.product.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Ürün bulunamadı.');
+    }
+
+    if (!this.mediaService) {
+      throw new NotFoundException('Medya servisi aktif değil.');
+    }
+
+    return this.mediaService.uploadFile(file, clientIp, userId);
   }
 }

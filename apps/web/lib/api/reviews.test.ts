@@ -3,6 +3,7 @@ import {
   getProductReviews,
   createProductReview,
   markReviewHelpful,
+  uploadReviewImage,
 } from './reviews';
 import { serverFetch, ApiError } from '../api-client';
 import type {
@@ -140,6 +141,34 @@ describe('Reviews API Client', () => {
         },
       );
       expect(result.helpful_count).toBe(4);
+    });
+  });
+
+  describe('uploadReviewImage', () => {
+    it('sends POST request to upload endpoint with FormData and returns response', async () => {
+      const mockUploadResponse = {
+        photo_src: 'media/uploads/photo.jpg',
+        url: 'http://localhost:3000/media/uploads/photo.jpg',
+      };
+      mockServerFetch.mockResolvedValueOnce(mockUploadResponse);
+
+      const formData = new FormData();
+      formData.append('file', new Blob(['test']), 'photo.jpg');
+
+      const result = await uploadReviewImage('whey-protein', 'test-token', formData);
+
+      expect(mockServerFetch).toHaveBeenCalledTimes(1);
+      expect(mockServerFetch).toHaveBeenCalledWith(
+        '/products/whey-protein/reviews/upload',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer test-token',
+          },
+          body: formData,
+        },
+      );
+      expect(result).toEqual(mockUploadResponse);
     });
   });
 });

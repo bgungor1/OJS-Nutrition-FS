@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Role } from '@prisma/client';
+import type { Request } from 'express';
 import { AuthenticatedUser } from '../common';
 import { CreateReviewDto, ReviewQueryDto } from './dto';
 import { ApiReview, PaginatedReviewsResponse } from './interfaces';
@@ -13,6 +14,7 @@ describe('ReviewsController', () => {
     create: jest.Mock;
     markHelpful: jest.Mock;
     delete: jest.Mock;
+    uploadImage: jest.Mock;
   };
 
   const mockUser: AuthenticatedUser = {
@@ -51,6 +53,7 @@ describe('ReviewsController', () => {
       create: jest.fn(),
       markHelpful: jest.fn(),
       delete: jest.fn(),
+      uploadImage: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -125,6 +128,37 @@ describe('ReviewsController', () => {
 
       expect(service.delete).toHaveBeenCalledWith('rev-1');
       expect(result).toEqual({ id: 'rev-1' });
+    });
+  });
+
+  describe('uploadImage', () => {
+    it('should call service.uploadImage with slug, file, clientIp, and userId', async () => {
+      const mockUploadResponse = {
+        photo_src: 'media/uploads/photo.jpg',
+        url: 'http://localhost:3000/media/uploads/photo.jpg',
+        filename: 'photo.jpg',
+        size: 1024,
+        mimetype: 'image/jpeg',
+      };
+      service.uploadImage.mockResolvedValue(mockUploadResponse);
+
+      const mockFile = { buffer: Buffer.from('test') } as Express.Multer.File;
+      const mockReq = { ip: '127.0.0.1' } as unknown as Request;
+
+      const result = await controller.uploadImage(
+        'whey-protein',
+        mockFile,
+        mockReq,
+        mockUser,
+      );
+
+      expect(service.uploadImage).toHaveBeenCalledWith(
+        'whey-protein',
+        mockFile,
+        '127.0.0.1',
+        'user-1',
+      );
+      expect(result).toBe(mockUploadResponse);
     });
   });
 });

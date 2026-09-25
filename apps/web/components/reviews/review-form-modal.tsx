@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { ReviewImageUploader } from './review-image-uploader';
 import { submitReviewAction } from '@/lib/actions/review';
 import type { ApiReview } from '@/types';
 
@@ -36,7 +37,7 @@ export const ReviewFormModal: React.FC<ReviewFormModalProps> = ({ slug, isOpen, 
   const [hoveredRating, setHoveredRating] = useState<number | null>(null);
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [images, setImages] = useState<string[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -50,7 +51,9 @@ export const ReviewFormModal: React.FC<ReviewFormModalProps> = ({ slug, isOpen, 
     formData.set('rating', rating.toString());
     formData.set('title', title);
     formData.set('text', text);
-    if (imageUrl.trim()) formData.append('images', imageUrl.trim());
+    for (const img of images) {
+      if (img.trim()) formData.append('images', img.trim());
+    }
 
     startTransition(async () => {
       const result = await submitReviewAction(slug, null, formData);
@@ -61,7 +64,7 @@ export const ReviewFormModal: React.FC<ReviewFormModalProps> = ({ slug, isOpen, 
         if (result.review && onSuccess) onSuccess(result.review);
         setTitle('');
         setText('');
-        setImageUrl('');
+        setImages([]);
         setRating(5);
         onClose();
       }
@@ -120,8 +123,13 @@ export const ReviewFormModal: React.FC<ReviewFormModalProps> = ({ slug, isOpen, 
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="review-image">Görsel URL (Opsiyonel)</Label>
-            <Input id="review-image" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://example.com/foto.jpg" disabled={isPending} />
+            <Label htmlFor="review-image-input">Görsel Ekle (Opsiyonel)</Label>
+            <ReviewImageUploader
+              slug={slug}
+              images={images}
+              onChange={setImages}
+              disabled={isPending}
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

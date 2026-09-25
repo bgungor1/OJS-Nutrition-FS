@@ -7,3 +7,4 @@ export { ReviewHelpfulButton } from './review-helpful-button';
 export { ReviewFormModal } from './review-form-modal';
 export { ReviewLoginCta } from './review-login-cta';
 export { ReviewList } from './review-list';
+export { ReviewImageUploader } from './review-image-uploader';

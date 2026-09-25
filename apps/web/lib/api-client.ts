@@ -21,10 +21,12 @@ export async function serverFetch<T>(
 ): Promise<T> {
   const url = `${SERVER_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
+  const isFormData = typeof FormData !== 'undefined' && options?.body instanceof FormData;
+
   const response = await fetch(url, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...(!isFormData ? { 'Content-Type': 'application/json' } : {}),
       ...options?.headers,
     },
   });
@@ -61,11 +63,13 @@ export async function clientFetch<T>(
 ): Promise<T> {
   const url = `${CLIENT_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
+  const isFormData = typeof FormData !== 'undefined' && options?.body instanceof FormData;
+
   const response = await fetch(url, {
     credentials: 'include',
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...(!isFormData ? { 'Content-Type': 'application/json' } : {}),
       ...options?.headers,
     },
   });
