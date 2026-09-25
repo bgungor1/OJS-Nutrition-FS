@@ -28,6 +28,9 @@ export class UsersMapper {
     if (dto.last_name !== undefined) {
       data.lastName = dto.last_name;
     }
+    if (dto.email !== undefined) {
+      data.email = dto.email;
+    }
     if (dto.phone_number !== undefined) {
       data.phoneNumber = dto.phone_number;
     }

@@ -27,6 +27,7 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
   let mockPrisma: {
     user: {
       findUnique: jest.Mock;
+      findFirst: jest.Mock;
       update: jest.Mock;
     };
     refreshToken: {
@@ -51,6 +52,7 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
     mockPrisma = {
       user: {
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         update: jest.fn(),
       },
       refreshToken: {
@@ -258,7 +260,41 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
       expect(body.reason).toBeDefined();
     });
 
-    it('should return 400 due to forbidNonWhitelisted when forbidden fields (email, role) are sent', async () => {
+    it('should successfully update email when a valid new email is provided', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.findFirst.mockResolvedValue(null);
+      mockPrisma.user.update.mockResolvedValue({
+        ...mockUser,
+        email: 'newemail@example.com',
+      });
+
+      const response: SupertestResponse = await request(server)
+        .put('/api/v1/users/my-account')
+        .set('Authorization', `Bearer ${validAccessToken}`)
+        .send({ email: 'newemail@example.com' })
+        .expect(200);
+
+      const body = response.body as ApiSuccessResponse<AccountProfile>;
+      expect(body.status).toBe('success');
+      expect(body.data.email).toBe('newemail@example.com');
+    });
+
+    it('should return 409 Conflict when updating to an email that is already registered', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'other-user' });
+
+      const response: SupertestResponse = await request(server)
+        .put('/api/v1/users/my-account')
+        .set('Authorization', `Bearer ${validAccessToken}`)
+        .send({ email: 'existing@example.com' })
+        .expect(409);
+
+      const body = response.body as ApiErrorResponse;
+      expect(body.status).toBe('error');
+      expect(body.message).toContain('zaten kullanımda');
+    });
+
+    it('should return 400 due to forbidNonWhitelisted when forbidden fields (e.g. role) are sent', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(mockUser);
 
       const response: SupertestResponse = await request(server)

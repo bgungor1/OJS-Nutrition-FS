@@ -1,7 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { submitReviewAction, markHelpfulAction } from './review';
+import {
+  submitReviewAction,
+  markHelpfulAction,
+  uploadReviewImageAction,
+} from './review';
 import { getAccessToken } from '@/lib/auth-cookies';
-import { createProductReview, markReviewHelpful } from '@/lib/api/reviews';
+import {
+  createProductReview,
+  markReviewHelpful,
+  uploadReviewImage,
+} from '@/lib/api/reviews';
 import { revalidateTag } from 'next/cache';
 import { ApiError } from '@/lib/api-client';
 import type { ApiReview } from '@/types';
@@ -17,6 +25,7 @@ vi.mock('@/lib/auth-cookies', () => ({
 vi.mock('@/lib/api/reviews', () => ({
   createProductReview: vi.fn(),
   markReviewHelpful: vi.fn(),
+  uploadReviewImage: vi.fn(),
 }));
 
 const mockReview: ApiReview = {
@@ -161,6 +170,54 @@ describe('markHelpfulAction', () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe('Network error');
+  });
+});
+
+describe('uploadReviewImageAction', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns error when user is not logged in', async () => {
+    vi.mocked(getAccessToken).mockResolvedValue(undefined);
+
+    const formData = new FormData();
+    formData.append('file', new Blob(['test']), 'photo.jpg');
+
+    const result = await uploadReviewImageAction('whey-protein', formData);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/lütfen giriş yapınız/i);
+    expect(uploadReviewImage).not.toHaveBeenCalled();
+  });
+
+  it('returns image url when upload is successful', async () => {
+    vi.mocked(getAccessToken).mockResolvedValue('valid_token');
+    vi.mocked(uploadReviewImage).mockResolvedValue({
+      photo_src: 'media/uploads/photo.jpg',
+      url: 'http://localhost:3000/media/uploads/photo.jpg',
+    });
+
+    const formData = new FormData();
+    formData.append('file', new Blob(['test']), 'photo.jpg');
+
+    const result = await uploadReviewImageAction('whey-protein', formData);
+
+    expect(result.success).toBe(true);
+    expect(result.url).toBe('http://localhost:3000/media/uploads/photo.jpg');
+    expect(result.photo_src).toBe('media/uploads/photo.jpg');
+    expect(uploadReviewImage).toHaveBeenCalledWith('whey-protein', 'valid_token', formData);
+  });
+
+  it('handles ApiError correctly', async () => {
+    vi.mocked(getAccessToken).mockResolvedValue('valid_token');
+    vi.mocked(uploadReviewImage).mockRejectedValue(new ApiError('Geçersiz dosya formatı', 400));
+
+    const formData = new FormData();
+    const result = await uploadReviewImageAction('whey-protein', formData);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Geçersiz dosya formatı');
   });
 });
 

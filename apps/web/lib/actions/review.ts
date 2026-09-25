@@ -2,7 +2,7 @@
 
 import { revalidateTag } from 'next/cache';
 import { getAccessToken } from '@/lib/auth-cookies';
-import { createProductReview, markReviewHelpful } from '@/lib/api/reviews';
+import { createProductReview, markReviewHelpful, uploadReviewImage } from '@/lib/api/reviews';
 import { createReviewSchema } from '@/lib/schemas/review';
 import { ApiError } from '@/lib/api-client';
 import type { ApiReview } from '@/types';
@@ -34,6 +34,23 @@ export async function submitReviewAction(
   for (const img of imagesRaw) {
     if (typeof img === 'string' && img.trim() !== '') {
       images.push(img.trim());
+    } else if (typeof File !== 'undefined' && img instanceof File && img.size > 0) {
+      try {
+        const fileFormData = new FormData();
+        fileFormData.append('file', img);
+        const uploaded = await uploadReviewImage(slug, token, fileFormData);
+        if (uploaded.url || uploaded.photo_src) {
+          images.push(uploaded.url || uploaded.photo_src);
+        }
+      } catch (uploadErr) {
+        return {
+          success: false,
+          message:
+            uploadErr instanceof Error
+              ? uploadErr.message
+              : 'Görsel yüklenirken bir hata oluştu.',
+        };
+      }
     }
   }
 
@@ -105,6 +122,36 @@ export async function markHelpfulAction(
     return {
       success: false,
       error: error instanceof Error ? error.message : 'İşlem gerçekleştirilemedi.',
+    };
+  }
+}
+
+export async function uploadReviewImageAction(
+  slug: string,
+  formData: FormData,
+): Promise<{ success: boolean; url?: string; photo_src?: string; error?: string }> {
+  const token = await getAccessToken();
+  if (!token) {
+    return {
+      success: false,
+      error: 'Görsel yüklemek için lütfen giriş yapınız.',
+    };
+  }
+
+  try {
+    const res = await uploadReviewImage(slug, token, formData);
+    return {
+      success: true,
+      url: res.url,
+      photo_src: res.photo_src,
+    };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return { success: false, error: error.message };
+    }
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Görsel yüklenirken bir hata oluştu.',
     };
   }
 }

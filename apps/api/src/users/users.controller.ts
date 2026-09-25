@@ -71,6 +71,11 @@ export class UsersController {
     description: 'Kullanıcı hesabı bulunamadı.',
     type: ErrorResponseDto,
   })
+  @ApiResponse({
+    status: 409,
+    description: 'E-posta adresi zaten kullanımda.',
+    type: ErrorResponseDto,
+  })
   async updateMyAccount(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: UpdateProfileDto,

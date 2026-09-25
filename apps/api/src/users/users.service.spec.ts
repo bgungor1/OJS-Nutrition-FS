@@ -1,4 +1,4 @@
-import { Logger, NotFoundException } from '@nestjs/common';
+import { ConflictException, Logger, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuditEvent, SecurityAuditService } from '../common/audit';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,6 +9,7 @@ describe('UsersService', () => {
   let prisma: {
     user: {
       findUnique: jest.Mock;
+      findFirst: jest.Mock;
       update: jest.Mock;
     };
   };
@@ -32,6 +33,7 @@ describe('UsersService', () => {
     prisma = {
       user: {
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         update: jest.fn(),
       },
     };
@@ -104,7 +106,10 @@ describe('UsersService', () => {
 
   describe('updateMyAccount', () => {
     it('should update profile information successfully and return updated profile', async () => {
-      prisma.user.findUnique.mockResolvedValue({ id: 'user-uuid-1' });
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'user-uuid-1',
+        email: 'test@example.com',
+      });
       prisma.user.update.mockResolvedValue({
         ...mockDbUser,
         firstName: 'Ahmet',
@@ -122,7 +127,7 @@ describe('UsersService', () => {
 
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: 'user-uuid-1' },
-        select: { id: true },
+        select: { id: true, email: true },
       });
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: 'user-uuid-1' },
@@ -157,8 +162,68 @@ describe('UsersService', () => {
       );
     });
 
+    it('should update email when email is provided and not in use', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'user-uuid-1',
+        email: 'test@example.com',
+      });
+      prisma.user.findFirst.mockResolvedValue(null);
+      prisma.user.update.mockResolvedValue({
+        ...mockDbUser,
+        email: 'newemail@example.com',
+      });
+
+      const dto = {
+        email: 'newemail@example.com',
+      };
+
+      const result = await service.updateMyAccount('user-uuid-1', dto);
+
+      expect(prisma.user.findFirst).toHaveBeenCalledWith({
+        where: {
+          email: 'newemail@example.com',
+          NOT: { id: 'user-uuid-1' },
+        },
+        select: { id: true },
+      });
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-uuid-1' },
+        data: {
+          email: 'newemail@example.com',
+        },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phoneNumber: true,
+          role: true,
+        },
+      });
+      expect(result.email).toBe('newemail@example.com');
+    });
+
+    it('should throw ConflictException when updating to an email that is already in use', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'user-uuid-1',
+        email: 'test@example.com',
+      });
+      prisma.user.findFirst.mockResolvedValue({ id: 'another-user-id' });
+
+      await expect(
+        service.updateMyAccount('user-uuid-1', {
+          email: 'alreadytaken@example.com',
+        }),
+      ).rejects.toThrow(ConflictException);
+
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
     it('should update only provided fields on partial update', async () => {
-      prisma.user.findUnique.mockResolvedValue({ id: 'user-uuid-1' });
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'user-uuid-1',
+        email: 'test@example.com',
+      });
       prisma.user.update.mockResolvedValue({
         ...mockDbUser,
         lastName: 'YeniSoyad',
@@ -200,7 +265,10 @@ describe('UsersService', () => {
       const loggerSpy = jest
         .spyOn(Logger.prototype, 'log')
         .mockImplementation();
-      prisma.user.findUnique.mockResolvedValue({ id: 'user-uuid-1' });
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'user-uuid-1',
+        email: 'test@example.com',
+      });
       prisma.user.update.mockResolvedValue(mockDbUser);
 
       await service.updateMyAccount('user-uuid-1', { first_name: 'YeniAd' });

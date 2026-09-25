@@ -1,12 +1,16 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma';
+import { MediaService } from '../media/media.service';
 import { ReviewQueryDto } from './dto';
 import { ReviewsService } from './reviews.service';
 import { mockProduct, mockReview } from './test/reviews.fixtures';
 
 describe('ReviewsService', () => {
   let service: ReviewsService;
+  let mediaService: {
+    uploadFile: jest.Mock;
+  };
   let prisma: {
     product: {
       findUnique: jest.Mock;
@@ -38,12 +42,20 @@ describe('ReviewsService', () => {
       $transaction: jest.fn(),
     };
 
+    mediaService = {
+      uploadFile: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReviewsService,
         {
           provide: PrismaService,
           useValue: prisma,
+        },
+        {
+          provide: MediaService,
+          useValue: mediaService,
         },
       ],
     }).compile();
@@ -190,6 +202,47 @@ describe('ReviewsService', () => {
 
       expect(result).toEqual({ id: 'rev-1' });
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('uploadImage', () => {
+    it('should throw NotFoundException when product does not exist', async () => {
+      prisma.product.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.uploadImage('non-existing', undefined, '127.0.0.1', 'user-1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should delegate to mediaService.uploadFile when product exists', async () => {
+      prisma.product.findUnique.mockResolvedValue(mockProduct);
+      const mockUploadResponse = {
+        photo_src: 'media/uploads/photo.jpg',
+        url: 'http://localhost:3000/media/uploads/photo.jpg',
+        filename: 'photo.jpg',
+        size: 1024,
+        mimetype: 'image/jpeg',
+      };
+      mediaService.uploadFile.mockResolvedValue(mockUploadResponse);
+
+      const mockFile = { buffer: Buffer.from('test') } as Express.Multer.File;
+      const result = await service.uploadImage(
+        'whey-protein',
+        mockFile,
+        '127.0.0.1',
+        'user-1',
+      );
+
+      expect(prisma.product.findUnique).toHaveBeenCalledWith({
+        where: { slug: 'whey-protein' },
+        select: { id: true },
+      });
+      expect(mediaService.uploadFile).toHaveBeenCalledWith(
+        mockFile,
+        '127.0.0.1',
+        'user-1',
+      );
+      expect(result).toBe(mockUploadResponse);
     });
   });
 });

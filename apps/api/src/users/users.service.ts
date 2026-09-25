@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -47,11 +48,25 @@ export class UsersService {
   ): Promise<AccountProfile> {
     const existingUser = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true },
+      select: { id: true, email: true },
     });
 
     if (!existingUser) {
       throw new NotFoundException('Kullanıcı hesabı bulunamadı.');
+    }
+
+    if (dto.email !== undefined && dto.email !== existingUser.email) {
+      const emailInUse = await this.prisma.user.findFirst({
+        where: {
+          email: dto.email,
+          NOT: { id: userId },
+        },
+        select: { id: true },
+      });
+
+      if (emailInUse) {
+        throw new ConflictException('Bu e-posta adresi zaten kullanımda.');
+      }
     }
 
     const updateData = UsersMapper.toPrismaUpdateInput(dto);

@@ -62,3 +62,19 @@ export async function markReviewHelpful(
     method: 'POST',
   });
 }
+
+export async function uploadReviewImage(
+  slug: string,
+  token: string,
+  formData: FormData,
+): Promise<{ photo_src: string; url: string }> {
+  const endpoint = `/products/${encodeURIComponent(slug)}/reviews/upload`;
+
+  return serverFetch<{ photo_src: string; url: string }>(endpoint, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+}

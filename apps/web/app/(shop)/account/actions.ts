@@ -34,6 +34,7 @@ export async function updateProfileAction(
 
   const firstName = formData.get('first_name')?.toString().trim();
   const lastName = formData.get('last_name')?.toString().trim();
+  const email = formData.get('email')?.toString().trim().toLowerCase();
   const phoneNumber = formData.get('phone_number')?.toString().trim();
 
   const fieldErrors: Record<string, string> = {};
@@ -43,6 +44,10 @@ export async function updateProfileAction(
   }
   if (!lastName || lastName.length < 2) {
     fieldErrors.last_name = 'Soyad en az 2 karakter olmalıdır.';
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) {
+    fieldErrors.email = 'Geçerli bir e-posta adresi giriniz.';
   }
 
   if (Object.keys(fieldErrors).length > 0) {
@@ -57,6 +62,7 @@ export async function updateProfileAction(
     await updateMyAccount(token, {
       first_name: firstName,
       last_name: lastName,
+      email,
       phone_number: phoneNumber || undefined,
     });
 

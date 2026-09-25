@@ -582,4 +582,47 @@ describe('Reviews E2E Test Suite (/api/v1/products/:slug/reviews & /api/v1/revie
       expect(body.data.id).toBe(sampleReview1.id);
     });
   });
+
+  describe('POST /api/v1/products/:slug/reviews/upload (Customer Review Media Upload)', () => {
+    const testJpgBuffer = Buffer.from([
+      0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01,
+    ]);
+
+    it('should return 401 when request is not authenticated', async () => {
+      await request(server)
+        .post(`/api/v1/products/${sampleProduct.slug}/reviews/upload`)
+        .attach('file', testJpgBuffer, 'review.jpg')
+        .expect(401);
+    });
+
+    it('should return 404 when product slug is not found', async () => {
+      mockPrisma.product.findUnique.mockResolvedValue(null);
+
+      await request(server)
+        .post('/api/v1/products/non-existing-product/reviews/upload')
+        .set('Authorization', `Bearer ${customer1AccessToken}`)
+        .attach('file', testJpgBuffer, 'review.jpg')
+        .expect(404);
+    });
+
+    it('should return 201 Created and photo_src when authenticated customer uploads image', async () => {
+      mockPrisma.product.findUnique.mockResolvedValue(sampleProduct);
+
+      const res: SupertestResponse = await request(server)
+        .post(`/api/v1/products/${sampleProduct.slug}/reviews/upload`)
+        .set('Authorization', `Bearer ${customer1AccessToken}`)
+        .attach('file', testJpgBuffer, 'review.jpg')
+        .expect(201);
+
+      const body = res.body as ApiSuccessResponse<{
+        photo_src: string;
+        url: string;
+      }>;
+      expect(body.status).toBe('success');
+      expect(body.data.photo_src).toMatch(/^media\/uploads\/[a-f0-9-]+\.jpg$/);
+      expect(body.data.url).toMatch(
+        /^http:\/\/localhost:3000\/media\/uploads\/[a-f0-9-]+\.jpg$/,
+      );
+    });
+  });
 });

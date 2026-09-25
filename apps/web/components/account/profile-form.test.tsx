@@ -40,19 +40,20 @@ describe('ProfileForm', () => {
     expect(submitButton).not.toBeDisabled();
   });
 
-  it('ensures email input is disabled and marked as non-editable', () => {
+  it('ensures email input is enabled and editable', () => {
     render(<ProfileForm initialData={mockProfile} />);
 
     const emailInput = screen.getByLabelText(/e-posta adresi/i);
-    expect(emailInput).toBeDisabled();
-    expect(screen.getByText(/değiştirilemez/i)).toBeInTheDocument();
+    expect(emailInput).not.toBeDisabled();
+    expect(screen.queryByText(/değiştirilemez/i)).not.toBeInTheDocument();
   });
 
-  it('allows user to modify first name, last name and phone number', async () => {
+  it('allows user to modify first name, last name, email and phone number', async () => {
     const { user } = render(<ProfileForm initialData={mockProfile} />);
 
     const firstNameInput = screen.getByLabelText(/^ad$/i);
     const lastNameInput = screen.getByLabelText(/^soyad$/i);
+    const emailInput = screen.getByLabelText(/e-posta adresi/i);
     const phoneInput = screen.getByLabelText(/telefon numarası/i);
 
     await user.clear(firstNameInput);
@@ -61,11 +62,15 @@ describe('ProfileForm', () => {
     await user.clear(lastNameInput);
     await user.type(lastNameInput, 'Yılmaz');
 
+    await user.clear(emailInput);
+    await user.type(emailInput, 'ahmet.yilmaz@example.com');
+
     await user.clear(phoneInput);
     await user.type(phoneInput, '05559876543');
 
     expect(firstNameInput).toHaveValue('Ahmet');
     expect(lastNameInput).toHaveValue('Yılmaz');
+    expect(emailInput).toHaveValue('ahmet.yilmaz@example.com');
     expect(phoneInput).toHaveValue('05559876543');
   });
 

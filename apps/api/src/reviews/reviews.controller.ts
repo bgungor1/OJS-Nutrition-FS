@@ -8,30 +8,47 @@ import {
   Param,
   Post,
   Query,
+  Req,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { Throttle } from '@nestjs/throttler';
+import { Role } from '@prisma/client';
+import type { Request } from 'express';
 import { AuthenticatedUser, CurrentUser, Public, Roles } from '../common';
 import { ErrorResponseDto } from '../common/dto';
-import { REVIEW_RATE_LIMIT } from './reviews.constants';
+import { MediaUploadResponse } from '../media/interfaces/media-upload-response.interface';
 import {
-  CreateReviewDto,
-  ReviewQueryDto,
+  MEDIA_MAX_FILE_SIZE,
+  MEDIA_RATE_LIMIT,
+} from '../media/media.constants';
+import {
   ApiReviewDto,
+  CreateReviewDto,
   DeletedIdResponseDto,
   PaginatedReviewsResponseDto,
+  ReviewQueryDto,
 } from './dto';
 import { ApiReview, PaginatedReviewsResponse } from './interfaces';
+import { REVIEW_RATE_LIMIT } from './reviews.constants';
 import { ReviewsService } from './reviews.service';
 
 @ApiTags('reviews')
+@ApiParam({
+  name: 'slug',
+  description: 'Ürün benzersiz URL slug değeri',
+  example: 'whey-protein-1000g',
+})
 @Controller('products/:slug/reviews')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
@@ -40,19 +57,11 @@ export class ReviewsController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary:
-      'Ürüne ait onaylı/genel yorumları ve puan istatistiklerini listeler',
-    description:
-      'rating, sortBy ve sayfalama parametreleri (limit, offset) desteklenir. Stats alanı tüm zamanların istatistiklerini içerir.',
-  })
-  @ApiParam({
-    name: 'slug',
-    description: 'Ürün benzersiz URL slug değeri',
-    example: 'whey-protein-1000g',
+    summary: 'Ürüne ait onaylı yorumları ve puan istatistiklerini listeler',
   })
   @ApiResponse({
     status: 200,
-    description: 'Yorum listesi ve istatistikler başarıyla getirildi.',
+    description: 'Yorum listesi ve istatistikler getirildi.',
     type: PaginatedReviewsResponseDto,
   })
   @ApiResponse({
@@ -70,21 +79,11 @@ export class ReviewsController {
   @Post()
   @ApiBearerAuth()
   @Throttle({
-    default: {
-      limit: REVIEW_RATE_LIMIT.LIMIT,
-      ttl: REVIEW_RATE_LIMIT.TTL,
-    },
+    default: { limit: REVIEW_RATE_LIMIT.LIMIT, ttl: REVIEW_RATE_LIMIT.TTL },
   })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Giriş yapmış kullanıcı adına ürüne yeni değerlendirme ekler',
-    description:
-      'Kullanıcı başına ürün başına bir yorum sınırı uygulanır. Doğrulanmış alıcı etiketleri sipariş geçmişine göre otomatik atanır.',
-  })
-  @ApiParam({
-    name: 'slug',
-    description: 'Ürün benzersiz URL slug değeri',
-    example: 'whey-protein-1000g',
   })
   @ApiResponse({
     status: 201,
@@ -98,7 +97,7 @@ export class ReviewsController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Oturum açılmamış veya token geçersiz.',
+    description: 'Yetkisiz erişim.',
     type: ErrorResponseDto,
   })
   @ApiResponse({
@@ -108,7 +107,7 @@ export class ReviewsController {
   })
   @ApiResponse({
     status: 409,
-    description: 'Bu ürün için zaten bir değerlendirme yapılmış.',
+    description: 'Bu ürün için zaten değerlendirme yapılmış.',
     type: ErrorResponseDto,
   })
   async create(
@@ -119,18 +118,64 @@ export class ReviewsController {
     return this.reviewsService.create(slug, user.id, dto);
   }
 
+  @Post('upload')
+  @ApiBearerAuth()
+  @Throttle({
+    default: { limit: MEDIA_RATE_LIMIT.LIMIT, ttl: MEDIA_RATE_LIMIT.TTL },
+  })
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Değerlendirme için görsel yükler' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Görsel (maks 5MB, JPEG/PNG/WEBP)',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Görsel başarıyla yüklendi.',
+    type: MediaUploadResponse,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Geçersiz dosya boyutu veya formatı.',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Yetkisiz erişim.',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Ürün bulunamadı.',
+    type: ErrorResponseDto,
+  })
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MEDIA_MAX_FILE_SIZE } }),
+  )
+  async uploadImage(
+    @Param('slug') slug: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Req() req: Request,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<MediaUploadResponse> {
+    const clientIp = req.ip || req.socket?.remoteAddress;
+    return this.reviewsService.uploadImage(slug, file, clientIp, user.id);
+  }
+
   @Public()
   @Post(':id/helpful')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Yorumun faydalı bulunma sayacını 1 artırır',
-    description: 'Oturum gerektirmez. Rate-limit uygulanır.',
-  })
-  @ApiParam({
-    name: 'slug',
-    description: 'Ürün benzersiz URL slug değeri',
-    example: 'whey-protein-1000g',
-  })
+  @ApiOperation({ summary: 'Yorumun faydalı bulunma sayacını 1 artırır' })
   @ApiParam({
     name: 'id',
     description: 'Yorum ID',
@@ -157,17 +202,7 @@ export class ReviewsController {
   @Roles(Role.admin)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary:
-      'Yorumu siler ve ürünün ortalama puanını günceller (Admin Moderasyon)',
-    description:
-      'Yorum silinince product.commentCount ve product.averageStar aynı transaction içinde güncellenir.',
-  })
-  @ApiParam({
-    name: 'slug',
-    description: 'Ürün benzersiz URL slug değeri',
-    example: 'whey-protein-1000g',
-  })
+  @ApiOperation({ summary: 'Yorumu siler ve ürün ortalama puanını günceller' })
   @ApiParam({
     name: 'id',
     description: 'Yorum ID',
@@ -180,7 +215,7 @@ export class ReviewsController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Yetkisiz erişim — Admin rolü gereklidir.',
+    description: 'Admin yetkisi gereklidir.',
     type: ErrorResponseDto,
   })
   @ApiResponse({
