@@ -19,7 +19,7 @@ const SearchBarFallback: React.FC<{ className?: string }> = ({ className = '' })
         type="search"
         placeholder="Aradığınız ürünü veya kategoriyi yazın..."
         disabled
-        className="h-10 pl-9 pr-8 text-sm bg-muted/40 border-border rounded-full"
+        className="h-10 pl-9 pr-8 text-sm bg-muted/40 border-border rounded-full [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
       />
     </div>
   </div>
@@ -143,7 +143,7 @@ const SearchBarInner: React.FC<SearchBarProps> = ({
           placeholder="Aradığınız ürünü veya kategoriyi yazın..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="h-10 pl-9 pr-8 text-sm bg-muted/40 border-border focus-visible:ring-1 focus-visible:ring-primary rounded-full [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
+          className="h-10 pl-9 pr-8 text-sm bg-muted/40 border-border focus-visible:ring-1 focus-visible:ring-primary rounded-full [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
         />
         {query && (
           <button
