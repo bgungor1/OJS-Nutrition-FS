@@ -1,11 +1,19 @@
 import React from 'react';
 import { Star } from 'lucide-react';
+import {
+  DEFAULT_STORE_METRICS,
+  type StoreMetrics,
+} from '@/lib/constants/store-metrics';
 
 interface ReviewSnippet {
   date: string;
   title: string;
   comment: string;
   rating: number;
+}
+
+interface CustomerReviewsPreviewProps {
+  metrics?: Partial<StoreMetrics>;
 }
 
 const SAMPLE_REVIEWS: ReviewSnippet[] = [
@@ -35,7 +43,9 @@ const SAMPLE_REVIEWS: ReviewSnippet[] = [
   },
 ];
 
-export const CustomerReviewsPreview: React.FC = () => {
+export const CustomerReviewsPreview: React.FC<CustomerReviewsPreviewProps> = ({ metrics }) => {
+  const effectiveMetrics = { ...DEFAULT_STORE_METRICS, ...metrics };
+
   return (
     <section className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-border gap-3">
@@ -54,7 +64,7 @@ export const CustomerReviewsPreview: React.FC = () => {
             ))}
           </div>
           <span className="text-xs sm:text-sm font-semibold text-foreground">
-            198.000+ Doğrulanmış Yorum
+            {effectiveMetrics.totalReviewsDisplay} Doğrulanmış Yorum
           </span>
         </div>
       </div>
