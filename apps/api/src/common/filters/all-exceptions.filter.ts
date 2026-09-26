@@ -10,6 +10,7 @@ import {
 import type { Request, Response } from 'express';
 import { AuditEvent, SecurityAuditService } from '../audit';
 import { CORRELATION_ID_HEADER } from '../constants';
+import { SentryService } from '../observability/sentry.service';
 
 interface ErrorResponseBody {
   status: 'error';
@@ -31,6 +32,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   constructor(
     @Optional() private readonly auditService?: SecurityAuditService,
+    @Optional() private readonly sentryService?: SentryService,
   ) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
@@ -64,6 +66,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
         `[${correlationId ?? '-'}] ${request.method} ${request.url} -> ${status}`,
         exception instanceof Error ? exception.stack : String(exception),
       );
+      this.sentryService?.captureException(exception, {
+        correlationId,
+        method: request.method,
+        url: request.url,
+      });
     }
 
     response.status(status).json(body);
