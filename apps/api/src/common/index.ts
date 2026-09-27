@@ -5,4 +5,5 @@ export * from './filters';
 export * from './guards';
 export * from './interceptors';
 export * from './middleware';
+export * from './observability/sentry.service';
 export * from './types';
