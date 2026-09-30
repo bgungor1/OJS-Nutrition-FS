@@ -2,11 +2,36 @@ import React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { ProductCard } from '@/components/product/product-card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ProductCardSkeleton } from '@/components/catalog/product-card-skeleton';
 import type { ApiBestSellerProduct } from '@/types';
 
 interface BestSellersSectionProps {
   products?: ApiBestSellerProduct[];
 }
+
+export const BestSellersSkeleton: React.FC = () => {
+  return (
+    <section
+      className="container mx-auto px-4 sm:px-6 py-8 sm:py-12"
+      aria-label="En Çok Satanlar Yükleniyor"
+    >
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-8 gap-2">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <Skeleton className="h-5 w-32" />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 sm:gap-5">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <ProductCardSkeleton key={`best-seller-skeleton-${index}`} />
+        ))}
+      </div>
+    </section>
+  );
+};
 
 export const BestSellersSection: React.FC<BestSellersSectionProps> = ({
   products = [],
