@@ -1,5 +1,6 @@
 import React from 'react';
 import { Header, InfoBanner, Footer } from '@/components/layout';
+import { SupportChatWidget } from '@/components/support/support-chat-widget';
 import { getCategories, getMyAccount } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth-cookies';
 import type { AccountProfile, ApiCategory } from '@/types';
@@ -35,6 +36,7 @@ export default async function ShopLayout({
         {children}
       </main>
       <Footer />
+      <SupportChatWidget />
     </div>
   );
 }
