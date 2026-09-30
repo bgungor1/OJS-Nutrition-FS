@@ -15,13 +15,12 @@ const mockProduct: ApiBestSellerProduct = {
   photo_src: 'media/products/whey.jpg',
   comment_count: 45,
   average_star: 4.8,
-  is_best_seller: true,
-  best_seller_rank: 1,
   price_info: {
     total_price: 899.9,
     discounted_price: 799.9,
     discount_percentage: 11,
-    price_per_serving: 26.6,
+    profit: 100,
+    price_per_servings: 26.6,
   },
 };
 
