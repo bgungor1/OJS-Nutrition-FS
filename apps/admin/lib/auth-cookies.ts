@@ -57,6 +57,8 @@ export async function clearAuthCookies(): Promise<void> {
 
   cookieStore.delete(ACCESS_TOKEN_COOKIE);
   cookieStore.delete(REFRESH_TOKEN_COOKIE);
+  cookieStore.delete('ojs_access_token');
+  cookieStore.delete('ojs_refresh_token');
 }
 
 export async function hasValidAdminToken(): Promise<boolean> {
