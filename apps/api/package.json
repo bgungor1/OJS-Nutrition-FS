@@ -49,7 +49,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "db:sync-metrics": "ts-node prisma/sync-metrics.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
