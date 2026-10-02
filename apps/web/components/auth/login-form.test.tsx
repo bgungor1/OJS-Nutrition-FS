@@ -35,7 +35,7 @@ describe('LoginForm', () => {
   it('includes the hidden redirect input with default or custom value', () => {
     const { container, rerender } = render(<LoginForm />);
     let hiddenRedirect = container.querySelector('input[name="redirect"]') as HTMLInputElement;
-    expect(hiddenRedirect).toHaveValue('/account');
+    expect(hiddenRedirect).toHaveValue('/');
 
     rerender(<LoginForm redirectTo="/payment" />);
     hiddenRedirect = container.querySelector('input[name="redirect"]') as HTMLInputElement;

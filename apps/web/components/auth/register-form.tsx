@@ -11,7 +11,7 @@ interface RegisterFormProps {
 
 const initialState: AuthActionState = { success: false };
 
-export const RegisterForm: React.FC<RegisterFormProps> = ({ redirectTo = '/account' }) => {
+export const RegisterForm: React.FC<RegisterFormProps> = ({ redirectTo = '/' }) => {
   const [state, formAction, isPending] = useActionState(registerAction, initialState);
 
   return (

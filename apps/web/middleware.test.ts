@@ -71,7 +71,7 @@ describe('Web Middleware - Role-based routing and protection', () => {
     expect(res.headers.get('location')).toBe('http://localhost:3002/');
   });
 
-  it('redirects customer to /account when visiting /login while logged in', async () => {
+  it('redirects customer to / when visiting /login while logged in', async () => {
     const customerToken = createMockJwt({
       sub: 'cust-1',
       role: 'customer',
@@ -85,7 +85,7 @@ describe('Web Middleware - Role-based routing and protection', () => {
     });
 
     const res = await middleware(req);
-    expect(res.headers.get('location')).toBe('http://localhost:3001/account');
+    expect(res.headers.get('location')).toBe('http://localhost:3001/');
   });
 
   it('redirects unauthenticated user to /login when accessing protected /account', async () => {

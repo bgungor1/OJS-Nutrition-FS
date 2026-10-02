@@ -16,7 +16,7 @@ interface LoginPageProps {
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
-  const redirectTo = params.redirect || '/account';
+  const redirectTo = params.redirect || '/';
   const defaultTab = params.tab === 'register' ? 'register' : 'login';
 
   return (
