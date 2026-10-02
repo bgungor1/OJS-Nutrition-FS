@@ -1,8 +1,10 @@
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import { uploadMediaAction } from '@/app/(dashboard)/products/actions';
 import { Button } from '@/components/ui/button';
+import { getImageUrl } from '@/lib/utils';
 import { Upload, X, Loader2 } from 'lucide-react';
 
 export interface MediaUploaderProps {
@@ -63,11 +65,13 @@ export function MediaUploader({ value, onChange, disabled = false }: MediaUpload
 
       {value ? (
         <div className="relative group rounded-lg border border-border/60 overflow-hidden w-36 h-36 bg-muted/40 flex items-center justify-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={value.startsWith('http') ? value : `/${value}`}
+          <Image
+            src={getImageUrl(value)}
             alt="Varyant Görseli"
+            fill
+            sizes="144px"
             className="w-full h-full object-cover"
+            unoptimized
           />
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
             <Button
