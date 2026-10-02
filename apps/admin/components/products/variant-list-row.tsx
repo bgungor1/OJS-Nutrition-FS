@@ -1,10 +1,11 @@
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, getImageUrl } from '@/lib/utils';
 import type { ApiProductVariant } from '@/types';
 import { Edit2, Trash2, Layers } from 'lucide-react';
 
@@ -22,13 +23,14 @@ export function VariantListRow({ variant, onEdit, onDelete }: VariantListRowProp
   return (
     <TableRow data-testid={`variant-row-${variant.id}`}>
       <TableCell>
-        <div className="h-9 w-9 rounded border overflow-hidden bg-muted/40 shrink-0">
+        <div className="relative h-9 w-9 rounded border overflow-hidden bg-muted/40 shrink-0 flex items-center justify-center">
           {variant.photo_src ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={variant.photo_src.startsWith('http') ? variant.photo_src : `/${variant.photo_src}`}
+            <Image
+              src={getImageUrl(variant.photo_src)}
               alt={variant.aroma}
-              className="h-full w-full object-cover"
+              fill
+              sizes="36px"
+              className="object-cover"
             />
           ) : (
             <Layers className="h-4 w-4 m-auto text-muted-foreground" />

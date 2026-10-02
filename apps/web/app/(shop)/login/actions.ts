@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { loginSchema, registerSchema } from '@/lib/schemas/auth';
 import { loginApi, registerApi } from '@/lib/api/auth';
 import { setAuthCookies } from '@/lib/auth-cookies';
@@ -43,7 +44,7 @@ export async function loginAction(
     return { success: false, error: 'Lütfen bilgilerinizi kontrol ediniz.', fieldErrors };
   }
 
-  const redirectTo = formData.get('redirect')?.toString() || '/account';
+  const redirectTo = formData.get('redirect')?.toString() || '/';
 
   try {
     const tokens = await loginApi({
@@ -59,6 +60,7 @@ export async function loginAction(
       redirect(adminUrl);
     }
 
+    revalidatePath('/', 'layout');
     redirect(redirectTo);
   } catch (err: unknown) {
     if (isNextRedirect(err)) throw err;
@@ -93,7 +95,7 @@ export async function registerAction(
     return { success: false, error: 'Lütfen bilgilerinizi kontrol ediniz.', fieldErrors };
   }
 
-  const redirectTo = formData.get('redirect')?.toString() || '/account';
+  const redirectTo = formData.get('redirect')?.toString() || '/';
 
   try {
     await registerApi(parsed.data);
@@ -105,6 +107,7 @@ export async function registerAction(
 
     await setAuthCookies(tokens);
     await mergeGuestCartSession(tokens.access);
+    revalidatePath('/', 'layout');
     redirect(redirectTo);
   } catch (err: unknown) {
     if (isNextRedirect(err)) throw err;

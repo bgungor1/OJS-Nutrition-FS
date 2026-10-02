@@ -2,9 +2,10 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, getImageUrl } from '@/lib/utils';
 import type { ApiProduct } from '@/types';
 import { Edit3, Trash2, Star, Package } from 'lucide-react';
 
@@ -21,13 +22,14 @@ export function ProductTableRow({ product, onDelete }: ProductTableRowProps) {
   return (
     <TableRow data-testid={`product-row-${product.id}`}>
       <TableCell>
-        <div className="h-10 w-10 rounded border overflow-hidden bg-muted/40 shrink-0">
+        <div className="relative h-10 w-10 rounded border overflow-hidden bg-muted/40 shrink-0 flex items-center justify-center">
           {product.photo_src ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={product.photo_src.startsWith('http') ? product.photo_src : `/${product.photo_src}`}
+            <Image
+              src={getImageUrl(product.photo_src)}
               alt={product.name}
-              className="h-full w-full object-cover"
+              fill
+              sizes="40px"
+              className="object-cover"
             />
           ) : (
             <Package className="h-5 w-5 m-auto text-muted-foreground" />

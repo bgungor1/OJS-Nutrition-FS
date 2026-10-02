@@ -25,7 +25,7 @@ export async function middleware(request: NextRequest) {
     if (payload?.role === 'admin') {
       return NextResponse.redirect(new URL(adminUrl));
     }
-    return NextResponse.redirect(new URL('/account', request.url));
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   if (isProtectedRoute) {

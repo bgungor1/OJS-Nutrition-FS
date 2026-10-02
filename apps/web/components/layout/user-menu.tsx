@@ -20,6 +20,27 @@ interface UserMenuProps {
 }
 
 export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
+  const [isLoggingOut, startTransition] = React.useTransition();
+
+  const handleLogout = () => {
+    startTransition(async () => {
+      try {
+        await logoutAction();
+      } catch (err: unknown) {
+        if (
+          typeof err === 'object' &&
+          err !== null &&
+          'digest' in err &&
+          typeof (err as { digest: unknown }).digest === 'string' &&
+          (err as { digest: string }).digest.startsWith('NEXT_REDIRECT')
+        ) {
+          throw err;
+        }
+        console.error('Logout error:', err);
+      }
+    });
+  };
+
   if (!user) {
     return (
       <Button
@@ -91,16 +112,16 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <form action={logoutAction} className="w-full">
-            <button
-              type="submit"
-              className="w-full text-left cursor-pointer text-destructive flex items-center gap-2 py-0.5"
-            >
-              <LogOut className="h-4 w-4" />
-              <span>Çıkış Yap</span>
-            </button>
-          </form>
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            handleLogout();
+          }}
+          disabled={isLoggingOut}
+          className="w-full cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10 flex items-center gap-2 py-1.5"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>{isLoggingOut ? 'Çıkış yapılıyor...' : 'Çıkış Yap'}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

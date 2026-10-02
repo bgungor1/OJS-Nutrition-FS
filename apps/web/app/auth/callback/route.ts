@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
   }
 
   const isProduction = process.env.NODE_ENV === 'production';
-  const response = NextResponse.redirect(new URL('/account', origin));
+  const redirectTo = searchParams.get('redirect') || '/';
+  const response = NextResponse.redirect(new URL(redirectTo, origin));
 
   response.cookies.set(ACCESS_TOKEN_COOKIE, access, {
     httpOnly: true,

@@ -11,7 +11,7 @@ interface LoginFormProps {
 
 const initialState: AuthActionState = { success: false };
 
-export const LoginForm: React.FC<LoginFormProps> = ({ redirectTo = '/account' }) => {
+export const LoginForm: React.FC<LoginFormProps> = ({ redirectTo = '/' }) => {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
 
   return (
