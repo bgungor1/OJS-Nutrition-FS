@@ -16,6 +16,24 @@ import { getImageUrl } from '@/lib/utils';
 
 export const revalidate = 60;
 
+export async function generateStaticParams() {
+  try {
+    const bestSellers = await getBestSellers();
+    if (bestSellers && bestSellers.length > 0) {
+      return bestSellers.map((p) => ({ slug: p.slug }));
+    }
+  } catch (err: unknown) {
+    console.warn('[generateStaticParams] Best-sellers API üzerinden alınamadı, statik slug listesi kullanılacak:', err);
+  }
+
+  return [
+    { slug: 'whey-protein' },
+    { slug: 'creatine' },
+    { slug: 'whey-isolate' },
+    { slug: 'pre-workout-supreme' },
+  ];
+}
+
 type ProductDetailPageProps = {
   params: Promise<{
     slug: string;
