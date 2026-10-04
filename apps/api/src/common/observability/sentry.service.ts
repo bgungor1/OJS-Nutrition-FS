@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as Sentry from '@sentry/nestjs';
 
 export interface SentryApiContext {
   correlationId?: string;
@@ -70,6 +71,18 @@ export class SentryService {
   constructor(private readonly configService?: ConfigService) {
     this.dsn =
       this.configService?.get<string>('SENTRY_DSN') || process.env.SENTRY_DSN;
+
+    if (this.dsn) {
+      try {
+        Sentry.init({
+          dsn: this.dsn,
+          tracesSampleRate: 1.0,
+          environment: process.env.NODE_ENV || 'development',
+        });
+      } catch {
+        // Failsafe for test/mock DSNs
+      }
+    }
   }
 
   isConfigured(): boolean {
@@ -112,6 +125,21 @@ export class SentryService {
 
     if (this.breadcrumbs.length > SentryService.MAX_BREADCRUMBS) {
       this.breadcrumbs.shift();
+    }
+
+    if (this.isConfigured()) {
+      try {
+        const sentryLevel =
+          breadcrumb.level === 'warn' ? 'warning' : breadcrumb.level || 'info';
+        Sentry.addBreadcrumb({
+          category: breadcrumb.category,
+          message: breadcrumb.message,
+          data: breadcrumb.data,
+          level: sentryLevel,
+        });
+      } catch {
+        // Failsafe
+      }
     }
   }
 
@@ -209,13 +237,17 @@ export class SentryService {
   }
 
   captureException(exception: unknown, context?: SentryApiContext): string {
-    const eventId = `api_err_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const localEventId = `api_err_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const message =
       exception instanceof Error ? exception.message : String(exception);
     const stack = exception instanceof Error ? exception.stack : undefined;
 
+    const sanitizedExtra = context?.extra
+      ? this.sanitize(context.extra)
+      : undefined;
+
     const payload = {
-      eventId,
+      eventId: localEventId,
       message,
       stack,
       correlationId: context?.correlationId,
@@ -223,24 +255,43 @@ export class SentryService {
       url: context?.url,
       userId: context?.userId,
       tags: context?.tags,
-      extra: context?.extra ? this.sanitize(context.extra) : undefined,
+      extra: sanitizedExtra,
       breadcrumbs: [...this.breadcrumbs],
       recentSpans: this.spans.slice(-10),
       timestamp: new Date().toISOString(),
     };
 
     if (this.isConfigured()) {
+      let sentryEventId: string | undefined;
+      try {
+        sentryEventId = Sentry.captureException(exception, {
+          extra: sanitizedExtra,
+          tags: {
+            ...context?.tags,
+            ...(context?.correlationId
+              ? { correlationId: context.correlationId }
+              : {}),
+            ...(context?.method ? { method: context.method } : {}),
+            ...(context?.url ? { url: context.url } : {}),
+          },
+          user: context?.userId ? { id: context.userId } : undefined,
+        });
+      } catch {
+        // Failsafe
+      }
+
+      const finalId = sentryEventId || localEventId;
       this.logger.warn(
-        `[Sentry:Production] Event ${eventId} dispatched: ${message}`,
+        `[Sentry:Production] Event ${finalId} dispatched: ${message}`,
         payload,
       );
+      return finalId;
     } else {
       this.logger.debug(
-        `[Sentry:Local] Event ${eventId} logged: ${message}`,
+        `[Sentry:Local] Event ${localEventId} logged: ${message}`,
         payload,
       );
+      return localEventId;
     }
-
-    return eventId;
   }
 }
