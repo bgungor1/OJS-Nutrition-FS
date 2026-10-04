@@ -134,10 +134,10 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
         first_name: mockUser.firstName,
         last_name: mockUser.lastName,
         phone_number: mockUser.phoneNumber,
+        role: mockUser.role,
       });
 
       expect('passwordHash' in body.data).toBe(false);
-      expect('role' in body.data).toBe(false);
       expect('authProvider' in body.data).toBe(false);
     });
 
@@ -192,6 +192,7 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
         first_name: 'Ahmet',
         last_name: 'Yılmaz',
         phone_number: '+905559998877',
+        role: mockUser.role,
       });
 
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
@@ -207,6 +208,7 @@ describe('Users E2E Test Suite (/api/v1/users)', () => {
           firstName: true,
           lastName: true,
           phoneNumber: true,
+          role: true,
         },
       });
     });

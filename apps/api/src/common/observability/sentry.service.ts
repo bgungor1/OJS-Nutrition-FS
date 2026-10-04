@@ -10,10 +10,62 @@ export interface SentryApiContext {
   tags?: Record<string, string>;
 }
 
+export interface SentryBreadcrumb {
+  category: string;
+  message: string;
+  data?: Record<string, unknown>;
+  level?: 'info' | 'warn' | 'error';
+  timestamp?: number;
+}
+
+export interface SentrySpan {
+  id?: string;
+  op: string;
+  description?: string;
+  durationMs: number;
+  status?: string;
+  data?: Record<string, unknown>;
+  tags?: Record<string, string>;
+  timestamp?: number;
+}
+
+export interface SlowQueryMetric {
+  query: string;
+  duration: number;
+  params?: unknown;
+  target?: string;
+}
+
+export interface SlowRequestMetric {
+  method: string;
+  url: string;
+  duration: number;
+  statusCode: number;
+  correlationId?: string;
+}
+
+export interface PerformanceMetricsSummary {
+  totalSpans: number;
+  totalRequests: number;
+  slowRequests: number;
+  slowQueries: number;
+  averageDurationMs: number;
+  p95DurationMs: number;
+  p99DurationMs: number;
+}
+
 @Injectable()
 export class SentryService {
   private readonly logger = new Logger(SentryService.name);
   private readonly dsn: string | undefined;
+
+  private readonly breadcrumbs: SentryBreadcrumb[] = [];
+  private readonly spans: SentrySpan[] = [];
+  private readonly slowRequests: SlowRequestMetric[] = [];
+  private readonly slowQueries: SlowQueryMetric[] = [];
+
+  private static readonly MAX_BREADCRUMBS = 50;
+  private static readonly MAX_SPANS = 200;
 
   constructor(private readonly configService?: ConfigService) {
     this.dsn =
@@ -35,6 +87,7 @@ export class SentryService {
       'cvv',
       'authorization',
       'cookie',
+      'secret',
     ];
     const clean: Record<string, unknown> = {};
 
@@ -49,6 +102,110 @@ export class SentryService {
     }
 
     return clean;
+  }
+
+  addBreadcrumb(breadcrumb: SentryBreadcrumb): void {
+    this.breadcrumbs.push({
+      ...breadcrumb,
+      timestamp: breadcrumb.timestamp || Date.now(),
+    });
+
+    if (this.breadcrumbs.length > SentryService.MAX_BREADCRUMBS) {
+      this.breadcrumbs.shift();
+    }
+  }
+
+  getBreadcrumbs(): readonly SentryBreadcrumb[] {
+    return this.breadcrumbs;
+  }
+
+  clearBreadcrumbs(): void {
+    this.breadcrumbs.length = 0;
+  }
+
+  recordSpan(span: SentrySpan): void {
+    const completedSpan: SentrySpan = {
+      ...span,
+      id:
+        span.id ||
+        `span_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      timestamp: span.timestamp || Date.now(),
+    };
+
+    this.spans.push(completedSpan);
+    if (this.spans.length > SentryService.MAX_SPANS) {
+      this.spans.shift();
+    }
+
+    if (this.isConfigured()) {
+      this.logger.verbose(
+        `[Sentry:Production:APM] Span ${completedSpan.op} (${completedSpan.durationMs}ms): ${completedSpan.description || '-'}`,
+      );
+    } else {
+      this.logger.debug(
+        `[Sentry:Local:APM] Span ${completedSpan.op} (${completedSpan.durationMs}ms): ${completedSpan.description || '-'}`,
+      );
+    }
+  }
+
+  getRecentSpans(): readonly SentrySpan[] {
+    return this.spans;
+  }
+
+  recordSlowRequest(metric: SlowRequestMetric): void {
+    this.slowRequests.push(metric);
+    this.addBreadcrumb({
+      category: 'performance',
+      level: 'warn',
+      message: `Slow API Request: ${metric.method} ${metric.url} took ${metric.duration}ms [${metric.statusCode}]`,
+      data: { ...metric },
+    });
+  }
+
+  getSlowRequests(): readonly SlowRequestMetric[] {
+    return this.slowRequests;
+  }
+
+  recordSlowQuery(metric: SlowQueryMetric): void {
+    this.slowQueries.push(metric);
+    this.addBreadcrumb({
+      category: 'db.slow_query',
+      level: 'warn',
+      message: `Slow DB Query: ${metric.query.substring(0, 100)} took ${metric.duration}ms`,
+      data: {
+        duration: metric.duration,
+        target: metric.target,
+      },
+    });
+  }
+
+  getSlowQueries(): readonly SlowQueryMetric[] {
+    return this.slowQueries;
+  }
+
+  getMetricsSummary(): PerformanceMetricsSummary {
+    const httpSpans = this.spans.filter((s) => s.op === 'http.server');
+    const durations = httpSpans.map((s) => s.durationMs).sort((a, b) => a - b);
+
+    const calculatePercentile = (percentile: number): number => {
+      if (durations.length === 0) return 0;
+      const index = Math.ceil((percentile / 100) * durations.length) - 1;
+      return durations[Math.max(0, index)] ?? 0;
+    };
+
+    const totalDuration = durations.reduce((sum, d) => sum + d, 0);
+    const averageDurationMs =
+      durations.length > 0 ? Math.round(totalDuration / durations.length) : 0;
+
+    return {
+      totalSpans: this.spans.length,
+      totalRequests: httpSpans.length,
+      slowRequests: this.slowRequests.length,
+      slowQueries: this.slowQueries.length,
+      averageDurationMs,
+      p95DurationMs: calculatePercentile(95),
+      p99DurationMs: calculatePercentile(99),
+    };
   }
 
   captureException(exception: unknown, context?: SentryApiContext): string {
@@ -67,6 +224,8 @@ export class SentryService {
       userId: context?.userId,
       tags: context?.tags,
       extra: context?.extra ? this.sanitize(context.extra) : undefined,
+      breadcrumbs: [...this.breadcrumbs],
+      recentSpans: this.spans.slice(-10),
       timestamp: new Date().toISOString(),
     };
 
