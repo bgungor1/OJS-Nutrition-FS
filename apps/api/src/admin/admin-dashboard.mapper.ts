@@ -15,8 +15,8 @@ import {
 } from './dto/dashboard-stats-response.dto';
 
 export type OrderWithUserAndItems = Order & {
-  user: User;
-  items: OrderItem[];
+  user?: User | null;
+  items?: OrderItem[];
 };
 
 export type LowStockVariantRelation = ProductVariant & {
@@ -72,21 +72,27 @@ export class AdminDashboardMapper {
   static toRecentOrders(
     orders: OrderWithUserAndItems[],
   ): AdminRecentOrderDto[] {
-    return orders.map((order) => ({
-      id: order.id,
-      orderNo: order.orderNo,
-      customerName:
-        `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() ||
-        order.user.email,
-      customerEmail: order.user.email,
-      totalPrice: Number(order.totalPrice),
-      status: order.status,
-      itemsCount: (order.items || []).reduce(
-        (sum, item) => sum + item.pieces,
-        0,
-      ),
-      createdAt: order.createdAt,
-    }));
+    return orders.map((order) => {
+      const firstName = order.user?.firstName ?? '';
+      const lastName = order.user?.lastName ?? '';
+      const fullName = `${firstName} ${lastName}`.trim();
+      const customerEmail = order.user?.email || 'bilinmeyen@ojsnutrition.com';
+      const customerName = fullName || customerEmail;
+
+      return {
+        id: order.id,
+        orderNo: order.orderNo,
+        customerName,
+        customerEmail,
+        totalPrice: Number(order.totalPrice),
+        status: order.status,
+        itemsCount: (order.items || []).reduce(
+          (sum, item) => sum + item.pieces,
+          0,
+        ),
+        createdAt: order.createdAt,
+      };
+    });
   }
 
   static toTopProducts(

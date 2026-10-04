@@ -11,13 +11,26 @@ import {
 } from './dto';
 
 export type AdminOrderWithRelations = Order & {
-  user: User;
+  user?: User | null;
   items?: OrderItem[];
   payment?: PaymentTransaction | null;
 };
 
 export class AdminOrdersMapper {
-  static toCustomerDto(user: User): AdminOrderCustomerDto {
+  static toCustomerDto(
+    user?: User | null,
+    fallbackUserId?: string,
+  ): AdminOrderCustomerDto {
+    if (!user) {
+      return {
+        id: fallbackUserId ?? 'unknown',
+        email: 'bilinmeyen@ojsnutrition.com',
+        firstName: 'Bilinmeyen',
+        lastName: 'Müşteri',
+        phoneNumber: null,
+      };
+    }
+
     return {
       id: user.id,
       email: user.email,
@@ -68,7 +81,7 @@ export class AdminOrdersMapper {
       shippingFee: Number(order.shippingFee),
       itemCount,
       createdAt: order.createdAt.toISOString(),
-      user: this.toCustomerDto(order.user),
+      user: this.toCustomerDto(order.user, order.userId),
       payment: this.toPaymentDto(order.payment),
     };
   }
@@ -85,7 +98,7 @@ export class AdminOrdersMapper {
       addressSnapshot: (order.addressSnapshot as Record<string, unknown>) ?? {},
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
-      user: this.toCustomerDto(order.user),
+      user: this.toCustomerDto(order.user, order.userId),
       items: (order.items ?? []).map((item) => this.toOrderItemDto(item)),
       payment: this.toPaymentDto(order.payment),
     };
