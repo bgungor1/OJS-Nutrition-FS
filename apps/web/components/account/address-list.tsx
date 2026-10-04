@@ -1,12 +1,17 @@
 'use client';
 
 import React, { useState, useTransition } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { AddressCard } from './address-card';
-import { AddressModal } from './address-modal';
 import { deleteAddressAction } from '@/app/(shop)/account/addresses/actions';
 import { Plus, MapPin, AlertCircle } from 'lucide-react';
 import type { Address, Country } from '@/types';
+
+const AddressModal = dynamic(
+  () => import('./address-modal').then((m) => m.AddressModal),
+  { ssr: false }
+);
 
 interface AddressListProps {
   addresses: Address[];

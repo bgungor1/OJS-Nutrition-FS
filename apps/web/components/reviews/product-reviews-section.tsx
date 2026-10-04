@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { PenSquare, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ReviewStatsSummary } from './review-stats-summary';
@@ -8,7 +9,6 @@ import { RatingDistributionBars } from './rating-distribution-bars';
 import { ReviewFiltersBar } from './review-filters-bar';
 import { ReviewList } from './review-list';
 import { ReviewLoginCta } from './review-login-cta';
-import { ReviewFormModal } from './review-form-modal';
 import type {
   ApiReview,
   PaginatedReviewsResponse,
@@ -16,6 +16,11 @@ import type {
   ReviewSortOption,
   ReviewStats,
 } from '@/types';
+
+const ReviewFormModal = dynamic(
+  () => import('./review-form-modal').then((m) => m.ReviewFormModal),
+  { ssr: false }
+);
 
 interface ProductReviewsSectionProps {
   slug: string;

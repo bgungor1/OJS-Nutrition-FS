@@ -4,14 +4,19 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ShoppingCart, Menu, X } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { SearchBar } from './search-bar';
 import { CategoryNav } from './category-nav';
 import { UserMenu } from './user-menu';
 import { MobileMenu } from './mobile-menu';
-import { CartDrawer } from '@/components/cart';
 import { useCartStore } from '@/store/cart-store';
 import type { AccountProfile, ApiCategory } from '@/types';
+
+const CartDrawer = dynamic(
+  () => import('@/components/cart/cart-drawer').then((m) => m.CartDrawer),
+  { ssr: false }
+);
 
 interface HeaderProps {
   categories?: ApiCategory[];
@@ -21,15 +26,15 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ categories = [], user = null }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const items = useCartStore((state) => state.items);
+  const itemCount = useCartStore((state) =>
+    state.items.reduce((acc, item) => acc + (item.pieces || 0), 0)
+  );
   const openDrawer = useCartStore((state) => state.openDrawer);
   const fetchCart = useCartStore((state) => state.fetchCart);
 
   useEffect(() => {
     void fetchCart();
   }, [fetchCart]);
-
-  const itemCount = items.reduce((acc, item) => acc + (item.pieces || 0), 0);
 
   const toggleMobileMenu = () => setMobileMenuOpen((prev) => !prev);
   const closeMobileMenu = () => setMobileMenuOpen(false);

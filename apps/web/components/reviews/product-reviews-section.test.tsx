@@ -120,6 +120,6 @@ describe('ProductReviewsSection Component', () => {
     const writeButton = screen.getAllByRole('button', { name: /değerlendirme (yaz|başlat)/i })[0];
     await user.click(writeButton);
 
-    expect(screen.getByRole('heading', { name: 'Ürünü Değerlendir' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Ürünü Değerlendir' })).toBeInTheDocument();
   });
 });
