@@ -62,23 +62,77 @@ export class ProductsService {
 
     let results: ApiPaginatedProducts['results'] = [];
 
-    // Fiyata göre sıralama ilişkisel varyant üzerinden bellekte yapılır
     if (sort === 'price_asc' || sort === 'price_desc') {
-      const allMatching = await this.prisma.product.findMany({
-        where,
-        include: {
-          variants: { orderBy: { createdAt: 'asc' } },
-        },
-      });
+      const direction =
+        sort === 'price_asc' ? Prisma.sql`ASC` : Prisma.sql`DESC`;
+      const whereClauses: Prisma.Sql[] = [Prisma.sql`1=1`];
 
-      const sorted = allMatching.sort((a, b) => {
-        const priceA = ProductsMapper.getLowestPrice(a.variants);
-        const priceB = ProductsMapper.getLowestPrice(b.variants);
-        return sort === 'price_asc' ? priceA - priceB : priceB - priceA;
-      });
+      if (category) {
+        whereClauses.push(
+          Prisma.sql`(mc.slug = ${category} OR sc.slug = ${category})`,
+        );
+      }
 
-      const paginated = sorted.slice(offset, offset + limit);
-      results = paginated.map((p) => ProductsMapper.toProduct(p));
+      if (search) {
+        const pattern = `%${search}%`;
+        whereClauses.push(
+          Prisma.sql`(p.name ILIKE ${pattern} OR p."shortExplanation" ILIKE ${pattern} OR p.slug ILIKE ${pattern} OR p.description ILIKE ${pattern})`,
+        );
+      }
+
+      const combinedWhere = Prisma.join(whereClauses, ' AND ');
+      let sortedRows: Array<{ id: string }> = [];
+
+      try {
+        if (typeof this.prisma.$queryRaw === 'function') {
+          sortedRows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+            SELECT p.id
+            FROM "Product" p
+            LEFT JOIN "ProductVariant" pv ON pv."productId" = p.id
+            LEFT JOIN "Category" mc ON mc.id = p."mainCategoryId"
+            LEFT JOIN "SubCategory" sc ON sc.id = p."subCategoryId"
+            WHERE ${combinedWhere}
+            GROUP BY p.id
+            ORDER BY COALESCE(MIN(COALESCE(pv."discountedPrice", pv."totalPrice")), 0) ${direction}
+            LIMIT ${limit} OFFSET ${offset}
+          `;
+        }
+      } catch {
+        // noop
+      }
+
+      if (sortedRows && sortedRows.length > 0) {
+        const ids = sortedRows.map((r) => r.id);
+        const products = await this.prisma.product.findMany({
+          where: { id: { in: ids } },
+          include: {
+            variants: { orderBy: { createdAt: 'asc' } },
+          },
+        });
+
+        const productMap = new Map(products.map((p) => [p.id, p]));
+        const ordered = ids
+          .map((id) => productMap.get(id))
+          .filter((p): p is NonNullable<typeof p> => p !== undefined);
+
+        results = ordered.map((p) => ProductsMapper.toProduct(p));
+      } else {
+        const allMatching = await this.prisma.product.findMany({
+          where,
+          include: {
+            variants: { orderBy: { createdAt: 'asc' } },
+          },
+        });
+
+        const sorted = allMatching.sort((a, b) => {
+          const priceA = ProductsMapper.getLowestPrice(a.variants);
+          const priceB = ProductsMapper.getLowestPrice(b.variants);
+          return sort === 'price_asc' ? priceA - priceB : priceB - priceA;
+        });
+
+        const paginated = sorted.slice(offset, offset + limit);
+        results = paginated.map((p) => ProductsMapper.toProduct(p));
+      }
     } else {
       let orderBy: Prisma.ProductOrderByWithRelationInput = {
         createdAt: 'desc',

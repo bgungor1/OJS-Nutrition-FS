@@ -16,6 +16,7 @@ describe('ProductsService', () => {
     category: {
       findMany: jest.Mock;
     };
+    $queryRaw?: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -172,6 +173,45 @@ describe('ProductsService', () => {
         sort: 'price_desc',
       });
       expect(descResult.results[0].name).toBe('Expensive');
+    });
+
+    it('should sort at database level via $queryRaw when available', async () => {
+      const cheap = createMockProduct({
+        id: 'p-cheap',
+        name: 'Cheap',
+        variants: [
+          createMockVariant({
+            id: 'v-cheap',
+            totalPrice: new Prisma.Decimal(200),
+          }),
+        ],
+      });
+      const expensive = createMockProduct({
+        id: 'p-exp',
+        name: 'Expensive',
+        variants: [
+          createMockVariant({
+            id: 'v-exp',
+            totalPrice: new Prisma.Decimal(900),
+          }),
+        ],
+      });
+
+      mockPrisma.product.count.mockResolvedValue(2);
+      mockPrisma.$queryRaw = jest
+        .fn()
+        .mockResolvedValue([{ id: 'p-cheap' }, { id: 'p-exp' }]);
+      mockPrisma.product.findMany.mockResolvedValue([expensive, cheap]);
+
+      const result = await service.list({
+        limit: 10,
+        offset: 0,
+        sort: 'price_asc',
+      });
+
+      expect(mockPrisma.$queryRaw).toHaveBeenCalled();
+      expect(result.results[0].name).toBe('Cheap');
+      expect(result.results[1].name).toBe('Expensive');
     });
 
     it('should pass rating sort as orderBy averageStar desc', async () => {

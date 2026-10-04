@@ -77,6 +77,24 @@ describe('AdminOrdersMapper', () => {
         phoneNumber: '+905551112233',
       });
     });
+
+    it('should return safe default customer DTO when user is null or undefined', () => {
+      const resultNull = AdminOrdersMapper.toCustomerDto(
+        null,
+        'fallback-usr-id',
+      );
+      expect(resultNull).toEqual({
+        id: 'fallback-usr-id',
+        email: 'bilinmeyen@ojsnutrition.com',
+        firstName: 'Bilinmeyen',
+        lastName: 'Müşteri',
+        phoneNumber: null,
+      });
+
+      const resultUndef = AdminOrdersMapper.toCustomerDto(undefined);
+      expect(resultUndef.id).toBe('unknown');
+      expect(resultUndef.email).toBe('bilinmeyen@ojsnutrition.com');
+    });
   });
 
   describe('toPaymentDto', () => {
@@ -143,6 +161,16 @@ describe('AdminOrdersMapper', () => {
         },
       });
     });
+
+    it('should map safely even if order.user is missing or null', () => {
+      const orderWithoutUser: AdminOrderWithRelations = {
+        ...mockOrder,
+        user: null,
+      };
+      const result = AdminOrdersMapper.toListItemDto(orderWithoutUser);
+      expect(result.user.id).toBe('user-1');
+      expect(result.user.firstName).toBe('Bilinmeyen');
+    });
   });
 
   describe('toDetailDto', () => {
@@ -156,6 +184,18 @@ describe('AdminOrdersMapper', () => {
       });
       expect(result.items).toHaveLength(1);
       expect(result.items[0].productName).toBe('Whey Protein');
+    });
+
+    it('should map detail safely even if order.user is missing or null', () => {
+      const orderWithoutUser: AdminOrderWithRelations & {
+        items: (typeof mockItem)[];
+      } = {
+        ...mockOrder,
+        user: null,
+      };
+      const result = AdminOrdersMapper.toDetailDto(orderWithoutUser);
+      expect(result.user.id).toBe('user-1');
+      expect(result.user.firstName).toBe('Bilinmeyen');
     });
   });
 

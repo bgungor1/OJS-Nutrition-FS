@@ -166,11 +166,14 @@ describe('Admin E2E Test Suite (/api/v1/admin, /api/v1/products, /api/v1/reviews
         { status: OrderStatus.processing, _count: { id: 4 } },
         { status: OrderStatus.delivered, _count: { id: 6 } },
       ]);
-      mockPrisma.order.findMany
-        .mockResolvedValueOnce([mockOrder])
-        .mockResolvedValueOnce([
-          { createdAt: new Date(), totalPrice: new Decimal(549) },
-        ]);
+      mockPrisma.order.findMany.mockResolvedValue([mockOrder]);
+      mockPrisma.$queryRaw.mockResolvedValue([
+        {
+          date: new Date().toISOString().split('T')[0],
+          orderCount: 1,
+          totalRevenue: 549,
+        },
+      ]);
       mockPrisma.orderItem.groupBy.mockResolvedValue([
         {
           productId: mockProduct.id,

@@ -16,10 +16,10 @@ export class AdminDashboardService {
   async getDashboardStats(): Promise<DashboardStatsResponseDto> {
     const now = new Date();
     const thirtyDaysAgo = new Date(now);
-    thirtyDaysAgo.setDate(
-      thirtyDaysAgo.getDate() - (ADMIN_DASHBOARD.SALES_TREND_DAYS - 1),
+    thirtyDaysAgo.setUTCDate(
+      thirtyDaysAgo.getUTCDate() - (ADMIN_DASHBOARD.SALES_TREND_DAYS - 1),
     );
-    thirtyDaysAgo.setHours(0, 0, 0, 0);
+    thirtyDaysAgo.setUTCHours(0, 0, 0, 0);
 
     const [
       totalOrders,
@@ -88,16 +88,7 @@ export class AdminDashboardService {
           },
         },
       }),
-      this.prisma.order.findMany({
-        where: {
-          createdAt: { gte: thirtyDaysAgo },
-          status: { notIn: [OrderStatus.cancelled, OrderStatus.returned] },
-        },
-        select: {
-          createdAt: true,
-          totalPrice: true,
-        },
-      }),
+      this.getSalesTrendRaw(thirtyDaysAgo),
     ]);
 
     const totalRevenue = revenueAgg._sum.totalPrice
@@ -115,7 +106,6 @@ export class AdminDashboardService {
     const mappedRecentOrders =
       AdminDashboardMapper.toRecentOrders(recentOrders);
 
-    // En çok satan ürünlerin görsellerini eşleştirmek için tek sorgu
     const topProductIds = topSoldItems.map((item) => item.productId);
     const productPhotos = new Map<string, string | null>();
 
@@ -150,17 +140,16 @@ export class AdminDashboardService {
 
     for (let i = 0; i < ADMIN_DASHBOARD.SALES_TREND_DAYS; i++) {
       const d = new Date(thirtyDaysAgo);
-      d.setDate(d.getDate() + i);
+      d.setUTCDate(d.getUTCDate() + i);
       const dateStr = d.toISOString().split('T')[0];
       dailyMap.set(dateStr, { orderCount: 0, totalRevenue: 0 });
     }
 
-    for (const order of trendOrders) {
-      const dateStr = order.createdAt.toISOString().split('T')[0];
-      const entry = dailyMap.get(dateStr);
+    for (const row of trendOrders) {
+      const entry = dailyMap.get(row.date);
       if (entry) {
-        entry.orderCount += 1;
-        entry.totalRevenue += Number(order.totalPrice);
+        entry.orderCount = Number(row.orderCount);
+        entry.totalRevenue = Number(row.totalRevenue);
       }
     }
 
@@ -174,5 +163,65 @@ export class AdminDashboardService {
       lowStockVariants: mappedLowStockVariants,
       salesTrend,
     };
+  }
+
+  /**
+   * 30 günlük satış trendini hesaplar.
+   * PostgreSQL seviyesinde date_trunc ile hesaplamayı önceler;
+   * Mock/test ortamlarında veya queryRaw desteklenmeyen durumlarda in-memory fallback çalıştırır.
+   */
+  private async getSalesTrendRaw(
+    thirtyDaysAgo: Date,
+  ): Promise<
+    Array<{ date: string; orderCount: number; totalRevenue: number }>
+  > {
+    if (typeof this.prisma.$queryRaw === 'function') {
+      try {
+        return await this.prisma.$queryRaw<
+          Array<{ date: string; orderCount: number; totalRevenue: number }>
+        >`
+          SELECT 
+            to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS date,
+            COUNT(*)::int AS "orderCount",
+            COALESCE(SUM("totalPrice"), 0)::float AS "totalRevenue"
+          FROM "Order"
+          WHERE "createdAt" >= ${thirtyDaysAgo}
+            AND "status" NOT IN ('cancelled'::"OrderStatus", 'returned'::"OrderStatus")
+          GROUP BY date_trunc('day', "createdAt")
+          ORDER BY date ASC
+        `;
+      } catch {
+        // noop
+      }
+    }
+
+    const fallbackOrders = await this.prisma.order.findMany({
+      where: {
+        createdAt: { gte: thirtyDaysAgo },
+        status: { notIn: [OrderStatus.cancelled, OrderStatus.returned] },
+      },
+      select: { createdAt: true, totalPrice: true },
+    });
+
+    const fallbackMap = new Map<
+      string,
+      { orderCount: number; totalRevenue: number }
+    >();
+    for (const ord of fallbackOrders) {
+      const dateKey = ord.createdAt.toISOString().split('T')[0];
+      const existing = fallbackMap.get(dateKey) ?? {
+        orderCount: 0,
+        totalRevenue: 0,
+      };
+      existing.orderCount += 1;
+      existing.totalRevenue += Number(ord.totalPrice);
+      fallbackMap.set(dateKey, existing);
+    }
+
+    return Array.from(fallbackMap.entries()).map(([date, data]) => ({
+      date,
+      orderCount: data.orderCount,
+      totalRevenue: data.totalRevenue,
+    }));
   }
 }

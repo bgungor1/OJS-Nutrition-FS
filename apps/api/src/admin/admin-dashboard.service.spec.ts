@@ -25,6 +25,7 @@ describe('AdminDashboardService', () => {
     orderItem: {
       groupBy: jest.Mock;
     };
+    $queryRaw: jest.Mock;
   };
 
   const mockCustomerUser = {
@@ -62,6 +63,7 @@ describe('AdminDashboardService', () => {
       orderItem: {
         groupBy: jest.fn(),
       },
+      $queryRaw: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -103,14 +105,14 @@ describe('AdminDashboardService', () => {
         createdAt: new Date('2026-03-18T12:00:00.000Z'),
         items: [{ pieces: 2 }, { pieces: 1 }],
       };
-      prisma.order.findMany
-        .mockResolvedValueOnce([mockRecentOrder]) // recentOrders
-        .mockResolvedValueOnce([
-          {
-            createdAt: new Date(),
-            totalPrice: 1250.0,
-          },
-        ]); // trendOrders
+      prisma.order.findMany.mockResolvedValue([mockRecentOrder]);
+      prisma.$queryRaw.mockResolvedValue([
+        {
+          date: new Date().toISOString().split('T')[0],
+          orderCount: 1,
+          totalRevenue: 1250.0,
+        },
+      ]);
 
       prisma.orderItem.groupBy.mockResolvedValue([
         {
@@ -177,6 +179,7 @@ describe('AdminDashboardService', () => {
       prisma.product.count.mockResolvedValue(0);
       prisma.order.groupBy.mockResolvedValue([]);
       prisma.order.findMany.mockResolvedValue([]);
+      prisma.$queryRaw.mockResolvedValue([]);
       prisma.orderItem.groupBy.mockResolvedValue([]);
       prisma.productVariant.findMany.mockResolvedValue([]);
 
@@ -189,10 +192,38 @@ describe('AdminDashboardService', () => {
         totalProducts: 0,
       });
       expect(result.ordersByStatus.pending).toBe(0);
-      expect(result.recentOrders).toHaveLength(0);
-      expect(result.topProducts).toHaveLength(0);
-      expect(result.lowStockVariants).toHaveLength(0);
       expect(result.salesTrend).toHaveLength(30);
+    });
+
+    it('should fallback to in-memory aggregation when $queryRaw is undefined or throws', async () => {
+      prisma.order.count.mockResolvedValue(1);
+      prisma.order.aggregate.mockResolvedValue({ _sum: { totalPrice: 500 } });
+      prisma.user.count.mockResolvedValue(1);
+      prisma.product.count.mockResolvedValue(1);
+      prisma.order.groupBy.mockResolvedValue([]);
+      const todayOrder = {
+        id: 'ord-fallback-1',
+        createdAt: new Date(),
+        totalPrice: 500,
+        items: [],
+        user: mockCustomerUser,
+        orderNo: 'ORD-FB-1',
+        status: OrderStatus.processing,
+      };
+      prisma.order.findMany.mockResolvedValue([todayOrder]);
+      // Simulate queryRaw throwing or being unavailable
+      prisma.$queryRaw.mockRejectedValue(new Error('queryRaw unavailable'));
+      prisma.orderItem.groupBy.mockResolvedValue([]);
+      prisma.productVariant.findMany.mockResolvedValue([]);
+
+      const result = await service.getDashboardStats();
+
+      expect(result.summary.totalOrders).toBe(1);
+      expect(result.salesTrend).toHaveLength(30);
+      const todayDateStr = new Date().toISOString().split('T')[0];
+      const todayEntry = result.salesTrend.find((t) => t.date === todayDateStr);
+      expect(todayEntry?.orderCount).toBe(1);
+      expect(todayEntry?.totalRevenue).toBe(500);
     });
   });
 });

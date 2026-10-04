@@ -183,6 +183,7 @@ export const createAdminMockPrisma = () => {
       aggregate: jest.fn(),
     },
     $transaction: jest.fn(),
+    $queryRaw: jest.fn().mockResolvedValue([]),
   };
 
   prisma.$transaction.mockImplementation(
