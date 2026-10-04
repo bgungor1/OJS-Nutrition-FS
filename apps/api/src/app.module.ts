@@ -12,9 +12,11 @@ import {
   AllExceptionsFilter,
   CorrelationIdMiddleware,
   ResponseInterceptor,
+  PerformanceInterceptor,
   JwtAuthGuard,
   RolesGuard,
   AuditModule,
+  ObservabilityModule,
 } from './common';
 
 import { AuthModule } from './auth';
@@ -61,6 +63,7 @@ import { AdminModule } from './admin';
     }),
     PrismaModule,
     AuditModule,
+    ObservabilityModule,
 
     AuthModule,
     UsersModule,
@@ -82,6 +85,7 @@ import { AdminModule } from './admin';
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     // @Roles('admin') taşıyan route'larda çalışır; JwtAuthGuard'dan sonra.
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_INTERCEPTOR, useClass: PerformanceInterceptor },
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],
