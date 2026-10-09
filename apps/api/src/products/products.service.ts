@@ -8,6 +8,7 @@ import {
   ApiProductDetail,
   CategoryTree,
 } from './interfaces/product-response.interface';
+import { PRODUCT_CARD_SELECT } from './products.constants';
 import { ProductsMapper } from './products.mapper';
 
 /**
@@ -105,9 +106,7 @@ export class ProductsService {
         const ids = sortedRows.map((r) => r.id);
         const products = await this.prisma.product.findMany({
           where: { id: { in: ids } },
-          include: {
-            variants: { orderBy: { createdAt: 'asc' } },
-          },
+          select: PRODUCT_CARD_SELECT,
         });
 
         const productMap = new Map(products.map((p) => [p.id, p]));
@@ -119,9 +118,7 @@ export class ProductsService {
       } else {
         const allMatching = await this.prisma.product.findMany({
           where,
-          include: {
-            variants: { orderBy: { createdAt: 'asc' } },
-          },
+          select: PRODUCT_CARD_SELECT,
         });
 
         const sorted = allMatching.sort((a, b) => {
@@ -148,9 +145,7 @@ export class ProductsService {
         skip: offset,
         take: limit,
         orderBy,
-        include: {
-          variants: { orderBy: { createdAt: 'asc' } },
-        },
+        select: PRODUCT_CARD_SELECT,
       });
 
       results = products.map((p) => ProductsMapper.toProduct(p));
@@ -188,9 +183,7 @@ export class ProductsService {
     const products = await this.prisma.product.findMany({
       where: { isBestSeller: true },
       orderBy: { bestSellerRank: 'asc' },
-      include: {
-        variants: { orderBy: { createdAt: 'asc' } },
-      },
+      select: PRODUCT_CARD_SELECT,
     });
 
     return products.map((p) => ProductsMapper.toBestSeller(p));

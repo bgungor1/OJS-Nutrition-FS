@@ -6,6 +6,7 @@ export * from './products.controller';
 export * from './products-admin.controller';
 export * from './product-variants-admin.controller';
 export * from './categories.controller';
+export * from './products.constants';
 export * from './products.mapper';
 export * from './dto';
 export * from './interfaces';

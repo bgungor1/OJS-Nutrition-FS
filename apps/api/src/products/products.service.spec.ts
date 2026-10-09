@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { PRODUCT_CARD_SELECT } from './products.constants';
 import { ProductsService } from './products.service';
 import { createMockProduct, createMockVariant } from './test/products.fixture';
 
@@ -52,6 +53,19 @@ describe('ProductsService', () => {
       expect(result.count).toBe(1);
       expect(result.results).toHaveLength(1);
       expect(result.results[0].name).toBe('WHEY PROTEIN');
+    });
+
+    it('should query products using PRODUCT_CARD_SELECT to prevent over-fetching', async () => {
+      mockPrisma.product.count.mockResolvedValue(1);
+      mockPrisma.product.findMany.mockResolvedValue([createMockProduct()]);
+
+      await service.list({ limit: 10, offset: 0 });
+
+      expect(mockPrisma.product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: PRODUCT_CARD_SELECT,
+        }),
+      );
     });
 
     it('should generate next and previous pagination links when applicable', async () => {
@@ -246,7 +260,7 @@ describe('ProductsService', () => {
       expect(mockPrisma.product.findMany).toHaveBeenCalledWith({
         where: { isBestSeller: true },
         orderBy: { bestSellerRank: 'asc' },
-        include: { variants: { orderBy: { createdAt: 'asc' } } },
+        select: PRODUCT_CARD_SELECT,
       });
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('WHEY PROTEIN');

@@ -11,6 +11,7 @@ import {
   CategoryTree,
 } from '../src/products/interfaces/product-response.interface';
 import { createMockProduct } from '../src/products/test/products.fixture';
+import { PRODUCT_CARD_SELECT } from '../src/products/products.constants';
 
 interface ApiSuccessResponse<T> {
   status: 'success';
@@ -286,9 +287,7 @@ describe('Products E2E Test Suite (/api/v1/products & /api/v1/categories)', () =
       expect(mockPrisma.product.findMany).toHaveBeenCalledWith({
         where: { isBestSeller: true },
         orderBy: { bestSellerRank: 'asc' },
-        include: {
-          variants: { orderBy: { createdAt: 'asc' } },
-        },
+        select: PRODUCT_CARD_SELECT,
       });
     });
   });
