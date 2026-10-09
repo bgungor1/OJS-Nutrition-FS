@@ -137,27 +137,27 @@ model SubCategory {
 }
 
 model Product {
-  id               String   @id @default(uuid())
-  name             String
-  slug             String   @unique
-  shortExplanation String
-  usage            String
-  features         String
-  description      String
+  id                 String      @id @default(uuid())
+  name               String
+  slug               String      @unique
+  shortExplanation   String
+  usage              String
+  features           String
+  description        String
   // { ingredients, nutrition_facts, amino_acid_facts } — bkz. BACKEND_PLAN §5.3
   nutritionalContent Json
-  tags             String[]
-  mainCategoryId   String
-  mainCategory     Category    @relation("ProductMainCategory", fields: [mainCategoryId], references: [id])
-  subCategoryId    String
-  subCategory      SubCategory  @relation("ProductSubCategory", fields: [subCategoryId], references: [id])
-  isBestSeller     Boolean  @default(false)
-  bestSellerRank   Int?
+  tags               String[]
+  mainCategoryId     String
+  mainCategory       Category    @relation("ProductMainCategory", fields: [mainCategoryId], references: [id])
+  subCategoryId      String
+  subCategory        SubCategory @relation("ProductSubCategory", fields: [subCategoryId], references: [id])
+  isBestSeller       Boolean     @default(false)
+  bestSellerRank     Int?
   // reviews'dan denormalize — yeni review ile aynı transaction'da güncellenir
-  commentCount     Int      @default(0)
-  averageStar      Float    @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  commentCount       Int         @default(0)
+  averageStar        Float       @default(0)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
   variants   ProductVariant[]
   reviews    Review[]
@@ -167,6 +167,11 @@ model Product {
   @@index([mainCategoryId])
   @@index([subCategoryId])
   @@index([isBestSeller, bestSellerRank])
+  @@index([tags], type: Gin)
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@index([shortExplanation(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@index([slug(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@index([description(ops: raw("gin_trgm_ops"))], type: Gin)
 }
 
 model ProductVariant {
@@ -210,6 +215,7 @@ model Review {
   createdAt    DateTime @default(now())
 
   @@index([productId])
+  @@index([productId, createdAt(sort: Desc)])
   @@index([userId])
 }
 
