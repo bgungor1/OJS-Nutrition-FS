@@ -91,17 +91,47 @@ export class CartService {
         );
       }
 
-      await this.prisma.cartItem.create({
-        data: {
-          userId: session.userId ?? null,
-          guestSessionId: session.userId
-            ? null
-            : (session.guestSessionId ?? null),
-          productId: dto.product_id,
-          productVariantId: dto.product_variant_id,
-          pieces: dto.pieces,
-        },
-      });
+      try {
+        await this.prisma.cartItem.create({
+          data: {
+            userId: session.userId ?? null,
+            guestSessionId: session.userId
+              ? null
+              : (session.guestSessionId ?? null),
+            productId: dto.product_id,
+            productVariantId: dto.product_variant_id,
+            pieces: dto.pieces,
+          },
+        });
+      } catch (err: unknown) {
+        if (
+          err &&
+          typeof err === 'object' &&
+          'code' in err &&
+          (err as { code: string }).code === 'P2002'
+        ) {
+          const concurrentItem = await this.prisma.cartItem.findFirst({
+            where: {
+              ...whereSession,
+              productVariantId: dto.product_variant_id,
+            },
+          });
+          if (concurrentItem) {
+            const totalPieces = concurrentItem.pieces + dto.pieces;
+            if (totalPieces > variant.stockQuantity) {
+              throw new BadRequestException(
+                `Yetersiz stok. Bu üründen en fazla ${variant.stockQuantity} adet ekleyebilirsiniz. (Sepetinizde zaten ${concurrentItem.pieces} adet var)`,
+              );
+            }
+            await this.prisma.cartItem.update({
+              where: { id: concurrentItem.id },
+              data: { pieces: totalPieces },
+            });
+          }
+        } else {
+          throw err;
+        }
+      }
     }
 
     return this.getCart(session);
@@ -125,17 +155,29 @@ export class CartService {
       throw new NotFoundException('Sepette böyle bir ürün bulunamadı.');
     }
 
-    if (existingItem.pieces <= dto.pieces) {
-      await this.prisma.cartItem.delete({
-        where: { id: existingItem.id },
-      });
-    } else {
-      await this.prisma.cartItem.update({
-        where: { id: existingItem.id },
-        data: {
-          pieces: { decrement: dto.pieces },
-        },
-      });
+    try {
+      if (existingItem.pieces <= dto.pieces) {
+        await this.prisma.cartItem.delete({
+          where: { id: existingItem.id },
+        });
+      } else {
+        await this.prisma.cartItem.update({
+          where: { id: existingItem.id },
+          data: {
+            pieces: { decrement: dto.pieces },
+          },
+        });
+      }
+    } catch (err: unknown) {
+      if (
+        err &&
+        typeof err === 'object' &&
+        'code' in err &&
+        (err as { code: string }).code === 'P2025'
+      ) {
+        return this.getCart(session);
+      }
+      throw err;
     }
 
     return this.getCart(session);
@@ -193,17 +235,50 @@ export class CartService {
               pieces: { increment: guestItem.pieces },
             },
           });
-          await tx.cartItem.delete({
-            where: { id: guestItem.id },
-          });
+          try {
+            await tx.cartItem.delete({
+              where: { id: guestItem.id },
+            });
+          } catch (err: unknown) {
+            const isRecordNotFound =
+              err &&
+              typeof err === 'object' &&
+              'code' in err &&
+              (err as { code: string }).code === 'P2025';
+            if (!isRecordNotFound) {
+              throw err;
+            }
+          }
         } else {
-          await tx.cartItem.update({
-            where: { id: guestItem.id },
-            data: {
-              userId,
-              guestSessionId: null,
-            },
-          });
+          try {
+            await tx.cartItem.update({
+              where: { id: guestItem.id },
+              data: {
+                userId,
+                guestSessionId: null,
+              },
+            });
+          } catch (err: unknown) {
+            if (
+              err &&
+              typeof err === 'object' &&
+              'code' in err &&
+              (err as { code: string }).code === 'P2002'
+            ) {
+              const concurrentUserItem = await tx.cartItem.findFirst({
+                where: { userId, productVariantId: guestItem.productVariantId },
+              });
+              if (concurrentUserItem) {
+                await tx.cartItem.update({
+                  where: { id: concurrentUserItem.id },
+                  data: { pieces: { increment: guestItem.pieces } },
+                });
+                await tx.cartItem.delete({ where: { id: guestItem.id } });
+              }
+            } else {
+              throw err;
+            }
+          }
         }
       }
     });

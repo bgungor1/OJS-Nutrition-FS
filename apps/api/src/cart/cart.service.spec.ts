@@ -200,5 +200,63 @@ describe('CartService', () => {
       });
       expect(result).toHaveLength(1);
     });
+
+    it('should handle P2002 unique constraint collision gracefully during concurrent addToCart by updating the item', async () => {
+      mockPrisma.productVariant.findUnique.mockResolvedValue({
+        ...mockVariant,
+        stockQuantity: 10,
+      });
+      mockPrisma.cartItem.findFirst.mockResolvedValueOnce(null);
+      const p2002Error = new Error('Unique constraint failed') as Error & {
+        code: string;
+      };
+      p2002Error.code = 'P2002';
+      mockPrisma.cartItem.create.mockRejectedValue(p2002Error);
+
+      mockPrisma.cartItem.findFirst.mockResolvedValueOnce({
+        ...mockCartItem,
+        pieces: 2,
+      });
+      mockPrisma.cartItem.update.mockResolvedValue({
+        ...mockCartItem,
+        pieces: 5,
+      });
+      mockPrisma.cartItem.findMany.mockResolvedValue([
+        { ...mockCartItem, pieces: 5 },
+      ]);
+
+      const result = await service.addToCart(
+        { userId: 'user-1' },
+        { ...validDto, pieces: 3 },
+      );
+
+      expect(mockPrisma.cartItem.update).toHaveBeenCalledWith({
+        where: { id: mockCartItem.id },
+        data: { pieces: 5 },
+      });
+      expect(result[0].pieces).toBe(5);
+    });
+
+    it('should throw BadRequestException if concurrent P2002 retry pushes total quantity above stock', async () => {
+      mockPrisma.productVariant.findUnique.mockResolvedValue({
+        ...mockVariant,
+        stockQuantity: 4,
+      });
+      mockPrisma.cartItem.findFirst.mockResolvedValueOnce(null);
+      const p2002Error = new Error('Unique constraint failed') as Error & {
+        code: string;
+      };
+      p2002Error.code = 'P2002';
+      mockPrisma.cartItem.create.mockRejectedValue(p2002Error);
+
+      mockPrisma.cartItem.findFirst.mockResolvedValueOnce({
+        ...mockCartItem,
+        pieces: 3,
+      });
+
+      await expect(
+        service.addToCart({ userId: 'user-1' }, { ...validDto, pieces: 3 }),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 });

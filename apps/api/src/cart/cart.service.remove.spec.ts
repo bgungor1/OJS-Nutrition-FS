@@ -102,6 +102,25 @@ describe('CartService - removeFromCart and clearCart', () => {
       });
       expect(result[0].pieces).toBe(2);
     });
+
+    it('should handle P2025 gracefully when item was already removed concurrently', async () => {
+      mockPrisma.cartItem.findFirst.mockResolvedValue(mockCartItem);
+      const p2025Error = new Error(
+        'Record to delete does not exist',
+      ) as Error & {
+        code: string;
+      };
+      p2025Error.code = 'P2025';
+      mockPrisma.cartItem.delete.mockRejectedValue(p2025Error);
+      mockPrisma.cartItem.findMany.mockResolvedValue([]);
+
+      const result = await service.removeFromCart(
+        { userId: 'user-1' },
+        { ...validDto, pieces: 2 },
+      );
+
+      expect(result).toEqual([]);
+    });
   });
 
   describe('clearCart', () => {
