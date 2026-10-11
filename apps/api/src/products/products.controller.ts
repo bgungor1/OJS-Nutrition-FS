@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Public } from '../common/decorators/public.decorator';
+import { CacheControl, HTTP_CACHE_DIRECTIVES, Public } from '../common';
 import { ErrorResponseDto } from '../common/dto';
 import {
   ApiBestSellerProductDto,
@@ -41,6 +41,7 @@ export class ProductsController {
 
   @Public()
   @Get('best-sellers')
+  @CacheControl(HTTP_CACHE_DIRECTIVES.BEST_SELLERS)
   @ApiOperation({ summary: 'En çok satan ürünler listesi' })
   @ApiResponse({
     status: 200,

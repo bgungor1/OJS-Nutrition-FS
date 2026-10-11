@@ -18,7 +18,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { Public, Roles } from '../common';
+import { CacheControl, HTTP_CACHE_DIRECTIVES, Public, Roles } from '../common';
 import { ErrorResponseDto, SuccessIdResponseDto } from '../common/dto';
 import {
   CreateFaqDto,
@@ -36,6 +36,7 @@ export class FaqController {
 
   @Public()
   @Get()
+  @CacheControl(HTTP_CACHE_DIRECTIVES.FAQ)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Sıkça sorulan soruları kategoriye göre veya tümüyle listeler',
@@ -51,6 +52,7 @@ export class FaqController {
 
   @Public()
   @Get(':id')
+  @CacheControl(HTTP_CACHE_DIRECTIVES.FAQ)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Tekil SSS maddesini getirir',

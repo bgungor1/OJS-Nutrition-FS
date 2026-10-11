@@ -1,9 +1,13 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { Prisma } from '@prisma/client';
+import { CACHE_KEYS } from '../common/constants';
 import { AuditEvent, SecurityAuditService } from '../common/audit';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVariantDto, UpdateVariantDto } from './dto';
@@ -15,6 +19,9 @@ export class ProductVariantsAdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: SecurityAuditService,
+    @Optional()
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager?: Cache,
   ) {}
 
   async createVariant(
@@ -60,6 +67,8 @@ export class ProductVariantsAdminService {
       resourceId: variant.id,
       details: { productId, aroma: variant.aroma },
     });
+
+    await this.cacheManager?.del(CACHE_KEYS.BEST_SELLERS);
 
     return ProductsMapper.toProductDetail(
       await this.getProductWithVariants(productId),
@@ -125,6 +134,8 @@ export class ProductVariantsAdminService {
       details: { productId, updatedFields: Object.keys(dto) },
     });
 
+    await this.cacheManager?.del(CACHE_KEYS.BEST_SELLERS);
+
     return ProductsMapper.toProductDetail(
       await this.getProductWithVariants(productId),
     );
@@ -162,6 +173,8 @@ export class ProductVariantsAdminService {
       resourceId: variantId,
       details: { productId, aroma: variant.aroma },
     });
+
+    await this.cacheManager?.del(CACHE_KEYS.BEST_SELLERS);
   }
 
   private getProductWithVariants(id: string) {

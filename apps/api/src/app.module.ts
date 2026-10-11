@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { CacheModule } from '@nestjs/cache-manager';
 import { join } from 'node:path';
 
 import configuration, { AppConfig, validateEnv } from './config';
@@ -13,6 +14,7 @@ import {
   CorrelationIdMiddleware,
   ResponseInterceptor,
   PerformanceInterceptor,
+  CacheControlInterceptor,
   JwtAuthGuard,
   RolesGuard,
   AuditModule,
@@ -62,6 +64,10 @@ import { AdminModule } from './admin';
       ],
     }),
     PrismaModule,
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 300 * 1000,
+    }),
     AuditModule,
     ObservabilityModule,
 
@@ -86,6 +92,7 @@ import { AdminModule } from './admin';
     // @Roles('admin') taşıyan route'larda çalışır; JwtAuthGuard'dan sonra.
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_INTERCEPTOR, useClass: PerformanceInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: CacheControlInterceptor },
     { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],

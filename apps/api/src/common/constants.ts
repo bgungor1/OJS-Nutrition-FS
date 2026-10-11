@@ -13,3 +13,5 @@ export const GUEST_CART_COOKIE = 'guest_cart_id';
 export const REQUEST_ID_HEADER = 'x-request-id';
 
 export const CORRELATION_ID_HEADER = 'x-correlation-id';
+
+export * from './constants/cache.constants';

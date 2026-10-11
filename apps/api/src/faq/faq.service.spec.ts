@@ -181,4 +181,116 @@ describe('FaqService', () => {
       );
     });
   });
+
+  describe('caching and invalidation', () => {
+    let cachedService: FaqService;
+    let mockCache: {
+      get: jest.Mock;
+      set: jest.Mock;
+      del: jest.Mock;
+    };
+
+    beforeEach(async () => {
+      mockCache = {
+        get: jest.fn(),
+        set: jest.fn(),
+        del: jest.fn().mockResolvedValue(true),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          FaqService,
+          { provide: PrismaService, useValue: prisma },
+          { provide: 'CACHE_MANAGER', useValue: mockCache },
+        ],
+      }).compile();
+
+      cachedService = module.get<FaqService>(FaqService);
+    });
+
+    it('should return cached items on findAll without querying database', async () => {
+      const cachedList = [
+        {
+          id: 'faq-cached',
+          question: 'Cached?',
+          answer: 'Yes',
+          category: 'genel',
+          sort_order: 0,
+        },
+      ];
+      mockCache.get.mockResolvedValue(cachedList);
+
+      const result = await cachedService.findAll();
+
+      expect(result).toEqual(cachedList);
+      expect(mockCache.get).toHaveBeenCalledWith('faq:list:all');
+      expect(prisma.faqItem.findMany).not.toHaveBeenCalled();
+    });
+
+    it('should query database and set cache on findAll cache miss', async () => {
+      mockCache.get.mockResolvedValue(undefined);
+      prisma.faqItem.findMany.mockResolvedValue([mockFaq]);
+
+      const result = await cachedService.findAll();
+
+      expect(result).toHaveLength(1);
+      expect(mockCache.get).toHaveBeenCalledWith('faq:list:all');
+      expect(prisma.faqItem.findMany).toHaveBeenCalled();
+      expect(mockCache.set).toHaveBeenCalledWith(
+        'faq:list:all',
+        expect.any(Array),
+        30 * 60 * 1000,
+      );
+    });
+
+    it('should return cached item on findById without querying database', async () => {
+      const cachedItem = {
+        id: 'faq-1',
+        question: 'Cached?',
+        answer: 'Yes',
+        category: 'genel',
+        sort_order: 0,
+      };
+      mockCache.get.mockResolvedValue(cachedItem);
+
+      const result = await cachedService.findById('faq-1');
+
+      expect(result).toEqual(cachedItem);
+      expect(mockCache.get).toHaveBeenCalledWith('faq:item:faq-1');
+      expect(prisma.faqItem.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('should invalidate cache when a new FAQ item is created', async () => {
+      prisma.faqItem.create.mockResolvedValue(mockFaq);
+
+      await cachedService.create({
+        question: 'Yeni Soru',
+        answer: 'Yeni Cevap',
+        category: 'genel',
+      });
+
+      expect(mockCache.del).toHaveBeenCalledWith('faq:list:all');
+      expect(mockCache.del).toHaveBeenCalledWith('faq:list:genel');
+    });
+
+    it('should invalidate cache and specific item when an FAQ is updated', async () => {
+      prisma.faqItem.findUnique.mockResolvedValue({ id: 'faq-1' });
+      prisma.faqItem.update.mockResolvedValue(mockFaq);
+
+      await cachedService.update('faq-1', { question: 'Guncel Soru' });
+
+      expect(mockCache.del).toHaveBeenCalledWith('faq:list:all');
+      expect(mockCache.del).toHaveBeenCalledWith('faq:item:faq-1');
+    });
+
+    it('should invalidate cache and specific item when an FAQ is deleted', async () => {
+      prisma.faqItem.findUnique.mockResolvedValue({ id: 'faq-1' });
+      prisma.faqItem.delete.mockResolvedValue(mockFaq);
+
+      await cachedService.delete('faq-1');
+
+      expect(mockCache.del).toHaveBeenCalledWith('faq:list:all');
+      expect(mockCache.del).toHaveBeenCalledWith('faq:item:faq-1');
+    });
+  });
 });

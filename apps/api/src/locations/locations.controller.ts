@@ -7,7 +7,9 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CacheControl } from '../common/decorators/cache-control.decorator';
 import { Public } from '../common/decorators/public.decorator';
+import { HTTP_CACHE_DIRECTIVES } from '../common/constants';
 import { ErrorResponseDto } from '../common/dto';
 import {
   CountryResponseDto,
@@ -23,6 +25,7 @@ export class LocationsController {
   constructor(private readonly locationsService: LocationsService) {}
 
   @Get('countries')
+  @CacheControl(HTTP_CACHE_DIRECTIVES.LOCATIONS)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Kayıtlı tüm ülkeleri alfabetik sırayla listeler' })
   @ApiResponse({
@@ -35,6 +38,7 @@ export class LocationsController {
   }
 
   @Get('countries/:countryId/regions')
+  @CacheControl(HTTP_CACHE_DIRECTIVES.LOCATIONS)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Belirli bir ülkeye bağlı illeri listeler' })
   @ApiParam({
@@ -64,6 +68,7 @@ export class LocationsController {
   }
 
   @Get('regions/:regionId/subregions')
+  @CacheControl(HTTP_CACHE_DIRECTIVES.LOCATIONS)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Belirli bir ile bağlı ilçeleri listeler' })
   @ApiParam({

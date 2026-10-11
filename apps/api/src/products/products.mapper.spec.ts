@@ -1,5 +1,9 @@
 import { Prisma, ProductVariant } from '@prisma/client';
-import { ProductsMapper, ProductWithVariants } from './products.mapper';
+import {
+  ProductCardItem,
+  ProductsMapper,
+  ProductWithVariants,
+} from './products.mapper';
 import { createMockProduct, createMockVariant } from './test/products.fixture';
 
 describe('ProductsMapper', () => {
@@ -136,6 +140,37 @@ describe('ProductsMapper', () => {
       }) as unknown as ProductWithVariants;
 
       expect(ProductsMapper.toProduct(product).photo_src).toBe('');
+    });
+
+    it('should map projected card item without full product fields', () => {
+      const projectedItem: ProductCardItem = {
+        id: 'prod-proj-1',
+        name: 'PROJECTED WHEY',
+        shortExplanation: 'Fast absorbing',
+        slug: 'projected-whey',
+        commentCount: 42,
+        averageStar: 4.9,
+        variants: [
+          {
+            id: 'var-1',
+            totalPrice: new Prisma.Decimal(600),
+            discountedPrice: new Prisma.Decimal(500),
+            pricePerServing: new Prisma.Decimal(30),
+            photoSrc: 'media/proj.jpg',
+          },
+        ],
+      };
+
+      const product = ProductsMapper.toProduct(projectedItem);
+      expect(product.id).toBe('prod-proj-1');
+      expect(product.name).toBe('PROJECTED WHEY');
+      expect(product.price_info.total_price).toBe(600);
+      expect(product.price_info.discounted_price).toBe(500);
+      expect(product.photo_src).toBe('media/proj.jpg');
+
+      const bestSeller = ProductsMapper.toBestSeller(projectedItem);
+      expect(bestSeller.name).toBe('PROJECTED WHEY');
+      expect(bestSeller.price_info.total_price).toBe(600);
     });
   });
 

@@ -1,4 +1,4 @@
-import { Product, ProductVariant } from '@prisma/client';
+import { Prisma, Product, ProductVariant } from '@prisma/client';
 import {
   ApiBestSellerProduct,
   ApiNutritionalContent,
@@ -13,6 +13,32 @@ export type ProductWithVariants = Product & {
 };
 
 /**
+ * Ürün kartı seviyesinde asgari varyant bilgisi.
+ * Full ProductVariant yerine yalnızca kartta hesaplanan alanları taşır.
+ */
+export type ProductCardVariant = {
+  id?: string;
+  totalPrice: Prisma.Decimal | number;
+  discountedPrice: Prisma.Decimal | number | null;
+  pricePerServing: Prisma.Decimal | number;
+  photoSrc: string;
+};
+
+/**
+ * Ürün kartı seviyesinde asgari ürün bilgisi.
+ * Heavy JSON ve text alanları (nutritionalContent, usage vb.) içermez.
+ */
+export type ProductCardItem = {
+  id: string;
+  name: string;
+  shortExplanation: string;
+  slug: string;
+  commentCount: number;
+  averageStar: number;
+  variants: ProductCardVariant[];
+};
+
+/**
  * OJS Nutrition — Ürün & Katalog Dönüştürücü Katmanı (Mapper).
  * Veritabanı modellerini frontend API sözleşmesine dönüştürür ve
  * backend'e ait fiyat, indirim, kâr ve stok uygunluk hesaplamalarını yapar.
@@ -21,7 +47,7 @@ export class ProductsMapper {
   /**
    * Birincil varyant üzerinden fiyat, indirim oranı ve kâr (profit) hesaplamalarını üretir.
    */
-  static toPriceInfo(variants: ProductVariant[]): ApiPriceInfo {
+  static toPriceInfo(variants: ProductCardVariant[]): ApiPriceInfo {
     const primary = variants[0];
     if (!primary) {
       return {
@@ -102,7 +128,7 @@ export class ProductsMapper {
     };
   }
 
-  static toProduct(product: ProductWithVariants): ApiProduct {
+  static toProduct(product: ProductCardItem): ApiProduct {
     return {
       id: product.id,
       name: product.name,
@@ -115,7 +141,7 @@ export class ProductsMapper {
     };
   }
 
-  static toBestSeller(product: ProductWithVariants): ApiBestSellerProduct {
+  static toBestSeller(product: ProductCardItem): ApiBestSellerProduct {
     return {
       name: product.name,
       short_explanation: product.shortExplanation,
@@ -155,7 +181,9 @@ export class ProductsMapper {
     };
   }
 
-  static getLowestPrice(variants: ProductVariant[]): number {
+  static getLowestPrice(
+    variants: Array<Pick<ProductCardVariant, 'totalPrice' | 'discountedPrice'>>,
+  ): number {
     if (variants.length === 0) return 0;
     return Math.min(
       ...variants.map((v) =>
