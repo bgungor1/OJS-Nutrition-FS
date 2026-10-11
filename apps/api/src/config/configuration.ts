@@ -8,6 +8,9 @@ export interface DatabaseConfig {
   connectionLimit?: number;
   poolTimeout?: number;
   connectTimeout?: number;
+  transactionTimeout?: number;
+  transactionMaxWait?: number;
+  pgbouncer?: boolean;
 }
 
 export interface AppConfig {
@@ -63,6 +66,15 @@ export default (): AppConfig => ({
       : undefined,
     connectTimeout: process.env.DATABASE_CONNECT_TIMEOUT
       ? parseInt(process.env.DATABASE_CONNECT_TIMEOUT, 10)
+      : undefined,
+    transactionTimeout: process.env.DATABASE_TRANSACTION_TIMEOUT
+      ? parseInt(process.env.DATABASE_TRANSACTION_TIMEOUT, 10)
+      : undefined,
+    transactionMaxWait: process.env.DATABASE_TRANSACTION_MAX_WAIT
+      ? parseInt(process.env.DATABASE_TRANSACTION_MAX_WAIT, 10)
+      : undefined,
+    pgbouncer: process.env.DATABASE_PGBOUNCER
+      ? process.env.DATABASE_PGBOUNCER === 'true'
       : undefined,
   },
   jwt: {

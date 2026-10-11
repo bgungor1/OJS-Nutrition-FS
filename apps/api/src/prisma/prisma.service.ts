@@ -11,6 +11,8 @@ import { SentryService } from '../common/observability/sentry.service';
 import { AppConfig, DatabaseConfig } from '../config/configuration';
 
 export const SLOW_QUERY_THRESHOLD_MS = 50;
+export const DEFAULT_TRANSACTION_TIMEOUT_MS = 15000;
+export const DEFAULT_TRANSACTION_MAX_WAIT_MS = 5000;
 
 export interface SafeConnectionSummary {
   host: string;
@@ -19,14 +21,10 @@ export interface SafeConnectionSummary {
   connectionLimit: string;
   poolTimeout: string;
   pgbouncer: boolean;
+  transactionTimeout: number;
+  transactionMaxWait: number;
 }
 
-/**
- * Prisma Client wrapper'ı:
- * - Veritabanı bağlantı yaşam döngüsünü ($connect / $disconnect) yönetir.
- * - Bağlantı havuzu ve PgBouncer parametrelerini yapılandırır.
- * - Yavaş sorguları (> 50ms) tespit eder ve Sentry APM'e iletir.
- */
 @Injectable()
 export class PrismaService
   extends PrismaClient<
@@ -37,14 +35,34 @@ export class PrismaService
 {
   private readonly logger = new Logger(PrismaService.name);
   readonly configuredDatasourceUrl?: string;
+  readonly transactionTimeout: number;
+  readonly transactionMaxWait: number;
 
   constructor(
     @Optional() private readonly sentryService?: SentryService,
     @Optional() private readonly configService?: ConfigService<AppConfig>,
   ) {
     const datasourceUrl = PrismaService.resolveDatasourceUrl(configService);
+    const dbConfig = configService?.get<DatabaseConfig>('database');
+
+    const transactionTimeout =
+      dbConfig?.transactionTimeout ??
+      (process.env.DATABASE_TRANSACTION_TIMEOUT
+        ? parseInt(process.env.DATABASE_TRANSACTION_TIMEOUT, 10)
+        : DEFAULT_TRANSACTION_TIMEOUT_MS);
+
+    const transactionMaxWait =
+      dbConfig?.transactionMaxWait ??
+      (process.env.DATABASE_TRANSACTION_MAX_WAIT
+        ? parseInt(process.env.DATABASE_TRANSACTION_MAX_WAIT, 10)
+        : DEFAULT_TRANSACTION_MAX_WAIT_MS);
+
     super({
       datasources: datasourceUrl ? { db: { url: datasourceUrl } } : undefined,
+      transactionOptions: {
+        timeout: transactionTimeout,
+        maxWait: transactionMaxWait,
+      },
       log: [
         { emit: 'event', level: 'query' },
         { emit: 'stdout', level: 'error' },
@@ -52,6 +70,8 @@ export class PrismaService
       ],
     });
     this.configuredDatasourceUrl = datasourceUrl;
+    this.transactionTimeout = transactionTimeout;
+    this.transactionMaxWait = transactionMaxWait;
   }
 
   static resolveDatasourceUrl(
@@ -109,10 +129,17 @@ export class PrismaService
         url.searchParams.set('connect_timeout', connectTimeout.toString());
       }
 
-      const isPoolerPort = url.port === '6543';
-      const isSupabasePoolerHost = url.hostname.includes('pooler.supabase.com');
+      const isPoolerPort = url.port === '6543' || url.port === '6432';
+      const isPoolerHost =
+        url.hostname.includes('pooler.supabase.com') ||
+        url.hostname.includes('pooler') ||
+        url.hostname.includes('pgbouncer');
+      const isPgBouncerExplicit =
+        dbConfig?.pgbouncer === true ||
+        process.env.DATABASE_PGBOUNCER === 'true';
+
       if (
-        (isPoolerPort || isSupabasePoolerHost) &&
+        (isPoolerPort || isPoolerHost || isPgBouncerExplicit) &&
         !url.searchParams.has('pgbouncer')
       ) {
         url.searchParams.set('pgbouncer', 'true');
@@ -124,10 +151,6 @@ export class PrismaService
     }
   }
 
-  /**
-   * Veritabanı bağlantı bilgilerini şifre ve hassas kimlik bilgileri arındırılmış (sanitized)
-   * güvenli bir özet olarak döner.
-   */
   getSafeConnectionSummary(): SafeConnectionSummary | null {
     const activeUrl = this.configuredDatasourceUrl || process.env.DATABASE_URL;
     if (!activeUrl) return null;
@@ -141,10 +164,29 @@ export class PrismaService
         connectionLimit: url.searchParams.get('connection_limit') || 'default',
         poolTimeout: url.searchParams.get('pool_timeout') || 'default',
         pgbouncer: url.searchParams.get('pgbouncer') === 'true',
+        transactionTimeout:
+          this.transactionTimeout ?? DEFAULT_TRANSACTION_TIMEOUT_MS,
+        transactionMaxWait:
+          this.transactionMaxWait ?? DEFAULT_TRANSACTION_MAX_WAIT_MS,
       };
     } catch {
       return null;
     }
+  }
+
+  async executeTransaction<T>(
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+    options?: {
+      maxWait?: number;
+      timeout?: number;
+      isolationLevel?: Prisma.TransactionIsolationLevel;
+    },
+  ): Promise<T> {
+    return this.$transaction(fn, {
+      maxWait: options?.maxWait ?? this.transactionMaxWait,
+      timeout: options?.timeout ?? this.transactionTimeout,
+      isolationLevel: options?.isolationLevel,
+    });
   }
 
   async onModuleInit(): Promise<void> {
@@ -159,7 +201,8 @@ export class PrismaService
       this.logger.log(
         `[Database Pool] Connected to ${summary.database} on ${summary.host}:${summary.port} | ` +
           `connection_limit: ${summary.connectionLimit} | pool_timeout: ${summary.poolTimeout} | ` +
-          `pgbouncer: ${summary.pgbouncer}`,
+          `pgbouncer: ${summary.pgbouncer} | tx_timeout: ${summary.transactionTimeout}ms | ` +
+          `tx_max_wait: ${summary.transactionMaxWait}ms`,
       );
     }
   }

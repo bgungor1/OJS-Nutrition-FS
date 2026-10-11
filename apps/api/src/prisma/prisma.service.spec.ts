@@ -201,6 +201,15 @@ describe('PrismaService', () => {
       expect(parsed.searchParams.get('pgbouncer')).toBe('true');
     });
 
+    it('automatically sets pgbouncer=true when connecting to standard pgbouncer port 6432', () => {
+      const poolerUrl =
+        'postgresql://postgres.ref:secret@db.internal:6432/postgres';
+      const resolved = PrismaService.resolveDatasourceUrl(undefined, poolerUrl);
+      expect(resolved).toBeDefined();
+      const parsed = new URL(resolved!);
+      expect(parsed.searchParams.get('pgbouncer')).toBe('true');
+    });
+
     it('automatically sets pgbouncer=true when hostname is pooler.supabase.com', () => {
       const poolerUrl =
         'postgresql://postgres.ref:secret@pooler.supabase.com/postgres';
@@ -210,11 +219,35 @@ describe('PrismaService', () => {
       expect(parsed.searchParams.get('pgbouncer')).toBe('true');
     });
 
+    it('automatically sets pgbouncer=true when config or env requests pgbouncer explicitly', () => {
+      const rawUrl = 'postgresql://user:pass@localhost:5432/db';
+      const mockConfigService = {
+        get: jest.fn((key: string) => {
+          if (key === 'database') {
+            return { pgbouncer: true };
+          }
+          return undefined;
+        }),
+      };
+      const resolved = PrismaService.resolveDatasourceUrl(
+        mockConfigService as never,
+        rawUrl,
+      );
+      expect(resolved).toBeDefined();
+      const parsed = new URL(resolved!);
+      expect(parsed.searchParams.get('pgbouncer')).toBe('true');
+    });
+
     it('generates a safe connection summary without sensitive credentials', () => {
       const raw =
         'postgresql://admin:superSecretPass123@db.supabase.com:5432/ojs_nutrition?connection_limit=20&pool_timeout=15';
       const customService = new PrismaService(undefined, {
-        get: (key: string) => (key === 'databaseUrl' ? raw : undefined),
+        get: (key: string) =>
+          key === 'databaseUrl'
+            ? raw
+            : key === 'database'
+              ? { transactionTimeout: 12000, transactionMaxWait: 4000 }
+              : undefined,
       } as never);
 
       const summary = customService.getSafeConnectionSummary();
@@ -225,9 +258,42 @@ describe('PrismaService', () => {
       expect(summary?.connectionLimit).toBe('20');
       expect(summary?.poolTimeout).toBe('15');
       expect(summary?.pgbouncer).toBe(false);
+      expect(summary?.transactionTimeout).toBe(12000);
+      expect(summary?.transactionMaxWait).toBe(4000);
 
       expect(JSON.stringify(summary)).not.toContain('superSecretPass123');
       expect(JSON.stringify(summary)).not.toContain('admin');
+    });
+
+    it('executes executeTransaction with default and custom options', async () => {
+      const txMock = {} as Prisma.TransactionClient;
+      const txSpy = jest
+        .spyOn(service, '$transaction')
+        .mockImplementation(
+          (
+            cb:
+              ((tx: Prisma.TransactionClient) => Promise<unknown>) | unknown[],
+            opts?: unknown,
+          ) => {
+            if (typeof cb === 'function') {
+              return cb(txMock);
+            }
+            return Promise.resolve(opts);
+          },
+        );
+
+      const callback = jest.fn().mockResolvedValue('tx-result');
+      const result = await service.executeTransaction(callback, {
+        timeout: 20000,
+      });
+
+      expect(result).toBe('tx-result');
+      expect(callback).toHaveBeenCalledWith(txMock);
+      expect(txSpy).toHaveBeenCalledWith(callback, {
+        timeout: 20000,
+        maxWait: 5000,
+        isolationLevel: undefined,
+      });
     });
 
     it('logs pool configuration on onModuleInit without throwing', async () => {

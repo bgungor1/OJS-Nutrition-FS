@@ -65,6 +65,22 @@ export class EnvironmentVariables {
   @IsOptional()
   DATABASE_CONNECT_TIMEOUT?: number;
 
+  @Type(() => Number)
+  @IsInt()
+  @Min(1000)
+  @IsOptional()
+  DATABASE_TRANSACTION_TIMEOUT?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(500)
+  @IsOptional()
+  DATABASE_TRANSACTION_MAX_WAIT?: number;
+
+  @IsString()
+  @IsOptional()
+  DATABASE_PGBOUNCER?: string;
+
   @IsString()
   @IsNotEmpty()
   JWT_ACCESS_SECRET!: string;
