@@ -134,4 +134,79 @@ describe('LocationsService', () => {
       expect(mockPrisma.subregion.findMany).not.toHaveBeenCalled();
     });
   });
+
+  describe('caching behavior', () => {
+    let cachedService: LocationsService;
+    let mockCache: {
+      get: jest.Mock;
+      set: jest.Mock;
+    };
+
+    beforeEach(async () => {
+      mockCache = {
+        get: jest.fn(),
+        set: jest.fn(),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          LocationsService,
+          { provide: PrismaService, useValue: mockPrisma },
+          { provide: 'CACHE_MANAGER', useValue: mockCache },
+        ],
+      }).compile();
+
+      cachedService = module.get<LocationsService>(LocationsService);
+    });
+
+    it('should return cached countries without querying database on cache hit', async () => {
+      mockCache.get.mockResolvedValue(mockCountries);
+
+      const result = await cachedService.findCountries();
+
+      expect(result).toEqual(mockCountries);
+      expect(mockCache.get).toHaveBeenCalledWith('locations:countries');
+      expect(mockPrisma.country.findMany).not.toHaveBeenCalled();
+    });
+
+    it('should query database and populate cache on cache miss', async () => {
+      mockCache.get.mockResolvedValue(undefined);
+      mockPrisma.country.findMany.mockResolvedValue(mockCountries);
+
+      const result = await cachedService.findCountries();
+
+      expect(result).toEqual(mockCountries);
+      expect(mockCache.get).toHaveBeenCalledWith('locations:countries');
+      expect(mockPrisma.country.findMany).toHaveBeenCalled();
+      expect(mockCache.set).toHaveBeenCalledWith(
+        'locations:countries',
+        mockCountries,
+        24 * 60 * 60 * 1000,
+      );
+    });
+
+    it('should return cached regions without querying database on cache hit', async () => {
+      const cachedRegions = [{ id: 1, name: 'İstanbul', country_id: 1 }];
+      mockCache.get.mockResolvedValue(cachedRegions);
+
+      const result = await cachedService.findRegionsByCountryId(1);
+
+      expect(result).toEqual(cachedRegions);
+      expect(mockCache.get).toHaveBeenCalledWith('locations:regions:1');
+      expect(mockPrisma.country.findUnique).not.toHaveBeenCalled();
+      expect(mockPrisma.region.findMany).not.toHaveBeenCalled();
+    });
+
+    it('should return cached subregions without querying database on cache hit', async () => {
+      const cachedSubregions = [{ id: 1, name: 'Kadıköy', region_id: 1 }];
+      mockCache.get.mockResolvedValue(cachedSubregions);
+
+      const result = await cachedService.findSubregionsByRegionId(1);
+
+      expect(result).toEqual(cachedSubregions);
+      expect(mockCache.get).toHaveBeenCalledWith('locations:subregions:1');
+      expect(mockPrisma.region.findUnique).not.toHaveBeenCalled();
+      expect(mockPrisma.subregion.findMany).not.toHaveBeenCalled();
+    });
+  });
 });
