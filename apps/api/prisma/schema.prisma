@@ -166,6 +166,8 @@ model Product {
   @@index([mainCategoryId])
   @@index([subCategoryId])
   @@index([isBestSeller, bestSellerRank])
+  @@index([createdAt])
+  @@index([averageStar])
   @@index([tags], type: Gin)
   @@index([name(ops: raw("gin_trgm_ops"))], type: Gin)
   @@index([shortExplanation(ops: raw("gin_trgm_ops"))], type: Gin)
@@ -196,6 +198,7 @@ model ProductVariant {
   orderItems OrderItem[]
 
   @@index([productId])
+  @@index([productId, createdAt])
 }
 
 model Review {
@@ -256,7 +259,10 @@ model Order {
   payment PaymentTransaction?
 
   @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
   @@index([status])
+  @@index([status, createdAt])
+  @@index([createdAt])
 }
 
 model OrderItem {
