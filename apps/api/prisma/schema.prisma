@@ -1,6 +1,5 @@
 // OJS Nutrition — Prisma schema
-// Kaynak: BACKEND_PLAN.md §4. Alan tipleri plandaki özet modelin
-// gerçek Prisma karşılığıdır; ilişkiler, index'ler ve @db tipleri eklenmiştir.
+// Kaynak: BACKEND_PLAN.md §4
 
 generator client {
   provider = "prisma-client-js"

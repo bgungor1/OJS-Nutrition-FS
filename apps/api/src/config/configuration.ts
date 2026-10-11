@@ -2,12 +2,21 @@
  * Tipli config nesnesi. Controller/service'ler env'i doğrudan process.env'den
  * değil, ConfigService<AppConfig> üzerinden okur.
  */
+export interface DatabaseConfig {
+  url: string;
+  directUrl?: string;
+  connectionLimit?: number;
+  poolTimeout?: number;
+  connectTimeout?: number;
+}
+
 export interface AppConfig {
   nodeEnv: string;
   port: number;
   apiGlobalPrefix: string;
   corsOrigins: string[];
   databaseUrl: string;
+  database: DatabaseConfig;
   jwt: {
     accessSecret: string;
     refreshSecret: string;
@@ -43,6 +52,19 @@ export default (): AppConfig => ({
     .map((origin) => origin.trim())
     .filter(Boolean),
   databaseUrl: process.env.DATABASE_URL ?? '',
+  database: {
+    url: process.env.DATABASE_URL ?? '',
+    directUrl: process.env.DIRECT_URL,
+    connectionLimit: process.env.DATABASE_CONNECTION_LIMIT
+      ? parseInt(process.env.DATABASE_CONNECTION_LIMIT, 10)
+      : undefined,
+    poolTimeout: process.env.DATABASE_POOL_TIMEOUT
+      ? parseInt(process.env.DATABASE_POOL_TIMEOUT, 10)
+      : undefined,
+    connectTimeout: process.env.DATABASE_CONNECT_TIMEOUT
+      ? parseInt(process.env.DATABASE_CONNECT_TIMEOUT, 10)
+      : undefined,
+  },
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET ?? '',
     refreshSecret: process.env.JWT_REFRESH_SECRET ?? '',

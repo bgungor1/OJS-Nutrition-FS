@@ -239,7 +239,8 @@ Alternatif olarak, kök dizinden doğrudan şu komutlar kullanılabilir:
 ### Backend (`apps/api/.env`)
 ```env
 # Veritabanı
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ojs_nutrition?schema=public"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ojs_nutrition?schema=public&connection_limit=10&pool_timeout=20"
+DIRECT_URL="postgresql://postgres:postgres@localhost:5432/ojs_nutrition"
 
 # Sunucu & Port
 PORT=3000
