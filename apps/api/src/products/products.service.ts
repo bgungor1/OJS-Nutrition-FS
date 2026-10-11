@@ -1,5 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { Prisma } from '@prisma/client';
+import { CACHE_KEYS, CACHE_TTL } from '../common/constants';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductsQueryDto } from './dto/products-query.dto';
 import {
@@ -11,19 +18,15 @@ import {
 import { PRODUCT_CARD_SELECT } from './products.constants';
 import { ProductsMapper } from './products.mapper';
 
-/**
- * OJS Nutrition — Storefront Ürün & Katalog Servisi.
- * Sayfalanmış ürün listeleme, filtreleme, sıralama, en çok satanlar ve
- * kategori ağacı okuma işlemlerini yürütür (Salt-okunur / Public).
- */
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional()
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager?: Cache,
+  ) {}
 
-  /**
-   * Sayfalanmış, filtrelenmiş ve sıralanmış ürün listesini döner.
-   * N+1 guard: varyantlar tek sorguda include edilir.
-   */
   async list(query: ProductsQueryDto): Promise<ApiPaginatedProducts> {
     const limit = query.limit ?? 20;
     const offset = query.offset ?? 0;
@@ -98,9 +101,7 @@ export class ProductsService {
             LIMIT ${limit} OFFSET ${offset}
           `;
         }
-      } catch {
-        // noop
-      }
+      } catch {}
 
       if (sortedRows && sortedRows.length > 0) {
         const ids = sortedRows.map((r) => r.id);
@@ -176,22 +177,39 @@ export class ProductsService {
     return { count, next, previous, results };
   }
 
-  /**
-   * En çok satan ürünleri döner (isBestSeller=true).
-   */
   async bestSellers(): Promise<ApiBestSellerProduct[]> {
+    const cacheKey = CACHE_KEYS.BEST_SELLERS;
+    if (this.cacheManager) {
+      try {
+        const cached =
+          await this.cacheManager.get<ApiBestSellerProduct[]>(cacheKey);
+        if (cached) {
+          return cached;
+        }
+      } catch {}
+    }
+
     const products = await this.prisma.product.findMany({
       where: { isBestSeller: true },
       orderBy: { bestSellerRank: 'asc' },
       select: PRODUCT_CARD_SELECT,
     });
 
-    return products.map((p) => ProductsMapper.toBestSeller(p));
+    const result = products.map((p) => ProductsMapper.toBestSeller(p));
+
+    if (this.cacheManager) {
+      try {
+        await this.cacheManager.set(
+          cacheKey,
+          result,
+          CACHE_TTL.BEST_SELLERS_MS,
+        );
+      } catch {}
+    }
+
+    return result;
   }
 
-  /**
-   * Slug ile tekil ürün detayını varyantlarıyla birlikte döner.
-   */
   async getBySlug(slug: string): Promise<ApiProductDetail> {
     const product = await this.prisma.product.findUnique({
       where: { slug },
@@ -207,10 +225,17 @@ export class ProductsService {
     return ProductsMapper.toProductDetail(product);
   }
 
-  /**
-   * Hiyerarşik kategori ağacını döner (ana kategori -> alt kategoriler).
-   */
   async categories(): Promise<CategoryTree[]> {
+    const cacheKey = CACHE_KEYS.CATEGORIES_TREE;
+    if (this.cacheManager) {
+      try {
+        const cached = await this.cacheManager.get<CategoryTree[]>(cacheKey);
+        if (cached) {
+          return cached;
+        }
+      } catch {}
+    }
+
     const categories = await this.prisma.category.findMany({
       include: {
         subCategories: {
@@ -220,7 +245,7 @@ export class ProductsService {
       orderBy: { name: 'asc' },
     });
 
-    return categories.map((c) => ({
+    const result = categories.map((c) => ({
       id: c.id,
       name: c.name,
       slug: c.slug,
@@ -231,5 +256,27 @@ export class ProductsService {
         categoryId: s.categoryId,
       })),
     }));
+
+    if (this.cacheManager) {
+      try {
+        await this.cacheManager.set(cacheKey, result, CACHE_TTL.CATEGORIES_MS);
+      } catch {}
+    }
+
+    return result;
+  }
+
+  async invalidateBestSellersCache(): Promise<void> {
+    if (!this.cacheManager) return;
+    try {
+      await this.cacheManager.del(CACHE_KEYS.BEST_SELLERS);
+    } catch {}
+  }
+
+  async invalidateCategoriesCache(): Promise<void> {
+    if (!this.cacheManager) return;
+    try {
+      await this.cacheManager.del(CACHE_KEYS.CATEGORIES_TREE);
+    } catch {}
   }
 }

@@ -1,10 +1,14 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { Prisma } from '@prisma/client';
+import { CACHE_KEYS } from '../common/constants';
 import { AuditEvent, SecurityAuditService } from '../common/audit';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto, UpdateProductDto } from './dto';
@@ -16,6 +20,9 @@ export class ProductsAdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: SecurityAuditService,
+    @Optional()
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager?: Cache,
   ) {}
 
   async createProduct(
@@ -52,6 +59,8 @@ export class ProductsAdminService {
       resourceId: product.id,
       details: { slug: product.slug, name: product.name },
     });
+
+    await this.cacheManager?.del(CACHE_KEYS.BEST_SELLERS);
 
     return ProductsMapper.toProductDetail(product);
   }
@@ -102,6 +111,8 @@ export class ProductsAdminService {
       },
     });
 
+    await this.cacheManager?.del(CACHE_KEYS.BEST_SELLERS);
+
     return ProductsMapper.toProductDetail(updated);
   }
 
@@ -137,5 +148,7 @@ export class ProductsAdminService {
       resourceId: productId,
       details: { slug: product.slug, name: product.name },
     });
+
+    await this.cacheManager?.del(CACHE_KEYS.BEST_SELLERS);
   }
 }

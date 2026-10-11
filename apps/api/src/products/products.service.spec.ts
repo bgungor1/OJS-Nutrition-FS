@@ -314,4 +314,102 @@ describe('ProductsService', () => {
       ]);
     });
   });
+
+  describe('caching behavior', () => {
+    let cachedService: ProductsService;
+    let mockCache: {
+      get: jest.Mock;
+      set: jest.Mock;
+      del: jest.Mock;
+    };
+
+    beforeEach(async () => {
+      mockCache = {
+        get: jest.fn(),
+        set: jest.fn(),
+        del: jest.fn().mockResolvedValue(true),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          ProductsService,
+          { provide: PrismaService, useValue: mockPrisma },
+          { provide: 'CACHE_MANAGER', useValue: mockCache },
+        ],
+      }).compile();
+
+      cachedService = module.get<ProductsService>(ProductsService);
+    });
+
+    it('should return cached bestSellers without database query on cache hit', async () => {
+      const cachedBestSellers = [{ id: 'p-1', name: 'Best Seller' }];
+      mockCache.get.mockResolvedValue(cachedBestSellers);
+
+      const result = await cachedService.bestSellers();
+
+      expect(result).toEqual(cachedBestSellers);
+      expect(mockCache.get).toHaveBeenCalledWith('products:best-sellers');
+      expect(mockPrisma.product.findMany).not.toHaveBeenCalled();
+    });
+
+    it('should query database and set cache on bestSellers cache miss', async () => {
+      mockCache.get.mockResolvedValue(undefined);
+      mockPrisma.product.findMany.mockResolvedValue([createMockProduct()]);
+
+      const result = await cachedService.bestSellers();
+
+      expect(result).toHaveLength(1);
+      expect(mockCache.get).toHaveBeenCalledWith('products:best-sellers');
+      expect(mockPrisma.product.findMany).toHaveBeenCalled();
+      expect(mockCache.set).toHaveBeenCalledWith(
+        'products:best-sellers',
+        expect.any(Array),
+        5 * 60 * 1000,
+      );
+    });
+
+    it('should return cached categories without database query on cache hit', async () => {
+      const cachedTree = [
+        { id: 'c-1', name: 'Cat', slug: 'cat', subCategories: [] },
+      ];
+      mockCache.get.mockResolvedValue(cachedTree);
+
+      const result = await cachedService.categories();
+
+      expect(result).toEqual(cachedTree);
+      expect(mockCache.get).toHaveBeenCalledWith('products:categories');
+      expect(mockPrisma.category.findMany).not.toHaveBeenCalled();
+    });
+
+    it('should query database and set cache on categories cache miss', async () => {
+      mockCache.get.mockResolvedValue(undefined);
+      mockPrisma.category.findMany.mockResolvedValue([
+        {
+          id: 'cat-1',
+          name: 'Protein',
+          slug: 'protein',
+          subCategories: [],
+        },
+      ]);
+
+      const result = await cachedService.categories();
+
+      expect(result).toHaveLength(1);
+      expect(mockCache.get).toHaveBeenCalledWith('products:categories');
+      expect(mockPrisma.category.findMany).toHaveBeenCalled();
+      expect(mockCache.set).toHaveBeenCalledWith(
+        'products:categories',
+        expect.any(Array),
+        60 * 60 * 1000,
+      );
+    });
+
+    it('should invalidate best sellers and categories cache via helper methods', async () => {
+      await cachedService.invalidateBestSellersCache();
+      expect(mockCache.del).toHaveBeenCalledWith('products:best-sellers');
+
+      await cachedService.invalidateCategoriesCache();
+      expect(mockCache.del).toHaveBeenCalledWith('products:categories');
+    });
+  });
 });

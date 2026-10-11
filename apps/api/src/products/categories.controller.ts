@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Public } from '../common/decorators/public.decorator';
+import { CacheControl, HTTP_CACHE_DIRECTIVES, Public } from '../common';
 import { CategoryTreeDto } from './dto';
 import { CategoryTree } from './interfaces/product-response.interface';
 import { ProductsService } from './products.service';
@@ -12,6 +12,7 @@ export class CategoriesController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
+  @CacheControl(HTTP_CACHE_DIRECTIVES.CATEGORIES)
   @ApiOperation({
     summary: 'Alt kategorileriyle birlikte hiyerarşik kategori ağacını döner',
   })
