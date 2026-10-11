@@ -128,4 +128,119 @@ describe('PrismaService', () => {
       expect(service.sanitizeParams('')).toBe('[]');
     });
   });
+
+  describe('Connection Pooling & Pooler Resolution', () => {
+    it('returns undefined when no database URL is available', () => {
+      const resolved = PrismaService.resolveDatasourceUrl(undefined, '');
+      expect(resolved).toBeUndefined();
+    });
+
+    it('returns raw URL untouched if protocol is not postgresql/postgres', () => {
+      const raw = 'mysql://user:pass@localhost:3306/db';
+      const resolved = PrismaService.resolveDatasourceUrl(undefined, raw);
+      expect(resolved).toBe(raw);
+    });
+
+    it('appends connection_limit, pool_timeout, and connect_timeout from configService', () => {
+      const raw =
+        'postgresql://user:pass@localhost:5432/ojs_nutrition?schema=public';
+      const mockConfigService = {
+        get: jest.fn((key: string) => {
+          if (key === 'database') {
+            return {
+              url: raw,
+              connectionLimit: 15,
+              poolTimeout: 25,
+              connectTimeout: 7,
+            };
+          }
+          if (key === 'databaseUrl') return raw;
+          return undefined;
+        }),
+      };
+
+      const resolved = PrismaService.resolveDatasourceUrl(
+        mockConfigService as never,
+      );
+      expect(resolved).toBeDefined();
+      const parsed = new URL(resolved!);
+      expect(parsed.searchParams.get('connection_limit')).toBe('15');
+      expect(parsed.searchParams.get('pool_timeout')).toBe('25');
+      expect(parsed.searchParams.get('connect_timeout')).toBe('7');
+      expect(parsed.searchParams.get('schema')).toBe('public');
+    });
+
+    it('does not overwrite existing connection_limit in URL', () => {
+      const raw =
+        'postgresql://user:pass@localhost:5432/ojs_nutrition?connection_limit=50';
+      const mockConfigService = {
+        get: jest.fn((key: string) => {
+          if (key === 'database') {
+            return {
+              connectionLimit: 10,
+            };
+          }
+          return undefined;
+        }),
+      };
+
+      const resolved = PrismaService.resolveDatasourceUrl(
+        mockConfigService as never,
+        raw,
+      );
+      const parsed = new URL(resolved!);
+      expect(parsed.searchParams.get('connection_limit')).toBe('50');
+    });
+
+    it('automatically sets pgbouncer=true when connecting to transaction pooler port 6543', () => {
+      const poolerUrl =
+        'postgresql://postgres.ref:secret@aws-0-eu-central-1.pooler.supabase.com:6543/postgres';
+      const resolved = PrismaService.resolveDatasourceUrl(undefined, poolerUrl);
+      expect(resolved).toBeDefined();
+      const parsed = new URL(resolved!);
+      expect(parsed.searchParams.get('pgbouncer')).toBe('true');
+    });
+
+    it('automatically sets pgbouncer=true when hostname is pooler.supabase.com', () => {
+      const poolerUrl =
+        'postgresql://postgres.ref:secret@pooler.supabase.com/postgres';
+      const resolved = PrismaService.resolveDatasourceUrl(undefined, poolerUrl);
+      expect(resolved).toBeDefined();
+      const parsed = new URL(resolved!);
+      expect(parsed.searchParams.get('pgbouncer')).toBe('true');
+    });
+
+    it('generates a safe connection summary without sensitive credentials', () => {
+      const raw =
+        'postgresql://admin:superSecretPass123@db.supabase.com:5432/ojs_nutrition?connection_limit=20&pool_timeout=15';
+      const customService = new PrismaService(undefined, {
+        get: (key: string) => (key === 'databaseUrl' ? raw : undefined),
+      } as never);
+
+      const summary = customService.getSafeConnectionSummary();
+      expect(summary).toBeDefined();
+      expect(summary?.host).toBe('db.supabase.com');
+      expect(summary?.port).toBe('5432');
+      expect(summary?.database).toBe('ojs_nutrition');
+      expect(summary?.connectionLimit).toBe('20');
+      expect(summary?.poolTimeout).toBe('15');
+      expect(summary?.pgbouncer).toBe(false);
+
+      expect(JSON.stringify(summary)).not.toContain('superSecretPass123');
+      expect(JSON.stringify(summary)).not.toContain('admin');
+    });
+
+    it('logs pool configuration on onModuleInit without throwing', async () => {
+      const loggerLogSpy = jest
+        .spyOn(
+          (service as unknown as { logger: { log: jest.Mock } }).logger,
+          'log',
+        )
+        .mockImplementation();
+
+      await service.onModuleInit();
+      expect(connectSpy).toHaveBeenCalled();
+      loggerLogSpy.mockRestore();
+    });
+  });
 });

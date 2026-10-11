@@ -239,7 +239,8 @@ Alternatively, launch services directly from the repository root:
 ### Backend (`apps/api/.env`)
 ```env
 # Database
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ojs_nutrition?schema=public"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/ojs_nutrition?schema=public&connection_limit=10&pool_timeout=20"
+DIRECT_URL="postgresql://postgres:postgres@localhost:5432/ojs_nutrition"
 
 # Server & Port
 PORT=3000

@@ -47,6 +47,24 @@ export class EnvironmentVariables {
   @IsOptional()
   DIRECT_URL?: string;
 
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  DATABASE_CONNECTION_LIMIT?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  DATABASE_POOL_TIMEOUT?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  DATABASE_CONNECT_TIMEOUT?: number;
+
   @IsString()
   @IsNotEmpty()
   JWT_ACCESS_SECRET!: string;
