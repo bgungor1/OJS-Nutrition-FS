@@ -249,6 +249,68 @@ describe('ProductsService', () => {
         expect.objectContaining({ orderBy: { createdAt: 'desc' } }),
       );
     });
+
+    it('should execute count and findMany concurrently via Promise.all', async () => {
+      let countStarted = false;
+      let findManyStarted = false;
+      let countResolvedConcurrently = false;
+
+      mockPrisma.product.count.mockImplementation(async () => {
+        countStarted = true;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        countResolvedConcurrently = findManyStarted;
+        return 1;
+      });
+
+      mockPrisma.product.findMany.mockImplementation(async () => {
+        findManyStarted = true;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return [createMockProduct()];
+      });
+
+      const result = await service.list({ limit: 10, offset: 0 });
+
+      expect(countStarted).toBe(true);
+      expect(findManyStarted).toBe(true);
+      expect(countResolvedConcurrently).toBe(true);
+      expect(result.count).toBe(1);
+      expect(result.results).toHaveLength(1);
+    });
+
+    it('should execute count and $queryRaw concurrently during price sorting', async () => {
+      let countStarted = false;
+      let queryRawStarted = false;
+      let queryRawStartedDuringCount = false;
+
+      mockPrisma.product.count.mockImplementation(async () => {
+        countStarted = true;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        queryRawStartedDuringCount = queryRawStarted;
+        return 2;
+      });
+
+      mockPrisma.$queryRaw = jest.fn().mockImplementation(async () => {
+        queryRawStarted = true;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return [{ id: 'p1' }];
+      });
+
+      mockPrisma.product.findMany.mockResolvedValue([
+        createMockProduct({ id: 'p1' }),
+      ]);
+
+      const result = await service.list({
+        limit: 10,
+        offset: 0,
+        sort: 'price_asc',
+      });
+
+      expect(countStarted).toBe(true);
+      expect(queryRawStarted).toBe(true);
+      expect(queryRawStartedDuringCount).toBe(true);
+      expect(result.count).toBe(2);
+      expect(result.results).toHaveLength(1);
+    });
   });
 
   describe('bestSellers', () => {

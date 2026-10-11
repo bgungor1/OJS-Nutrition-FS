@@ -62,8 +62,7 @@ export class ProductsService {
           ? conditions[0]
           : { AND: conditions };
 
-    const count = await this.prisma.product.count({ where });
-
+    let count: number;
     let results: ApiPaginatedProducts['results'] = [];
 
     if (sort === 'price_asc' || sort === 'price_desc') {
@@ -86,10 +85,11 @@ export class ProductsService {
 
       const combinedWhere = Prisma.join(whereClauses, ' AND ');
       let sortedRows: Array<{ id: string }> = [];
+      const countPromise = this.prisma.product.count({ where });
 
       try {
         if (typeof this.prisma.$queryRaw === 'function') {
-          sortedRows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+          const rawPromise = this.prisma.$queryRaw<Array<{ id: string }>>`
             SELECT p.id
             FROM "Product" p
             LEFT JOIN "ProductVariant" pv ON pv."productId" = p.id
@@ -100,8 +100,18 @@ export class ProductsService {
             ORDER BY COALESCE(MIN(COALESCE(pv."discountedPrice", pv."totalPrice")), 0) ${direction}
             LIMIT ${limit} OFFSET ${offset}
           `;
+          const [countResult, rows] = await Promise.all([
+            countPromise,
+            rawPromise,
+          ]);
+          count = countResult;
+          sortedRows = rows;
+        } else {
+          count = await countPromise;
         }
-      } catch {}
+      } catch {
+        count = await countPromise;
+      }
 
       if (sortedRows && sortedRows.length > 0) {
         const ids = sortedRows.map((r) => r.id);
@@ -141,14 +151,18 @@ export class ProductsService {
         orderBy = { createdAt: 'desc' };
       }
 
-      const products = await this.prisma.product.findMany({
-        where,
-        skip: offset,
-        take: limit,
-        orderBy,
-        select: PRODUCT_CARD_SELECT,
-      });
+      const [totalCount, products] = await Promise.all([
+        this.prisma.product.count({ where }),
+        this.prisma.product.findMany({
+          where,
+          skip: offset,
+          take: limit,
+          orderBy,
+          select: PRODUCT_CARD_SELECT,
+        }),
+      ]);
 
+      count = totalCount;
       results = products.map((p) => ProductsMapper.toProduct(p));
     }
 
