@@ -44,7 +44,11 @@ export class OrderLifecycleHelper {
     tx: Prisma.TransactionClient,
     items: Array<{ productVariantId: string; pieces: number }>,
   ): Promise<void> {
-    for (const item of items) {
+    const sortedItems = [...items].sort((a, b) =>
+      a.productVariantId.localeCompare(b.productVariantId),
+    );
+
+    for (const item of sortedItems) {
       await tx.productVariant.update({
         where: { id: item.productVariantId },
         data: {
@@ -78,6 +82,21 @@ export class OrderLifecycleHelper {
 
     const updatedOrder = (await prisma.$transaction(
       async (tx) => {
+        if (typeof tx.order?.findUnique === 'function') {
+          const freshOrder = await tx.order.findUnique({
+            where: { id: orderId },
+          });
+          if (!freshOrder) {
+            throw new NotFoundException('Sipariş bulunamadı.');
+          }
+          if (freshOrder.status !== order.status) {
+            OrderLifecycleHelper.validateTransition(
+              freshOrder.status,
+              dto.status,
+            );
+          }
+        }
+
         if (isRestock) {
           await OrderLifecycleHelper.restockOrderItems(tx, order.items);
         }

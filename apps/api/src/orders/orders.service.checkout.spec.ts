@@ -33,7 +33,8 @@ describe('OrdersService - Checkout Flow', () => {
   let txMock: {
     productVariant: { updateMany: jest.Mock };
     order: { create: jest.Mock };
-    cartItem: { deleteMany: jest.Mock };
+    cartItem: { findMany?: jest.Mock; deleteMany: jest.Mock };
+    $queryRaw?: jest.Mock;
   };
 
   let paymentsService: {
@@ -204,6 +205,71 @@ describe('OrdersService - Checkout Flow', () => {
       expect(result.items).toHaveLength(1);
       expect(result.cart_detail).toHaveLength(1);
       expect(result.payment?.provider_ref).toBe('mock_pay_123');
+    });
+
+    it('should throw BadRequestException and not charge card when cart is empty inside transaction (concurrent checkout safeguard)', async () => {
+      prismaService.address.findFirst.mockResolvedValue(mockAddress);
+      prismaService.user.findUnique.mockResolvedValue(mockUser);
+      prismaService.cartItem.findMany.mockResolvedValue([mockCartItem]);
+
+      txMock.cartItem.findMany = jest.fn().mockResolvedValue([]);
+
+      await expect(service.completeShopping(userId, dto)).rejects.toThrow(
+        BadRequestException,
+      );
+
+      expect(paymentsService.charge).not.toHaveBeenCalled();
+      expect(txMock.productVariant.updateMany).not.toHaveBeenCalled();
+      expect(txMock.order.create).not.toHaveBeenCalled();
+    });
+
+    it('should execute pessimistic locking via $queryRaw and reject before payment if locked stock is insufficient', async () => {
+      prismaService.address.findFirst.mockResolvedValue(mockAddress);
+      prismaService.user.findUnique.mockResolvedValue(mockUser);
+      prismaService.cartItem.findMany.mockResolvedValue([mockCartItem]);
+
+      txMock.cartItem.findMany = jest
+        .fn()
+        .mockResolvedValue([{ productVariantId: 'var-1', pieces: 2 }]);
+      txMock.$queryRaw = jest
+        .fn()
+        .mockResolvedValue([
+          { id: 'var-1', stockQuantity: 1, isAvailable: true },
+        ]);
+
+      await expect(service.completeShopping(userId, dto)).rejects.toThrow(
+        ConflictException,
+      );
+
+      expect(txMock.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(paymentsService.charge).not.toHaveBeenCalled();
+      expect(txMock.productVariant.updateMany).not.toHaveBeenCalled();
+      expect(txMock.order.create).not.toHaveBeenCalled();
+    });
+
+    it('should execute pessimistic locking and proceed to payment when locked stock is sufficient', async () => {
+      prismaService.address.findFirst.mockResolvedValue(mockAddress);
+      prismaService.user.findUnique.mockResolvedValue(mockUser);
+      prismaService.cartItem.findMany.mockResolvedValue([mockCartItem]);
+
+      txMock.cartItem.findMany = jest
+        .fn()
+        .mockResolvedValue([{ productVariantId: 'var-1', pieces: 2 }]);
+      txMock.$queryRaw = jest
+        .fn()
+        .mockResolvedValue([
+          { id: 'var-1', stockQuantity: 10, isAvailable: true },
+        ]);
+      txMock.productVariant.updateMany.mockResolvedValue({ count: 1 });
+      paymentsService.charge.mockResolvedValue(mockPaymentChargeSuccess);
+      txMock.order.create.mockResolvedValue(mockCreatedOrder);
+      txMock.cartItem.deleteMany.mockResolvedValue({ count: 1 });
+
+      const result = await service.completeShopping(userId, dto);
+
+      expect(txMock.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(paymentsService.charge).toHaveBeenCalledTimes(1);
+      expect(result.order_no).toBe(MOCK_ORDER_NO);
     });
   });
 });
