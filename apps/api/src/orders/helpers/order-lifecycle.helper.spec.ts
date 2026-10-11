@@ -84,6 +84,32 @@ describe('OrderLifecycleHelper', () => {
       });
     });
 
+    it('should sort items deterministically ascending by productVariantId even if provided in reverse order', async () => {
+      const updateMock = jest.fn().mockResolvedValue({});
+      const mockTx = {
+        productVariant: {
+          update: updateMock,
+        },
+      } as unknown as Prisma.TransactionClient;
+
+      const items = [
+        { productVariantId: 'var-2', pieces: 5 },
+        { productVariantId: 'var-1', pieces: 3 },
+      ];
+
+      await OrderLifecycleHelper.restockOrderItems(mockTx, items);
+
+      expect(updateMock).toHaveBeenCalledTimes(2);
+      expect(updateMock).toHaveBeenNthCalledWith(1, {
+        where: { id: 'var-1' },
+        data: { stockQuantity: { increment: 3 } },
+      });
+      expect(updateMock).toHaveBeenNthCalledWith(2, {
+        where: { id: 'var-2' },
+        data: { stockQuantity: { increment: 5 } },
+      });
+    });
+
     it('should not perform any update when items list is empty', async () => {
       const updateMock = jest.fn();
       const mockTx = {
@@ -95,6 +121,48 @@ describe('OrderLifecycleHelper', () => {
       await OrderLifecycleHelper.restockOrderItems(mockTx, []);
 
       expect(updateMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('executeStatusUpdate', () => {
+    it('should throw BadRequestException inside transaction if status was concurrently changed to cancelled (double restocking guard)', async () => {
+      const mockPrisma = {
+        order: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'ord-1',
+            status: OrderStatus.processing,
+            items: [{ productVariantId: 'var-1', pieces: 2 }],
+            payment: null,
+          }),
+        },
+        $transaction: jest.fn(
+          async (callback: (tx: unknown) => Promise<unknown>) => {
+            const tx = {
+              order: {
+                findUnique: jest.fn().mockResolvedValue({
+                  id: 'ord-1',
+                  status: OrderStatus.cancelled,
+                }),
+                update: jest.fn(),
+              },
+              productVariant: {
+                update: jest.fn(),
+              },
+            };
+            return callback(tx);
+          },
+        ),
+      };
+
+      await expect(
+        OrderLifecycleHelper.executeStatusUpdate(
+          mockPrisma as unknown as import('../../prisma/prisma.service').PrismaService,
+          'ord-1',
+          { status: OrderStatus.cancelled },
+        ),
+      ).rejects.toThrow(
+        'İptal edilmiş veya iade edilmiş bir siparişin durumu değiştirilemez.',
+      );
     });
   });
 });

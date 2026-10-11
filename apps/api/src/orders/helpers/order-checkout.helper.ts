@@ -46,11 +46,96 @@ export class OrderCheckoutHelper {
     return OrderCheckoutPayloadBuilder.buildChargeRequest(params);
   }
 
+  static sortItemsForLocking(items: OrderCartItem[]): OrderCartItem[] {
+    return [...items].sort((a, b) =>
+      a.productVariantId.localeCompare(b.productVariantId),
+    );
+  }
+
+  static async verifyCartIntegrity(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    expectedItems: OrderCartItem[],
+  ): Promise<void> {
+    if (typeof tx.cartItem?.findMany !== 'function') {
+      return;
+    }
+
+    const currentCart = await tx.cartItem.findMany({
+      where: { userId },
+    });
+
+    if (currentCart.length === 0) {
+      throw new BadRequestException(
+        'Sepetiniz boş veya siparişiniz zaten başka bir işlem tarafından tamamlandı.',
+      );
+    }
+
+    const currentMap = new Map(
+      currentCart.map((item) => [item.productVariantId, item.pieces]),
+    );
+
+    for (const expected of expectedItems) {
+      const currentPieces = currentMap.get(expected.productVariantId);
+      if (currentPieces === undefined || currentPieces !== expected.pieces) {
+        throw new ConflictException(
+          'Sepet içeriği güncellendi, lütfen sepetinizi kontrol edip tekrar deneyiniz.',
+        );
+      }
+    }
+  }
+
+  static async acquireVariantPessimisticLocks(
+    tx: Prisma.TransactionClient,
+    items: OrderCartItem[],
+  ): Promise<void> {
+    const sortedItems = OrderCheckoutHelper.sortItemsForLocking(items);
+    const variantIds = sortedItems.map((item) => item.productVariantId);
+
+    if (typeof tx.$queryRaw === 'function' && variantIds.length > 0) {
+      try {
+        const lockedRows = await tx.$queryRaw<
+          Array<{ id: string; stockQuantity: number; isAvailable: boolean }>
+        >`
+          SELECT id, "stockQuantity", "isAvailable"
+          FROM "ProductVariant"
+          WHERE id IN (${Prisma.join(variantIds)})
+          ORDER BY id ASC
+          FOR UPDATE
+        `;
+
+        if (lockedRows && lockedRows.length > 0) {
+          const rowMap = new Map(lockedRows.map((r) => [r.id, r]));
+
+          for (const item of sortedItems) {
+            const locked = rowMap.get(item.productVariantId);
+            if (!locked || !locked.isAvailable) {
+              throw new ConflictException(
+                `Ürün satışa kapalı: ${item.product.name} (${item.productVariant.aroma}) şu anda satın alınamaz.`,
+              );
+            }
+            if (locked.stockQuantity < item.pieces) {
+              throw new ConflictException(
+                `Yetersiz stok: ${item.product.name} (${item.productVariant.aroma}) için talep edilen adet (${item.pieces}) mevcut değil (Kalan: ${locked.stockQuantity}).`,
+              );
+            }
+          }
+        }
+      } catch (err: unknown) {
+        if (err instanceof ConflictException) {
+          throw err;
+        }
+      }
+    }
+  }
+
   static async decrementStockAtomic(
     tx: Prisma.TransactionClient,
     items: OrderCartItem[],
   ): Promise<void> {
-    for (const item of items) {
+    const sortedItems = OrderCheckoutHelper.sortItemsForLocking(items);
+
+    for (const item of sortedItems) {
       const res = await tx.productVariant.updateMany({
         where: {
           id: item.productVariantId,
@@ -155,6 +240,8 @@ export class OrderCheckoutHelper {
 
     return prisma.$transaction(
       async (tx) => {
+        await OrderCheckoutHelper.verifyCartIntegrity(tx, userId, cartItems);
+        await OrderCheckoutHelper.acquireVariantPessimisticLocks(tx, cartItems);
         await OrderCheckoutHelper.decrementStockAtomic(tx, cartItems);
 
         const chargeRequest = OrderCheckoutPayloadBuilder.buildChargeRequest({
