@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { mergeGuestCartSession } from '@/lib/auth-session';
 
 const ACCESS_TOKEN_COOKIE = 'ojs_access_token';

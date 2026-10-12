@@ -40,7 +40,7 @@ export class PrismaService
 
   constructor(
     @Optional() private readonly sentryService?: SentryService,
-    @Optional() private readonly configService?: ConfigService<AppConfig>,
+    @Optional() configService?: ConfigService<AppConfig>,
   ) {
     const datasourceUrl = PrismaService.resolveDatasourceUrl(configService);
     const dbConfig = configService?.get<DatabaseConfig>('database');

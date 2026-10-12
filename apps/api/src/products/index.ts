@@ -10,3 +10,4 @@ export * from './products.constants';
 export * from './products.mapper';
 export * from './dto';
 export * from './interfaces';
+export * from './helpers/products-query.helper';

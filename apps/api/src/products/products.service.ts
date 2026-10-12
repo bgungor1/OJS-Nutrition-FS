@@ -17,6 +17,7 @@ import {
 } from './interfaces/product-response.interface';
 import { PRODUCT_CARD_SELECT } from './products.constants';
 import { ProductsMapper } from './products.mapper';
+import { ProductsQueryHelper } from './helpers/products-query.helper';
 
 @Injectable()
 export class ProductsService {
@@ -33,138 +34,18 @@ export class ProductsService {
     const { category, sort } = query;
     const search = query.search?.trim();
 
-    const conditions: Prisma.ProductWhereInput[] = [];
+    const where = ProductsQueryHelper.buildWhereClause(category, search);
 
-    if (category) {
-      conditions.push({
-        OR: [
-          { mainCategory: { slug: category } },
-          { subCategory: { slug: category } },
-        ],
-      });
-    }
-
-    if (search) {
-      conditions.push({
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { shortExplanation: { contains: search, mode: 'insensitive' } },
-          { slug: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
-        ],
-      });
-    }
-
-    const where: Prisma.ProductWhereInput =
-      conditions.length === 0
-        ? {}
-        : conditions.length === 1
-          ? conditions[0]
-          : { AND: conditions };
-
-    let count: number;
-    let results: ApiPaginatedProducts['results'] = [];
-
-    if (sort === 'price_asc' || sort === 'price_desc') {
-      const direction =
-        sort === 'price_asc' ? Prisma.sql`ASC` : Prisma.sql`DESC`;
-      const whereClauses: Prisma.Sql[] = [Prisma.sql`1=1`];
-
-      if (category) {
-        whereClauses.push(
-          Prisma.sql`(mc.slug = ${category} OR sc.slug = ${category})`,
-        );
-      }
-
-      if (search) {
-        const pattern = `%${search}%`;
-        whereClauses.push(
-          Prisma.sql`(p.name ILIKE ${pattern} OR p."shortExplanation" ILIKE ${pattern} OR p.slug ILIKE ${pattern} OR p.description ILIKE ${pattern})`,
-        );
-      }
-
-      const combinedWhere = Prisma.join(whereClauses, ' AND ');
-      let sortedRows: Array<{ id: string }> = [];
-      const countPromise = this.prisma.product.count({ where });
-
-      try {
-        if (typeof this.prisma.$queryRaw === 'function') {
-          const rawPromise = this.prisma.$queryRaw<Array<{ id: string }>>`
-            SELECT p.id
-            FROM "Product" p
-            LEFT JOIN "ProductVariant" pv ON pv."productId" = p.id
-            LEFT JOIN "Category" mc ON mc.id = p."mainCategoryId"
-            LEFT JOIN "SubCategory" sc ON sc.id = p."subCategoryId"
-            WHERE ${combinedWhere}
-            GROUP BY p.id
-            ORDER BY COALESCE(MIN(COALESCE(pv."discountedPrice", pv."totalPrice")), 0) ${direction}
-            LIMIT ${limit} OFFSET ${offset}
-          `;
-          const [countResult, rows] = await Promise.all([
-            countPromise,
-            rawPromise,
-          ]);
-          count = countResult;
-          sortedRows = rows;
-        } else {
-          count = await countPromise;
-        }
-      } catch {
-        count = await countPromise;
-      }
-
-      if (sortedRows && sortedRows.length > 0) {
-        const ids = sortedRows.map((r) => r.id);
-        const products = await this.prisma.product.findMany({
-          where: { id: { in: ids } },
-          select: PRODUCT_CARD_SELECT,
-        });
-
-        const productMap = new Map(products.map((p) => [p.id, p]));
-        const ordered = ids
-          .map((id) => productMap.get(id))
-          .filter((p): p is NonNullable<typeof p> => p !== undefined);
-
-        results = ordered.map((p) => ProductsMapper.toProduct(p));
-      } else {
-        const allMatching = await this.prisma.product.findMany({
-          where,
-          select: PRODUCT_CARD_SELECT,
-        });
-
-        const sorted = allMatching.sort((a, b) => {
-          const priceA = ProductsMapper.getLowestPrice(a.variants);
-          const priceB = ProductsMapper.getLowestPrice(b.variants);
-          return sort === 'price_asc' ? priceA - priceB : priceB - priceA;
-        });
-
-        const paginated = sorted.slice(offset, offset + limit);
-        results = paginated.map((p) => ProductsMapper.toProduct(p));
-      }
-    } else {
-      let orderBy: Prisma.ProductOrderByWithRelationInput = {
-        createdAt: 'desc',
-      };
-      if (sort === 'rating') {
-        orderBy = { averageStar: 'desc' };
-      } else if (sort === 'newest') {
-        orderBy = { createdAt: 'desc' };
-      }
-
-      const [totalCount, products] = await Promise.all([
-        this.prisma.product.count({ where }),
-        this.prisma.product.findMany({
-          where,
-          skip: offset,
-          take: limit,
-          orderBy,
-          select: PRODUCT_CARD_SELECT,
-        }),
-      ]);
-
-      count = totalCount;
-      results = products.map((p) => ProductsMapper.toProduct(p));
-    }
+    const { count, results } =
+      sort === 'price_asc' || sort === 'price_desc'
+        ? await this.listByPriceSort(where, {
+            category,
+            search,
+            sort,
+            limit,
+            offset,
+          })
+        : await this.listByDefaultSort(where, { sort, limit, offset });
 
     const next =
       offset + limit < count
@@ -191,15 +72,102 @@ export class ProductsService {
     return { count, next, previous, results };
   }
 
+  private async listByPriceSort(
+    where: Prisma.ProductWhereInput,
+    params: {
+      category?: string;
+      search?: string;
+      sort: 'price_asc' | 'price_desc';
+      limit: number;
+      offset: number;
+    },
+  ): Promise<{ count: number; results: ApiPaginatedProducts['results'] }> {
+    const { category, search, sort, limit, offset } = params;
+    const rawQuery = ProductsQueryHelper.buildPriceSortRawQuery({
+      category,
+      search,
+      direction: sort === 'price_asc' ? 'ASC' : 'DESC',
+      limit,
+      offset,
+    });
+
+    let count: number;
+    let sortedRows: Array<{ id: string }> = [];
+    const countPromise = this.prisma.product.count({ where });
+
+    try {
+      if (typeof this.prisma.$queryRaw === 'function') {
+        const [countResult, rows] = await Promise.all([
+          countPromise,
+          this.prisma.$queryRaw<Array<{ id: string }>>(rawQuery),
+        ]);
+        count = countResult;
+        sortedRows = rows;
+      } else {
+        count = await countPromise;
+      }
+    } catch {
+      count = await countPromise;
+    }
+
+    if (sortedRows && sortedRows.length > 0) {
+      const ids = sortedRows.map((r) => r.id);
+      const products = await this.prisma.product.findMany({
+        where: { id: { in: ids } },
+        select: PRODUCT_CARD_SELECT,
+      });
+
+      const ordered = ProductsQueryHelper.orderProductsByIds(products, ids);
+      return {
+        count,
+        results: ordered.map((p) => ProductsMapper.toProduct(p)),
+      };
+    }
+
+    const allMatching = await this.prisma.product.findMany({
+      where,
+      select: PRODUCT_CARD_SELECT,
+    });
+
+    const sorted = ProductsQueryHelper.sortProductsByPrice(allMatching, sort);
+    const paginated = sorted.slice(offset, offset + limit);
+    return {
+      count,
+      results: paginated.map((p) => ProductsMapper.toProduct(p)),
+    };
+  }
+
+  private async listByDefaultSort(
+    where: Prisma.ProductWhereInput,
+    params: { sort?: string; limit: number; offset: number },
+  ): Promise<{ count: number; results: ApiPaginatedProducts['results'] }> {
+    const { sort, limit, offset } = params;
+    const orderBy = ProductsQueryHelper.buildOrderBy(sort);
+
+    const [count, products] = await Promise.all([
+      this.prisma.product.count({ where }),
+      this.prisma.product.findMany({
+        where,
+        skip: offset,
+        take: limit,
+        orderBy,
+        select: PRODUCT_CARD_SELECT,
+      }),
+    ]);
+
+    return {
+      count,
+      results: products.map((p) => ProductsMapper.toProduct(p)),
+    };
+  }
+
   async bestSellers(): Promise<ApiBestSellerProduct[]> {
     const cacheKey = CACHE_KEYS.BEST_SELLERS;
     if (this.cacheManager) {
       try {
         const cached =
           await this.cacheManager.get<ApiBestSellerProduct[]>(cacheKey);
-        if (cached) {
-          return cached;
-        }
+        if (cached) return cached;
       } catch {}
     }
 
@@ -244,9 +212,7 @@ export class ProductsService {
     if (this.cacheManager) {
       try {
         const cached = await this.cacheManager.get<CategoryTree[]>(cacheKey);
-        if (cached) {
-          return cached;
-        }
+        if (cached) return cached;
       } catch {}
     }
 

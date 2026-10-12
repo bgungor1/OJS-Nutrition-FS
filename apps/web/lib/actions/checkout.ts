@@ -3,11 +3,14 @@
 import { revalidatePath } from 'next/cache';
 import { getAccessToken } from '@/lib/auth-cookies';
 import { completeShopping } from '@/lib/api/orders';
-import { checkoutPaymentSchema } from '@/lib/schemas/checkout';
-import { ApiError, serverFetch } from '@/lib/api-client';
+import {
+  checkoutPaymentSchema,
+  type CheckoutFormData,
+} from '@/lib/schemas/checkout';
+import { ApiError } from '@/lib/api-client';
 import { mergeGuestCartSession } from '@/lib/auth-session';
-import type { CheckoutFormData } from '@/lib/schemas/checkout';
 import type { CartItemResponse } from '@/types';
+import { syncClientCartWithServer } from './checkout-sync';
 
 export interface CompleteCheckoutResult {
   success: boolean;
@@ -55,92 +58,13 @@ export async function completeCheckoutAction(
   await mergeGuestCartSession(token);
 
   if (clientCartItems && clientCartItems.length > 0) {
-    try {
-      const serverCart = await serverFetch<CartItemResponse[]>('/cart', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        cache: 'no-store',
-      });
-
-      const serverMap = new Map(
-        serverCart.map((item) => [item.product_variant_id, item]),
-      );
-
-      for (const clientItem of clientCartItems) {
-        const existing = serverMap.get(clientItem.product_variant_id);
-        if (!existing) {
-          await serverFetch('/cart', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              product_id: clientItem.product_id,
-              product_variant_id: clientItem.product_variant_id,
-              pieces: clientItem.pieces,
-            }),
-            cache: 'no-store',
-          });
-        } else if (existing.pieces < clientItem.pieces) {
-          const diff = clientItem.pieces - existing.pieces;
-          await serverFetch('/cart', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              product_id: clientItem.product_id,
-              product_variant_id: clientItem.product_variant_id,
-              pieces: diff,
-            }),
-            cache: 'no-store',
-          });
-        } else if (existing.pieces > clientItem.pieces) {
-          const diff = existing.pieces - clientItem.pieces;
-          await serverFetch('/cart', {
-            method: 'DELETE',
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              product_id: clientItem.product_id,
-              product_variant_id: clientItem.product_variant_id,
-              pieces: diff,
-            }),
-            cache: 'no-store',
-          });
-        }
-      }
-
-      const clientVariantIds = new Set(
-        clientCartItems.map((item) => item.product_variant_id),
-      );
-      for (const serverItem of serverCart) {
-        if (!clientVariantIds.has(serverItem.product_variant_id)) {
-          await serverFetch('/cart', {
-            method: 'DELETE',
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              product_id: serverItem.product_id,
-              product_variant_id: serverItem.product_variant_id,
-              pieces: serverItem.pieces,
-            }),
-            cache: 'no-store',
-          });
-        }
-      }
-    } catch (syncErr: unknown) {
-      if (syncErr instanceof ApiError) {
-        return {
-          success: false,
-          error: syncErr.message || 'Sepet ürünleri güncellenirken bir hata oluştu.',
-          fieldErrors: syncErr.reason,
-        };
-      }
-      console.warn('[completeCheckoutAction] Sepet senkronizasyon uyarısı:', syncErr);
+    const syncResult = await syncClientCartWithServer(token, clientCartItems);
+    if (syncResult.hasError) {
+      return {
+        success: false,
+        error: syncResult.error,
+        fieldErrors: syncResult.fieldErrors,
+      };
     }
   }
 
@@ -172,7 +96,8 @@ export async function completeCheckoutAction(
     }
     return {
       success: false,
-      error: 'Ödeme alınırken beklenmeyen bir hata oluştu. Lütfen tekrar deneyiniz.',
+      error:
+        'Ödeme alınırken beklenmeyen bir hata oluştu. Lütfen tekrar deneyiniz.',
     };
   }
 }

@@ -1,11 +1,10 @@
 import * as React from 'react';
 import { PageHeader } from '@/components/layout/page-header';
 import { UsersTable, UsersToolbar, UsersPagination } from '@/components/users';
-import { listUsers } from '@/lib/api/users';
+import { listUsers, type AdminUsersPaginatedResponse } from '@/lib/api/users';
 import { getAccessToken } from '@/lib/auth-cookies';
 import { decodeJwtPayload } from '@/lib/jwt';
 import { updateUserRoleAction } from './actions';
-import type { AdminUsersPaginatedResponse } from '@/lib/api/users';
 import type { Role } from '@/types';
 
 export const dynamic = 'force-dynamic';
