@@ -1,8 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { listUsers, getUserById, updateUserRole } from './users';
+import {
+  listUsers,
+  getUserById,
+  updateUserRole,
+  type AdminUsersPaginatedResponse,
+} from './users';
 import * as apiClient from '@/lib/api-client';
 import type { AdminUserDetail, AdminUserListItem } from '@/types';
-import type { AdminUsersPaginatedResponse } from './users';
 
 vi.mock('@/lib/api-client', () => ({
   serverFetch: vi.fn(),

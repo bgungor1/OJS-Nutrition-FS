@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { decodeJwtPayload } from './lib/jwt';
 
 const ACCESS_TOKEN_COOKIE = 'ojs_access_token';
