@@ -8,6 +8,13 @@ import {
   clearCart as clearCartApi,
   mergeGuestCart as mergeGuestCartApi,
 } from '@/lib/api/cart';
+import {
+  calculateOptimisticAdd,
+  calculateOptimisticRemove,
+  mergeAddCartResponse,
+  mergeRemoveCartResponse,
+  mergeServerAndLocalCart,
+} from './cart-store.helpers';
 
 export interface CartState {
   items: CartItemResponse[];
@@ -52,18 +59,8 @@ export const useCartStore = create<CartState>()(
         try {
           const serverItems = await getCart();
           const localItems = get().items;
-
-          if (serverItems.length > 0) {
-            const serverMap = new Map(
-              serverItems.map((item) => [item.product_variant_id, item]),
-            );
-            const preservedLocal = localItems.filter(
-              (item) => !serverMap.has(item.product_variant_id),
-            );
-            set({ items: [...preservedLocal, ...serverItems], isLoading: false });
-          } else {
-            set({ items: localItems, isLoading: false });
-          }
+          const merged = mergeServerAndLocalCart(serverItems, localItems);
+          set({ items: merged, isLoading: false });
         } catch (err: unknown) {
           const message =
             err instanceof Error ? err.message : 'Sepet yüklenirken hata oluştu';
@@ -78,12 +75,10 @@ export const useCartStore = create<CartState>()(
         );
 
         if (existingItem) {
-          const optimisticItems = previousItems.map((item) =>
-            item.product_variant_id === variantId
-              ? { ...item, pieces: item.pieces + pieces }
-              : item,
-          );
-          set({ items: optimisticItems, error: null });
+          set({
+            items: calculateOptimisticAdd(previousItems, variantId, pieces),
+            error: null,
+          });
         } else {
           set({ isLoading: true, error: null });
         }
@@ -96,19 +91,13 @@ export const useCartStore = create<CartState>()(
           });
 
           const currentItems = get().items;
-          const apiItemMap = new Map(
-            apiItems.map((item) => [item.product_variant_id, item]),
+          const merged = mergeAddCartResponse(
+            currentItems,
+            apiItems,
+            variantId,
           );
-
-          const preservedItems = currentItems.filter(
-            (item) =>
-              item.product_variant_id !== variantId &&
-              !apiItemMap.has(item.product_variant_id),
-          );
-
-          const merged = [...preservedItems, ...apiItems];
-
           const shouldOpen = !get().isDrawerOpen;
+
           set({
             items: merged,
             isLoading: false,
@@ -130,15 +119,10 @@ export const useCartStore = create<CartState>()(
         );
 
         if (targetItem) {
-          const optimisticItems =
-            targetItem.pieces <= pieces
-              ? previousItems.filter((i) => i.product_variant_id !== variantId)
-              : previousItems.map((i) =>
-                i.product_variant_id === variantId
-                  ? { ...i, pieces: i.pieces - pieces }
-                  : i,
-              );
-          set({ items: optimisticItems, error: null });
+          set({
+            items: calculateOptimisticRemove(previousItems, variantId, pieces),
+            error: null,
+          });
         }
 
         try {
@@ -149,28 +133,15 @@ export const useCartStore = create<CartState>()(
           });
 
           const currentItems = get().items;
-          const apiItemMap = new Map(
-            apiItems.map((item) => [item.product_variant_id, item]),
+          const merged = mergeRemoveCartResponse(
+            currentItems,
+            apiItems,
+            variantId,
+            targetItem?.pieces,
+            pieces,
           );
 
-          const isCompletelyRemoved =
-            !apiItemMap.has(variantId) ||
-            (targetItem !== undefined && targetItem.pieces <= pieces);
-
-          const preservedItems = currentItems.filter((item) => {
-            if (item.product_variant_id === variantId) {
-              return !isCompletelyRemoved;
-            }
-            return !apiItemMap.has(item.product_variant_id);
-          });
-
-          const merged = [...preservedItems, ...apiItems];
-          const deduplicatedMap = new Map<string, CartItemResponse>();
-          for (const item of merged) {
-            deduplicatedMap.set(item.product_variant_id, item);
-          }
-
-          set({ items: Array.from(deduplicatedMap.values()), isLoading: false });
+          set({ items: merged, isLoading: false });
           return true;
         } catch (err: unknown) {
           const message =
