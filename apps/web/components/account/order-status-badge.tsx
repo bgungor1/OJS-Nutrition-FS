@@ -32,6 +32,10 @@ const STATUS_CONFIG: Record<
     label: 'İptal Edildi',
     className: 'bg-destructive/15 text-destructive border-destructive/30',
   },
+  refunded: {
+    label: 'İade Edildi',
+    className: 'bg-muted text-muted-foreground border-border',
+  },
   returned: {
     label: 'İade Edildi',
     className: 'bg-muted text-muted-foreground border-border',
