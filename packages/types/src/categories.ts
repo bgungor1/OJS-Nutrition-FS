@@ -12,6 +12,15 @@ export interface CategoryTree {
   subCategories: SubCategoryItem[];
 }
 
+export type ApiSubCategory = SubCategoryItem;
+
+export interface ApiCategory {
+  id: string;
+  name: string;
+  slug: string;
+  subCategories?: ApiSubCategory[];
+}
+
 export interface MediaUploadResponse {
   photo_src: string;
   url: string;
