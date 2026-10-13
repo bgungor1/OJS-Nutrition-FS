@@ -44,3 +44,18 @@ export interface RegisterRequest {
   first_name: string;
   last_name: string;
 }
+
+export interface RefreshTokenRequest {
+  refresh: string;
+}
+
+export interface RegisterResponse {
+  user: SafeUser;
+  message: string;
+}
+
+export interface AuthSession {
+  accessToken: string;
+  refreshToken: string;
+  user?: SafeUser;
+}

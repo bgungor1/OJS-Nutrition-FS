@@ -37,6 +37,17 @@ export interface NutritionFacts {
   portion_sizes: string[];
 }
 
+export interface ApiBestSellerProduct {
+  id?: string;
+  name: string;
+  short_explanation: string;
+  slug: string;
+  price_info: ApiPriceInfo;
+  photo_src: string;
+  comment_count: number;
+  average_star: number;
+}
+
 export interface AminoAcidFacts {
   ingredients: NutritionFactItem[];
   portion_sizes: string[];
@@ -45,8 +56,10 @@ export interface AminoAcidFacts {
 export interface ApiNutritionalContent {
   ingredients: NutritionalIngredient[];
   nutrition_facts: NutritionFacts;
-  amino_acid_facts: AminoAcidFacts;
+  amino_acid_facts?: AminoAcidFacts;
 }
+
+export type NutritionalContent = ApiNutritionalContent;
 
 export interface ApiProductExplanation {
   usage: string;
@@ -100,11 +113,15 @@ export interface UpdateProductInput {
   nutritionalContent?: ApiNutritionalContent;
 }
 
+export type ProductSortOption = 'price_asc' | 'price_desc' | 'newest' | 'rating';
+
 export interface ProductsQuery {
   limit?: number;
   offset?: number;
   category?: string;
-  sort?: 'price_asc' | 'price_desc' | 'newest' | 'rating';
+  sort?: ProductSortOption;
   search?: string;
 }
+
+export type GetProductsParams = ProductsQuery;
 

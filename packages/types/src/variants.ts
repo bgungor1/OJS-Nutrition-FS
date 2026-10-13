@@ -8,7 +8,7 @@ export interface ApiProductVariantPrice {
   profit: number | null;
   total_price: number;
   discounted_price: number | null;
-  price_per_servings: number;
+  price_per_servings: number | null;
   discount_percentage: number | null;
 }
 

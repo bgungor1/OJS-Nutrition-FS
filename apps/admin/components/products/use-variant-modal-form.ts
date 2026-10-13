@@ -24,7 +24,7 @@ export function getInitialVariantState(initialData?: ApiProductVariant | null): 
       totalServings: initialData.size.total_services,
       totalPrice: initialData.price.total_price,
       discountedPrice: initialData.price.discounted_price ?? '',
-      pricePerServing: initialData.price.price_per_servings,
+      pricePerServing: initialData.price.price_per_servings ?? '',
       photoSrc: initialData.photo_src,
       isAvailable: initialData.is_available,
       stockQuantity: 10,
