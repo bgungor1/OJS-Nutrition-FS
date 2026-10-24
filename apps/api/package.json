@@ -71,6 +71,7 @@
     "class-validator": "^0.14.1",
     "compression": "^1.7.5",
     "cookie-parser": "^1.4.7",
+    "express": "^5.3.0",
     "helmet": "^8.3.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
