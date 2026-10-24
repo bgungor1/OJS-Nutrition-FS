@@ -39,8 +39,22 @@ async function bootstrap(): Promise<void> {
   app.use(cookieParser());
   app.use(compression());
 
+  const allowedOrigins = config.get('corsOrigins', { infer: true });
+  const corsOrigins: (string | RegExp)[] = allowedOrigins.map((origin) => {
+    if (origin === '*') {
+      return '*';
+    }
+    if (origin.includes('*')) {
+      const escaped = origin
+        .replace(/[-/\\^$+?.()|[\]{}]/g, '\\$&')
+        .replace(/\\\*/g, '.*');
+      return new RegExp(`^${escaped}$`);
+    }
+    return origin;
+  });
+
   app.enableCors({
-    origin: config.get('corsOrigins', { infer: true }),
+    origin: corsOrigins,
     credentials: true,
   });
 
@@ -106,7 +120,7 @@ async function bootstrap(): Promise<void> {
   );
 
   const port = config.get('port', { infer: true });
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 }
 
 void bootstrap();

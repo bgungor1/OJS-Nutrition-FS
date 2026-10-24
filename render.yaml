@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: ojs-nutrition-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: .
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter api build
+    startCommand: pnpm --filter api run prisma:deploy && node apps/api/dist/main.js
+    healthCheckPath: /api/v1/products
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: API_GLOBAL_PREFIX
+        value: api/v1
+      - key: CORS_ORIGIN
+        value: https://*.vercel.app
+      - key: COOKIE_SAME_SITE
+        value: none
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES
+        value: 7d
+      - key: MEDIA_STORAGE_PATH
+        value: ./media
+      - key: THROTTLE_TTL
+        value: 60
+      - key: THROTTLE_LIMIT
+        value: 100
+      # Supabase PostgreSQL:
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false

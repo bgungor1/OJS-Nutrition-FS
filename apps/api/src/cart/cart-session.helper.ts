@@ -9,9 +9,10 @@ export const GUEST_CART_COOKIE_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 export function getGuestCartCookieOptions(
   isProduction: boolean,
 ): CookieOptions {
+  const sameSiteEnv = process.env.COOKIE_SAME_SITE as CookieOptions['sameSite'];
   return {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: sameSiteEnv ?? 'lax',
     secure: isProduction,
     maxAge: GUEST_CART_COOKIE_MAX_AGE,
     path: '/',
@@ -49,9 +50,10 @@ export function resolveCartSession(
 
 export function clearGuestCartCookie(res: Response): void {
   const isProduction = process.env.NODE_ENV === 'production';
+  const sameSiteEnv = process.env.COOKIE_SAME_SITE as CookieOptions['sameSite'];
   res.clearCookie(GUEST_CART_COOKIE, {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: sameSiteEnv ?? 'lax',
     secure: isProduction,
     path: '/',
   });
